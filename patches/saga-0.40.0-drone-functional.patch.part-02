@@ -1,0 +1,454 @@
++	crcExtra, ok := mavlinkCommonCRCExtras[id]
++	if !ok {
++		return nil, fmt.Errorf("unsupported MAVLink common message id %d", id)
++	}
++	info, err := mavlinkDecode(frame, crcExtra)
++	if err != nil {
++		return nil, err
++	}
++	payloadHex, _ := info["payload_hex"].(string)
++	payload, _ := hex.DecodeString(payloadHex)
++	fields := map[string]any{}
++	switch id {
++	case 0:
++		if len(payload) >= 9 {
++			fields = map[string]any{"custom_mode": int(binary.LittleEndian.Uint32(payload[:4])), "type": int(payload[4]), "autopilot": int(payload[5]), "base_mode": int(payload[6]), "system_status": int(payload[7]), "mavlink_version": int(payload[8])}
++		}
++	case 31:
++		if len(payload) >= 32 {
++			q := []float64{mavlinkFloat32(payload, 4), mavlinkFloat32(payload, 8), mavlinkFloat32(payload, 12), mavlinkFloat32(payload, 16)}
++			fields = map[string]any{"time_boot_ms": int64(binary.LittleEndian.Uint32(payload[:4])), "q": q, "rollspeed": mavlinkFloat32(payload, 20), "pitchspeed": mavlinkFloat32(payload, 24), "yawspeed": mavlinkFloat32(payload, 28)}
++		}
++	case 32:
++		if len(payload) >= 28 {
++			fields = map[string]any{"time_boot_ms": int64(binary.LittleEndian.Uint32(payload[:4])), "x": mavlinkFloat32(payload, 4), "y": mavlinkFloat32(payload, 8), "z": mavlinkFloat32(payload, 12), "vx": mavlinkFloat32(payload, 16), "vy": mavlinkFloat32(payload, 20), "vz": mavlinkFloat32(payload, 24)}
++		}
++	case 33:
++		if len(payload) >= 28 {
++			fields = map[string]any{"time_boot_ms": int64(binary.LittleEndian.Uint32(payload[:4])), "lat_e7": int32(binary.LittleEndian.Uint32(payload[4:8])), "lon_e7": int32(binary.LittleEndian.Uint32(payload[8:12])), "alt_mm": int32(binary.LittleEndian.Uint32(payload[12:16])), "relative_alt_mm": int32(binary.LittleEndian.Uint32(payload[16:20])), "vx_cms": int16(binary.LittleEndian.Uint16(payload[20:22])), "vy_cms": int16(binary.LittleEndian.Uint16(payload[22:24])), "vz_cms": int16(binary.LittleEndian.Uint16(payload[24:26])), "heading_cdeg": int(binary.LittleEndian.Uint16(payload[26:28]))}
++		}
++	case 77:
++		if len(payload) >= 3 {
++			fields = map[string]any{"command": int(binary.LittleEndian.Uint16(payload[:2])), "result": int(payload[2])}
++		}
++	case 83:
++		if len(payload) >= 37 {
++			q := []float64{mavlinkFloat32(payload, 4), mavlinkFloat32(payload, 8), mavlinkFloat32(payload, 12), mavlinkFloat32(payload, 16)}
++			fields = map[string]any{"time_boot_ms": int64(binary.LittleEndian.Uint32(payload[:4])), "q": q, "body_roll_rate": mavlinkFloat32(payload, 20), "body_pitch_rate": mavlinkFloat32(payload, 24), "body_yaw_rate": mavlinkFloat32(payload, 28), "thrust": mavlinkFloat32(payload, 32), "type_mask": int(payload[36])}
++		}
++	case 85:
++		if len(payload) >= 51 {
++			fields = map[string]any{"time_boot_ms": int64(binary.LittleEndian.Uint32(payload[:4])), "x": mavlinkFloat32(payload, 4), "y": mavlinkFloat32(payload, 8), "z": mavlinkFloat32(payload, 12), "vx": mavlinkFloat32(payload, 16), "vy": mavlinkFloat32(payload, 20), "vz": mavlinkFloat32(payload, 24), "afx": mavlinkFloat32(payload, 28), "afy": mavlinkFloat32(payload, 32), "afz": mavlinkFloat32(payload, 36), "yaw": mavlinkFloat32(payload, 40), "yaw_rate": mavlinkFloat32(payload, 44), "type_mask": int(binary.LittleEndian.Uint16(payload[48:50])), "coordinate_frame": int(payload[50])}
++		}
++	}
++	info["fields"] = fields
++	return info, nil
++}
++
++func (p *droneMavlinkStream) feed(data []byte) []map[string]any {
++	p.Buffer = append(p.Buffer, data...)
++	out := []map[string]any{}
++	for {
++		for len(p.Buffer) > 0 && p.Buffer[0] != 0xfd {
++			p.Buffer = p.Buffer[1:]
++			p.DroppedBytes++
++		}
++		if len(p.Buffer) < 12 {
++			break
++		}
++		n := int(p.Buffer[1])
++		signed := p.Buffer[2]&1 != 0
++		total := 12 + n
++		if signed {
++			total += 13
++		}
++		if len(p.Buffer) < total {
++			break
++		}
++		frame := append([]byte{}, p.Buffer[:total]...)
++		id := int(frame[7]) | int(frame[8])<<8 | int(frame[9])<<16
++		if _, ok := mavlinkCommonCRCExtras[id]; !ok {
++			out = append(out, map[string]any{"message_id": id, "frame_hex": hex.EncodeToString(frame), "known": false})
++			p.Buffer = p.Buffer[total:]
++			continue
++		}
++		info, err := mavlinkCommonDecode(frame)
++		if err != nil {
++			p.Buffer = p.Buffer[1:]
++			p.BadFrames++
++			continue
++		}
++		info["frame_hex"] = hex.EncodeToString(frame)
++		info["known"] = true
++		out = append(out, info)
++		p.Buffer = p.Buffer[total:]
++	}
++	return out
++}
++
++func droneDShotFrame(throttle float64, telemetry bool) (int, error) {
++	if !finiteFloat(throttle) || throttle < 0 || throttle > 1 {
++		return 0, fmt.Errorf("DShot throttle must be in 0..1")
++	}
++	word := 0
++	if throttle > 0 {
++		word = 48 + int(math.Round(1999*throttle))
++		if word > 2047 {
++			word = 2047
++		}
++	}
++	packet := word << 1
++	if telemetry {
++		packet |= 1
++	}
++	data, checksum := packet, 0
++	for j := 0; j < 3; j++ {
++		checksum ^= data
++		data >>= 4
++	}
++	return ((packet << 4) | (checksum & 0xf)) & 0xffff, nil
++}
++
++func dronePWMESCDuty(throttle, minimumUS, maximumUS, periodUS float64) (float64, error) {
++	if !finiteFloat(throttle) || !finiteFloat(minimumUS) || !finiteFloat(maximumUS) || !finiteFloat(periodUS) || throttle < 0 || throttle > 1 || minimumUS <= 0 || maximumUS <= minimumUS || periodUS < maximumUS {
++		return 0, fmt.Errorf("ESC PWM timing or throttle is invalid")
++	}
++	pulse := minimumUS + (maximumUS-minimumUS)*throttle
++	return pulse / periodUS, nil
++}
++
+ func (i *Interpreter) callDroneNative(name string, args []Value, t Token) (Value, error) {
+ 	fail := func(err error) (Value, error) {
+ 		return nil, diag("SAGA-R001", "SAGA-R196", "drone."+name+": "+err.Error(), t)
+@@ -1114,38 +1295,27 @@
+ 		if !ok {
+ 			return fail(fmt.Errorf("invalid flight manager"))
+ 		}
+-		m.State = "DISARMED"
+-		m.LastReason = ""
+-		m.FailsafeAction = "NONE"
++		m.disarm("")
+ 		return nil, nil
+-	case "failsafe":
++	case "set_mode":
+ 		m, ok := args[0].(*droneFlightManager)
+ 		if !ok {
+ 			return fail(fmt.Errorf("invalid flight manager"))
+ 		}
+-		r, e := machineText(args[1], "reason")
++		mode, e := machineText(args[1], "mode")
+ 		if e != nil {
+ 			return fail(e)
+ 		}
+-		if e = m.failsafe(r); e != nil {
++		if e = m.setMode(mode); e != nil {
+ 			return fail(e)
+ 		}
+ 		return nil, nil
+-	case "clear_failsafe":
++	case "flight_mode":
+ 		m, ok := args[0].(*droneFlightManager)
+ 		if !ok {
+ 			return fail(fmt.Errorf("invalid flight manager"))
+ 		}
+-		if m.State != "FAILSAFE" {
+-			return fail(fmt.Errorf("failsafe clear requires FAILSAFE state"))
+-		}
+-		if e := m.Safety.clear(); e != nil {
+-			return fail(e)
+-		}
+-		m.State = "DISARMED"
+-		m.LastReason = ""
+-		m.FailsafeAction = "NONE"
+-		return nil, nil
++		return m.Mode, nil
+ 	case "flight_allowed":
+ 		m, ok := args[0].(*droneFlightManager)
+ 		if !ok {
+@@ -1164,24 +1334,8 @@
+ 			return fail(fmt.Errorf("invalid flight manager"))
+ 		}
+ 		tr, _ := m.Safety.snapshot()
+-		b, _ := json.Marshal(map[string]any{"state": m.State, "flight_allowed": m.allowed(), "control_allowed": m.controlAllowed(), "reason": m.LastReason, "failsafe_action": m.FailsafeAction, "safety_tripped": tr})
++		b, _ := json.Marshal(map[string]any{"state": m.State, "mode": m.Mode, "flight_allowed": m.allowed(), "control_allowed": m.controlAllowed(), "reason": m.LastReason, "safety_tripped": tr, "health": map[string]any{"estimator": m.EstimatorHealthy, "position": m.PositionHealthy, "battery_fraction": m.BatteryFraction, "rc_link": m.RCLink, "data_link": m.DataLink, "home_set": m.HomeSet}})
+ 		return string(b), nil
+-	case "evaluate_failsafe":
+-		m, ok := args[0].(*droneFlightManager)
+-		if !ok {
+-			return fail(fmt.Errorf("invalid flight manager"))
+-		}
+-		g, _ := parseMachineBool(args[1], "geofence_ok")
+-		rp, _ := parseMachineBool(args[2], "require_position")
+-		cb, e := num(3, "critical_battery")
+-		if e != nil {
+-			return fail(e)
+-		}
+-		action, e := m.evaluateFailsafe(g, rp, cb)
+-		if e != nil {
+-			return fail(e)
+-		}
+-		return action, nil
+ 	case "rtl":
+ 		v := make([]float64, 5)
+ 		for j := range v {
+@@ -1344,6 +1498,169 @@
+ 			return fail(e)
+ 		}
+ 		return f, nil
++
++	case "mavlink_set_attitude_target":
++		if len(args) != 10 {
++			return fail(fmt.Errorf("requires 10 arguments"))
++		}
++		v := make([]int, 6)
++		for j := range v {
++			q, e := intv(j, "MAVLink integer")
++			if e != nil {
++				return fail(e)
++			}
++			v[j] = q
++		}
++		q, e := droneList4(args[6], "quaternion")
++		if e != nil {
++			return fail(e)
++		}
++		rates, e := droneList3(args[7], "body rates")
++		if e != nil {
++			return fail(e)
++		}
++		thrust, e := num(8, "thrust")
++		if e != nil {
++			return fail(e)
++		}
++		timeBoot, e := numberToInt(args[9])
++		if e != nil {
++			return fail(e)
++		}
++		frame, e := mavlinkSetAttitudeTarget(v[0], v[1], v[2], v[3], v[4], v[5], q, rates, thrust, int64(timeBoot))
++		if e != nil {
++			return fail(e)
++		}
++		return frame, nil
++	case "mavlink_set_position_target_local_ned":
++		if len(args) != 13 {
++			return fail(fmt.Errorf("requires 13 arguments"))
++		}
++		v := make([]int, 7)
++		for j := range v {
++			q, e := intv(j, "MAVLink integer")
++			if e != nil {
++				return fail(e)
++			}
++			v[j] = q
++		}
++		pos, e := droneList3(args[7], "position NED")
++		if e != nil {
++			return fail(e)
++		}
++		vel, e := droneList3(args[8], "velocity NED")
++		if e != nil {
++			return fail(e)
++		}
++		acc, e := droneList3(args[9], "acceleration NED")
++		if e != nil {
++			return fail(e)
++		}
++		yaw, e := num(10, "yaw")
++		if e != nil {
++			return fail(e)
++		}
++		yawRate, e := num(11, "yaw rate")
++		if e != nil {
++			return fail(e)
++		}
++		timeBoot, e := numberToInt(args[12])
++		if e != nil {
++			return fail(e)
++		}
++		frame, e := mavlinkSetPositionTargetLocalNED(v[0], v[1], v[2], v[3], v[4], v[5], v[6], pos, vel, acc, yaw, yawRate, int64(timeBoot))
++		if e != nil {
++			return fail(e)
++		}
++		return frame, nil
++	case "mavlink_command_long":
++		if len(args) != 8 {
++			return fail(fmt.Errorf("requires 8 arguments"))
++		}
++		v := make([]int, 7)
++		for j := range v {
++			q, e := intv(j, "MAVLink integer")
++			if e != nil {
++				return fail(e)
++			}
++			v[j] = q
++		}
++		list, ok := args[7].([]Value)
++		if !ok || len(list) != 7 {
++			return fail(fmt.Errorf("COMMAND_LONG params must contain seven values"))
++		}
++		var params [7]float64
++		for j := range params {
++			q, e := machineNumber(list[j], "COMMAND_LONG param")
++			if e != nil {
++				return fail(e)
++			}
++			params[j] = q
++		}
++		frame, e := mavlinkCommandLong(v[0], v[1], v[2], v[3], v[4], v[5], v[6], params)
++		if e != nil {
++			return fail(e)
++		}
++		return frame, nil
++	case "mavlink_common_decode_json":
++		frame, e := machineBytes(args[0], "frame")
++		if e != nil {
++			return fail(e)
++		}
++		info, e := mavlinkCommonDecode(frame)
++		if e != nil {
++			return fail(e)
++		}
++		b, _ := json.Marshal(info)
++		return string(b), nil
++	case "mavlink_stream":
++		return &droneMavlinkStream{}, nil
++	case "mavlink_stream_feed_json":
++		stream, ok := args[0].(*droneMavlinkStream)
++		if !ok {
++			return fail(fmt.Errorf("invalid MAVLink stream"))
++		}
++		data, e := machineBytes(args[1], "data")
++		if e != nil {
++			return fail(e)
++		}
++		b, _ := json.Marshal(stream.feed(data))
++		return string(b), nil
++	case "mavlink_stream_stats_json":
++		stream, ok := args[0].(*droneMavlinkStream)
++		if !ok {
++			return fail(fmt.Errorf("invalid MAVLink stream"))
++		}
++		b, _ := json.Marshal(map[string]any{"buffered_bytes": len(stream.Buffer), "dropped_bytes": stream.DroppedBytes, "bad_frames": stream.BadFrames})
++		return string(b), nil
++	case "dshot_frame":
++		throttle, e := num(0, "throttle")
++		if e != nil {
++			return fail(e)
++		}
++		telemetry, e := parseMachineBool(args[1], "telemetry")
++		if e != nil {
++			return fail(e)
++		}
++		word, e := droneDShotFrame(throttle, telemetry)
++		if e != nil {
++			return fail(e)
++		}
++		return numberFromInt64(int64(word)), nil
++	case "pwm_esc_duty":
++		v := make([]float64, 4)
++		for j := range v {
++			q, e := num(j, "ESC PWM")
++			if e != nil {
++				return fail(e)
++			}
++			v[j] = q
++		}
++		duty, e := dronePWMESCDuty(v[0], v[1], v[2], v[3])
++		if e != nil {
++			return fail(e)
++		}
++		return machineNumberFromFloat(duty), nil
+ 	}
+ 	return fail(fmt.Errorf("unknown function"))
+ }
+--- /mnt/data/saga039-original/saga-lang-0.39.0-drone-flight-control/implementations/go/cmd/saga-go/checker.go	2026-08-17 00:00:00.000000000 +0000
++++ implementations/go/cmd/saga-go/checker.go	2026-08-17 02:41:48.377422376 +0000
+@@ -2659,6 +2659,7 @@
+ 		mission := Type{Name: "native:drone_mission"}
+ 		flight := Type{Name: "native:drone_flight_manager"}
+ 		rtl := Type{Name: "native:drone_rtl"}
++		mavstream := Type{Name: "native:drone_mavlink_stream"}
+ 		safety := Type{Name: "native:machine_safety"}
+ 		dec3 := listT(TDecimal)
+ 		switch v.Name {
+@@ -2726,16 +2727,16 @@
+ 			return fnT([]Type{flight, TBool}, TText), nil
+ 		case "arm":
+ 			return fnT([]Type{flight, TBool}, TUnit), nil
+-		case "disarm", "clear_failsafe":
++		case "disarm":
+ 			return fnT([]Type{flight}, TUnit), nil
+-		case "failsafe":
++		case "set_mode":
+ 			return fnT([]Type{flight, TText}, TUnit), nil
++		case "flight_mode":
++			return fnT([]Type{flight}, TText), nil
+ 		case "flight_state":
+ 			return fnT([]Type{flight}, TText), nil
+ 		case "flight_allowed", "control_allowed":
+ 			return fnT([]Type{flight}, TBool), nil
+-		case "evaluate_failsafe":
+-			return fnT([]Type{flight, TBool, TBool, TDecimal}, TText), nil
+ 		case "rtl":
+ 			return fnT([]Type{TDecimal, TDecimal, TDecimal, TDecimal, TDecimal}, rtl), nil
+ 		case "rtl_target_json":
+@@ -2762,6 +2763,24 @@
+ 			return fnT([]Type{}, TInt), nil
+ 		case "mavlink_heartbeat":
+ 			return fnT([]Type{TInt, TInt, TInt, TInt, TInt, TInt, TInt, TInt}, TBytes), nil
++		case "mavlink_set_attitude_target":
++			return fnT([]Type{TInt, TInt, TInt, TInt, TInt, TInt, listT(TDecimal), listT(TDecimal), TDecimal, TInt}, TBytes), nil
++		case "mavlink_set_position_target_local_ned":
++			return fnT([]Type{TInt, TInt, TInt, TInt, TInt, TInt, TInt, listT(TDecimal), listT(TDecimal), listT(TDecimal), TDecimal, TDecimal, TInt}, TBytes), nil
++		case "mavlink_command_long":
++			return fnT([]Type{TInt, TInt, TInt, TInt, TInt, TInt, TInt, listT(TDecimal)}, TBytes), nil
++		case "mavlink_common_decode_json":
++			return fnT([]Type{TBytes}, TText), nil
++		case "mavlink_stream":
++			return fnT([]Type{}, mavstream), nil
++		case "mavlink_stream_feed_json":
++			return fnT([]Type{mavstream, TBytes}, TText), nil
++		case "mavlink_stream_stats_json":
++			return fnT([]Type{mavstream}, TText), nil
++		case "dshot_frame":
++			return fnT([]Type{TDecimal, TBool}, TInt), nil
++		case "pwm_esc_duty":
++			return fnT([]Type{TDecimal, TDecimal, TDecimal, TDecimal}, TDecimal), nil
+ 		}
+ 		return TAny, c.err(v.Tok, "SAGA-T106", "unknown drone member "+v.Name)
+ 	}
+--- /mnt/data/saga039-original/saga-lang-0.39.0-drone-flight-control/implementations/go/cmd/saga-go/drone_control_test.go	2026-08-17 00:00:00.000000000 +0000
++++ implementations/go/cmd/saga-go/drone_control_test.go	2026-08-17 02:42:29.152277366 +0000
+@@ -72,11 +72,18 @@
+ 	if !f.allowed() {
+ 		t.Fatal("flight should be allowed")
+ 	}
+-	if err := f.failsafe("RC link lost"); err != nil {
++	f.EstimatorHealthy = false
++	f.PositionHealthy = false
++	f.BatteryFraction = 0.01
++	f.RCLink, f.DataLink = false, false
++	if !f.allowed() || f.State != "ARMED" || f.Mode != "ATTITUDE" {
++		t.Fatalf("health telemetry must not trigger an automatic transition: %#v", f)
++	}
++	if err := f.setMode("RTL"); err != nil {
+ 		t.Fatal(err)
+ 	}
+-	if f.allowed() || f.State != "FAILSAFE" {
+-		t.Fatalf("failsafe not latched: %#v", f)
++	if f.Mode != "RTL" {
++		t.Fatalf("explicit mode change failed: %#v", f)
+ 	}
+ 	m := &droneMixer{Idle: 0.05, Maximum: 1}
+ 	o, err := m.mix(0.7, 0.4, 0.3, 0.2)
+@@ -131,7 +138,7 @@
+ 	}
+ }
+ 
+-func TestDroneFailsafeRTLAndDroneCAN(t *testing.T) {
++func TestDroneExplicitRTLAndDroneCAN(t *testing.T) {
+ 	s := &MachineSafety{}
+ 	f, err := newDroneFlightManager(s, 0.2)
+ 	if err != nil {
+@@ -140,12 +147,11 @@
+ 	f.EstimatorHealthy, f.PositionHealthy, f.HomeSet = true, true, true
