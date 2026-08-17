@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "saga-language"
+version = "0.41.0"
+description = "Reference implementation of the beginner-first, exact-number, capability-secured Saga programming language"
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+authors = [{name = "Saga Language Project"}]
+keywords = ["programming-language", "education", "exact-arithmetic", "capability-security"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Interpreters",
+]
+dependencies = []
+
+[project.optional-dependencies]
+websocket = ["websocket-client"]
+crypto = ["cryptography"]
+media = ["Pillow", "opencv-python"]
+game = ["pygame"]
+cloud = ["boto3"]
+iot = ["gpiozero"]
+bigdata = ["pyspark"]
+mobile = ["briefcase", "toga"]
+all = ["websocket-client", "cryptography", "Pillow", "opencv-python", "pygame", "boto3", "gpiozero", "pyspark", "briefcase", "toga"]
+
+[project.scripts]
+saga = "saga.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["saga*"]
