@@ -1,0 +1,333 @@
+ 	f.BatteryFraction, f.RCLink, f.DataLink = 0.8, false, false
+ 	f.State = "ARMED"
+-	action, err := f.evaluateFailsafe(true, true, 0.1)
+-	if err != nil {
++	if err := f.setMode("RTL"); err != nil {
+ 		t.Fatal(err)
+ 	}
+-	if action != "RTL" || f.FailsafeAction != "RTL" || f.State != "FAILSAFE" {
+-		t.Fatalf("bad failsafe: %#v", f)
++	if f.State != "ARMED" || f.Mode != "RTL" {
++		t.Fatalf("explicit RTL mode failed: %#v", f)
+ 	}
+ 
+ 	r := &droneRTLPlanner{HomeLat: 35, HomeLon: 139, HomeAlt: 5, ReturnAlt: 30, Acceptance: 2}
+@@ -241,3 +247,69 @@
+ 		t.Fatalf("bad transfer stream %x", stream)
+ 	}
+ }
++
++func TestDroneMAVLinkOffboardBuildersAndStream(t *testing.T) {
++	q := [4]float64{1, 0, 0, 0}
++	rates := [3]float64{0.1, -0.2, 0.3}
++	att, err := mavlinkSetAttitudeTarget(7, 245, 190, 1, 1, 0, q, rates, 0.55, 1234)
++	if err != nil {
++		t.Fatal(err)
++	}
++	info, err := mavlinkCommonDecode(att)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if info["message_id"].(int) != 82 || len(att) != 51 {
++		t.Fatalf("bad attitude target: %v len=%d", info, len(att))
++	}
++
++	pos, err := mavlinkSetPositionTargetLocalNED(8, 245, 190, 1, 1, 1, 0, [3]float64{1, 2, -3}, [3]float64{0.1, 0.2, 0.3}, [3]float64{}, 0.4, 0, 2000)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if len(pos) != 65 {
++		t.Fatalf("bad position target length %d", len(pos))
++	}
++
++	params := [7]float64{1, 2, 3, 4, 5, 6, 7}
++	cmd, err := mavlinkCommandLong(9, 245, 190, 1, 1, 400, 0, params)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if len(cmd) != 45 {
++		t.Fatalf("bad command length %d", len(cmd))
++	}
++
++	stream := &droneMavlinkStream{}
++	if got := stream.feed(att[:9]); len(got) != 0 {
++		t.Fatalf("partial frame emitted: %v", got)
++	}
++	got := stream.feed(append(att[9:], pos...))
++	if len(got) != 2 || got[0]["message_id"].(int) != 82 || got[1]["message_id"].(int) != 84 {
++		t.Fatalf("bad stream output: %v", got)
++	}
++}
++
++func TestDroneDShotAndPWMHelpers(t *testing.T) {
++	word, err := droneDShotFrame(0.5, false)
++	if err != nil {
++		t.Fatal(err)
++	}
++	packet := word >> 4
++	data := packet
++	checksum := 0
++	for j := 0; j < 3; j++ {
++		checksum ^= data
++		data >>= 4
++	}
++	if word&0xf != checksum&0xf {
++		t.Fatalf("DShot checksum mismatch %#x", word)
++	}
++	duty, err := dronePWMESCDuty(0.5, 1000, 2000, 20000)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if math.Abs(duty-0.075) > 1e-12 {
++		t.Fatalf("PWM duty %v", duty)
++	}
++}
+--- /mnt/data/saga039-original/saga-lang-0.39.0-drone-flight-control/tests/test_drone_control_039.py	2026-08-17 00:00:00.000000000 +0000
++++ tests/test_drone_control_040.py	2026-08-17 02:38:22.484689607 +0000
+@@ -11,14 +11,15 @@
+     MissionPlan, PositionController, QuadXMixer, QuaternionAttitudeController, RTLPlanner, RateController,
+     dronecan_crc16_ccitt_false, dronecan_multi_frame, dronecan_single_frame, dronecan_single_frame_decode,
+     landing_vertical_velocity, quaternion_from_rpy, mavlink2_decode, mavlink2_encode, mavlink2_encode_signed,
+-    mavlink2_verify_signed, mavlink_heartbeat,
++    mavlink2_verify_signed, mavlink_heartbeat, MAVLinkStreamParser, dshot_frame, pwm_esc_duty,
++    mavlink_set_attitude_target, mavlink_set_position_target_local_ned, mavlink_command_long, mavlink_common_decode,
+ )
+ from saga.stdlib.machine_control import SafetyLatch
+ 
+ D = Decimal
+ 
+ 
+-class DroneControl039Tests(unittest.TestCase):
++class DroneControl040Tests(unittest.TestCase):
+     def test_attitude_estimator_level_and_yaw_wrap(self):
+         est = AttitudeEstimator(D("0.05"))
+         for _ in range(100):
+@@ -75,7 +76,7 @@
+         self.assertEqual(mission.update(D("35.00001"), D("139"), D("12"), D("0.01")), "complete")
+         self.assertTrue(mission.complete)
+ 
+-    def test_flight_manager_fail_closed(self):
++    def test_flight_manager_uses_only_explicit_mode_transitions(self):
+         safety = SafetyLatch()
+         manager = FlightManager(safety, D("0.2"))
+         with self.assertRaises(DroneControlError):
+@@ -83,23 +84,18 @@
+         manager.update_health(True, True, D("0.8"), True, True, True)
+         manager.arm(True)
+         self.assertTrue(manager.flight_allowed())
+-        manager.failsafe("RC link lost")
+-        self.assertFalse(manager.flight_allowed())
+-        self.assertEqual(manager.state, "FAILSAFE")
+-        manager.clear_failsafe()
+-        self.assertEqual(manager.state, "DISARMED")
+-
+-    def test_automatic_failsafe_chooses_rtl_when_navigation_is_healthy(self):
+-        safety = SafetyLatch()
+-        manager = FlightManager(safety, D("0.2"))
+-        manager.update_health(True, True, D("0.8"), True, True, True)
+-        manager.arm(True)
+-        manager.update_health(True, True, D("0.8"), False, False, True)
+-        self.assertEqual(manager.evaluate_failsafe(True, True, D("0.1")), "RTL")
+-        self.assertEqual(manager.state, "FAILSAFE")
+-        self.assertEqual(manager.failsafe_action, "RTL")
++        self.assertEqual(manager.mode, "ATTITUDE")
++        # Health changes are observations only. Saga 0.40 has no automatic
++        # battery/link/geofence/estimator mode transition.
++        manager.update_health(False, False, D("0.01"), False, False, False)
++        self.assertEqual(manager.state, "ARMED")
++        self.assertEqual(manager.mode, "ATTITUDE")
++        manager.set_mode("RTL")
++        self.assertEqual(manager.mode, "RTL")
+         self.assertTrue(manager.control_allowed())
+-        self.assertFalse(manager.flight_allowed())
++        manager.disarm("operator command")
++        self.assertEqual(manager.state, "DISARMED")
++        self.assertEqual(manager.last_reason, "operator command")
+ 
+     def test_rtl_and_landing_profile(self):
+         rtl = RTLPlanner(D("35"), D("139"), D("5"), D("30"), D("2"))
+@@ -161,6 +157,50 @@
+         frame = mavlink2_encode(300, 77, b"payload", 255, 250, 200)
+         self.assertEqual(mavlink2_decode(frame, 77)["payload_hex"], b"payload".hex())
+ 
++    def test_common_mavlink_offboard_builders_and_stream_parser(self):
++        att = mavlink_set_attitude_target(7, 42, 191, 1, 1, 0,
++            [D(1), D(0), D(0), D(0)], [D(0), D(0), D(0)], D("0.5"), 1234)
++        self.assertEqual(att[7], 82)
++        self.assertEqual(len(att), 51)
++        pos = mavlink_set_position_target_local_ned(8, 42, 191, 1, 1, 1, 0,
++            [D(1), D(2), D(-3)], [D("0.1"), D("0.2"), D("0.3")], [D(0), D(0), D(0)], D("0.4"), D("0.05"), 1250)
++        self.assertEqual(pos[7], 84)
++        self.assertEqual(len(pos), 65)
++        cmd = mavlink_command_long(9, 42, 191, 1, 1, 400, 0, [D(1), D(0), D(0), D(0), D(0), D(0), D(0)])
++        self.assertEqual(cmd[7], 76)
++        self.assertEqual(len(cmd), 45)
++        parser = MAVLinkStreamParser()
++        self.assertEqual(parser.feed(att[:10]), [])
++        messages = parser.feed(att[10:] + pos)
++        self.assertEqual([m["message_id"] for m in messages], [82, 84])
++        self.assertTrue(all(m["known"] for m in messages))
++
++    def test_common_mavlink_telemetry_decode(self):
++        import struct
++        payload = struct.pack("<I6f", 5000, 1.5, -2.0, -10.0, 0.1, 0.2, 0.3)
++        frame = mavlink2_encode(32, 185, payload, 3, 1, 1)
++        decoded = mavlink_common_decode(frame)
++        self.assertEqual(decoded["message_id"], 32)
++        self.assertAlmostEqual(decoded["fields"]["x"], 1.5)
++        parser = MAVLinkStreamParser()
++        messages = parser.feed(b"noise" + frame)
++        self.assertEqual(messages[0]["fields"]["z"], -10.0)
++        self.assertEqual(parser.dropped_bytes, 5)
++
++    def test_esc_protocol_helpers(self):
++        self.assertEqual(dshot_frame(D(0), False), 0)
++        word = dshot_frame(D("0.5"), True)
++        self.assertGreater(word, 0)
++        packet = word >> 4
++        checksum = word & 0xF
++        x = packet
++        expected = 0
++        for _ in range(3):
++            expected ^= x
++            x >>= 4
++        self.assertEqual(checksum, expected & 0xF)
++        self.assertEqual(pwm_esc_duty(D("0.5"), D(1000), D(2000), D(2500)), D("0.6"))
++
+     def test_saga_surface(self):
+         out: list[str] = []
+         run_source('''
+--- /mnt/data/saga039-original/saga-lang-0.39.0-drone-flight-control/tools/drone_control_qualification.py	2026-08-17 00:00:00.000000000 +0000
++++ tools/drone_control_qualification.py	2026-08-17 02:43:02.678820227 +0000
+@@ -6,6 +6,7 @@
+ import math
+ import subprocess
+ import sys
++import socket
+ from decimal import Decimal as D
+ from pathlib import Path
+ 
+@@ -29,16 +30,20 @@
+     dronecan_single_frame,
+     mavlink2_encode_signed,
+     mavlink2_verify_signed,
++    mavlink_set_attitude_target,
++    mavlink_set_position_target_local_ned,
++    mavlink_command_long,
++    MAVLinkStreamParser,
+     quaternion_from_rpy,
+ )
+ from saga.stdlib.machine_control import SafetyLatch
+ from tools.evidence_context import source_binding
+ 
+-RELEASE = "0.39.0"
++RELEASE = "0.40.0"
+ 
+ 
+ def main() -> int:
+-    ap = argparse.ArgumentParser(description="Saga 0.39 drone flight-control qualification")
++    ap = argparse.ArgumentParser(description="Saga 0.40 practical drone/offboard qualification")
+     ap.add_argument("--output", default=str(ROOT / "validation" / f"drone-control-{RELEASE}.json"))
+     args = ap.parse_args()
+     checks: list[dict[str, object]] = []
+@@ -47,7 +52,7 @@
+         checks.append({"name": name, "pass": bool(passed), "detail": detail})
+ 
+     # Component regressions in both independent implementations.
+-    py = subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_drone_control_039.py"], cwd=ROOT, text=True, capture_output=True, timeout=60)
++    py = subprocess.run([sys.executable, "-m", "pytest", "-q", "tests/test_drone_control_040.py"], cwd=ROOT, text=True, capture_output=True, timeout=60)
+     mark("Python drone regression", py.returncode == 0, (py.stdout + py.stderr)[-2000:])
+     go = subprocess.run(["go", "test", "./cmd/saga-go", "-run", "TestDrone", "-count=1"], cwd=ROOT / "implementations/go", text=True, capture_output=True, timeout=90)
+     mark("Go drone regression", go.returncode == 0, (go.stdout + go.stderr)[-2000:])
+@@ -121,28 +126,53 @@
+         "cycles": 12_000, "final_position_m": [str(v) for v in pos], "error_m": position_error, "max_acceleration": str(max_acc)
+     })
+ 
+-    # Failsafe semantics: recoverable flight-mode failsafes preserve controlled actuation;
+-    # a hard DISARM trips the machine safety latch.
++    # No automatic flight-safety policy: health telemetry is observable but does not change mode.
+     safety = SafetyLatch()
+     flight = FlightManager(safety, D("0.2"))
+     flight.update_health(True, True, D("0.8"), True, True, True)
+     flight.arm(True)
+-    flight.update_health(True, True, D("0.8"), False, False, True)
+-    action = flight.evaluate_failsafe(True, True, D("0.1"))
+-    controlled = action == "RTL" and flight.control_allowed() and not flight.flight_allowed() and not safety.tripped
+-    mark("link-loss selects controlled RTL without hard actuator trip", controlled, {"action": action, "state": flight.state, "machine_safety_tripped": safety.tripped})
+-    hard = FlightManager(SafetyLatch(), D("0.2"))
+-    hard.update_health(True, True, D("0.8"), True, True, True)
+-    hard.arm(True)
+-    hard.failsafe("independent hard-stop input", "DISARM")
+-    mark("hard DISARM path trips shared machine safety", hard.safety.tripped and not hard.control_allowed(), {"action": hard.failsafe_action, "state": hard.state})
++    flight.set_mode("ATTITUDE")
++    flight.update_health(False, False, D("0.01"), False, False, True)
++    explicit_only = flight.state == "ARMED" and flight.mode == "ATTITUDE" and flight.control_allowed() and not safety.tripped
++    mark("health degradation does not trigger automatic RTL/LAND/DISARM", explicit_only, {"state": flight.state, "mode": flight.mode, "safety_tripped": safety.tripped})
++    flight.set_mode("RTL")
++    mark("RTL remains an explicit application command", flight.state == "ARMED" and flight.mode == "RTL", {"state": flight.state, "mode": flight.mode})
+ 
+     # Navigation safety helpers.
+     fence = Geofence(D("35"), D("139"), D("100"), D(0), D("120"))
+     rtl = RTLPlanner(D("35"), D("139"), D("5"), D("30"), D("2"))
+     mark("geofence prediction and RTL phases", fence.predict_breach(D("35"), D("139"), D("50"), D("30"), D0, D0, D("4")) and rtl.target(D("35.001"), D("139"), D("10"))["phase"] == "CLIMB", None)
+ 
+-    # Protocol safety paths.
++    # Practical companion/offboard path: build standard MAVLink common setpoints and
++    # send them through a real localhost UDP socket, then incrementally parse them.
++    att_frame = mavlink_set_attitude_target(7, 245, 190, 1, 1, 0,
++                                            (D(1), D0, D0, D0), (D("0.1"), D("-0.2"), D("0.3")), D("0.55"), 1234)
++    pos_frame = mavlink_set_position_target_local_ned(8, 245, 190, 1, 1, 1, 0,
++                                                       (D(1), D(2), D(-3)), (D("0.1"), D("0.2"), D("0.3")),
++                                                       (D0, D0, D0), D("0.4"), D0, 2000)
++    cmd_frame = mavlink_command_long(9, 245, 190, 1, 1, 400, 0, (D(1),D(2),D(3),D(4),D(5),D(6),D(7)))
++    parser = MAVLinkStreamParser()
++    rx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
++    tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
++    rx.bind(("127.0.0.1", 0))
++    rx.settimeout(1.0)
++    try:
++        address = rx.getsockname()
++        for frame in (att_frame, pos_frame, cmd_frame):
++            tx.sendto(frame, address)
++        decoded = []
++        for _ in range(3):
++            packet, _ = rx.recvfrom(2048)
++            # Feed in two pieces to exercise UART-like partial framing over the same parser.
++            split = max(1, len(packet) // 3)
++            decoded.extend(parser.feed(packet[:split]))
++            decoded.extend(parser.feed(packet[split:]))
++    finally:
++        tx.close(); rx.close()
++    ids = [row.get("message_id") for row in decoded]
++    mark("MAVLink offboard setpoints survive real UDP transport and incremental parsing", ids == [82, 84, 76], {"message_ids": ids, "frame_lengths": [len(att_frame), len(pos_frame), len(cmd_frame)]})
++
++    # Protocol integrity paths.
+     key = bytes(range(32))
+     frame = mavlink2_encode_signed(200, 33, b"abc", 9, 42, 10, key, 3, 123456)
+     signed = mavlink2_verify_signed(frame, 33, key, 123456)
+@@ -166,7 +196,7 @@
+         "schema": 1,
+         "release": RELEASE,
+         **binding,
+-        "profile": "hosted-drone-flight-control-sitl",
++        "profile": "hosted-drone-companion-offboard-sitl-hil",
+         "physical_flight": "UNEXECUTED",
+         "hard_realtime": False,
+         "checks": checks,
+@@ -177,7 +207,9 @@
+             "Rotational and translational SITL models are deterministic simplified dynamics, not an aerodynamic airframe model.",
+             "No physical IMU, GNSS, barometer, ESC, motor, propeller, radio, or aircraft was attached in this environment.",
+             "The complementary estimator is a reference/SITL estimator and is not represented as a production EKF.",
+-            "Hosted Saga remains soft real-time and is not an airworthiness or flight-safety certification artifact.",
++            "No automatic RTL/LAND/DISARM policy is provided by the drone module; applications or an external autopilot decide mode changes.",
++            "Hosted Saga remains soft real-time and is not qualified as the sole inner-loop flight controller for direct motor stabilization.",
++            "The practical target validated here is a companion/offboard controller speaking MAVLink to an established flight controller.",
+         ],
+     }
+     out = Path(args.output)
+--- /mnt/data/saga039-original/saga-lang-0.39.0-drone-flight-control/saga/project_templates.py	2026-08-17 00:00:00.000000000 +0000
++++ saga/project_templates.py	2026-08-17 02:43:15.202881174 +0000
+@@ -152,7 +152,7 @@
+ 
+ print("safe=", not machine.safety_tripped(safety))
+ ''',
