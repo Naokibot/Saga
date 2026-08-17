@@ -1,0 +1,24 @@
+use drone
+use net
+
+// Build standard MAVLink common setpoints for a companion/offboard link.
+let attitude = drone.mavlink_set_attitude_target(
+    0, 245, 190, 1, 1, 7,
+    [1.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0],
+    0.5, 0
+)
+let position = drone.mavlink_set_position_target_local_ned(
+    1, 245, 190, 1, 1, 1, 0,
+    [0.0, 0.0, -5.0],
+    [0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0],
+    0.0, 0.0, 0
+)
+
+// Example transport for PX4 SITL. Runtime access is still deny-by-default;
+// run only when you intentionally grant --allow-net 127.0.0.1:14540.
+let udp = net.udp()
+print(net.udp_send(udp, attitude, "127.0.0.1", 14540))
+print(net.udp_send(udp, position, "127.0.0.1", 14540))
+net.close(udp)
