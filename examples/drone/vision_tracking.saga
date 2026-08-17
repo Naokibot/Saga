@@ -1,0 +1,18 @@
+use image
+use vision
+
+// Use a reviewed local frame. Physical camera input uses video.open_camera(index)
+// and requires an explicit device capability grant.
+let frame = image.open("marker.png")
+print(vision.aruco_detect_json(frame, 0))
+
+let camera = vision.camera(500.0, 500.0, 320.0, 240.0)
+print(vision.pixel_to_bearing(camera, 320.0, 240.0))
+
+let tracker = vision.tracker(60.0, 5)
+let detections = "[{\"class_id\":1,\"confidence\":0.95,\"box\":[100,120,180,220],\"label\":\"target\"}]"
+print(vision.track_json(tracker, detections))
+
+// Learned models use the optional OpenCV DNN ONNX backend:
+// let model = vision.onnx_load("model.onnx", 640, 640, 0.003921568627, true)
+// print(vision.onnx_forward_json(model, frame, 4096))
