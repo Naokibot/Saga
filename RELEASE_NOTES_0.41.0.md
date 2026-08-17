@@ -1,17 +1,23 @@
-# Saga 0.41.0 — Advanced Drone + Vision + Communications
+# Saga 0.41.0 — Autonomous Systems, Vision and Communications
+
+Saga 0.41 keeps explicit flight-policy control from 0.40 and adds reusable primitives for higher-level drone/autonomy software.
 
 ## Added
+- Jerk-limited 3-axis NED trajectory generation.
+- General multirotor control allocation with actuator-disable support for HIL/research.
+- MAVLink sequence/loss/latency link monitoring.
+- `vision` standard module: NMS, centroid tracking, pinhole camera rays, ArUco detection and OpenCV-DNN ONNX model loading/inference.
+- Camera capture and video frame extraction through guarded device capability.
+- Network socket timeout configuration for communication loops.
 
-- Quintic minimum-jerk 3D trajectories.
-- Generic 4/6/8-rotor control allocation with explicit disabled-rotor isolation; disabled actuators are commanded to zero and unresolved demand is returned as residual.
-- MAVLink sequence/loss monitoring, redundant-link de-duplication, token-bucket rate shaping, and TIMESYNC message 111 support.
-- `vision` module: guarded OpenCV capture, OpenCV-DNN ONNX inference, YOLO v5/v8-style output post-processing and NMS, HSV region recognition, target tracking, JPEG/resize, pixel-to-camera ray and quaternion ray transforms.
-- Independent Go geometry/tracking support with explicit DNN-unavailable reporting when no OpenCV adapter is present.
+## Scope
+Saga remains qualified primarily as a companion/offboard controller, not as a sole hard-real-time flight controller. Learned ONNX inference uses the optional OpenCV media backend; the core language, parser, type system, native compiler, runtime and package model do not depend on OpenCV.
 
-## Validation
+## Review hardening
+- Control allocation now exposes achieved demand, residual error, saturation and disabled-actuator metadata through `drone.allocation_report_json`.
+- ONNX inference now exposes bounded tensor values through `vision.onnx_forward_json`; `max_values` is a total inference-output budget, not a per-output budget.
+- UDP receive can retain peer host/port and payload through `net.udp_receive_from_json` for multi-vehicle links.
+- UDP receive buffers are capped at 16 MiB per call in the hosted Python and independent Go implementations.
+- The Go implementation now exposes custom allocation matrices in addition to Quad-X and has peer-aware UDP receive parity.
 
-The final source-bound qualification reports Drone/Vision/Comms 18/18, Python↔Go 48/48, module 14/14, Native Runtime 10/10, Native Codegen 17/17, Python self-conformance 48/48 and Go self-conformance 48/48. A generated ONNX identity network is loaded and executed through OpenCV DNN; a generated AVI is read through VideoCapture; synthetic imagery and YOLO tensors exercise detection/NMS/tracking.
-
-## Boundary
-
-Automatic RTL/LAND/DISARM policy remains intentionally absent. Saga 0.41 is reviewed as a companion/offboard controller for an established autopilot, not as a qualified sole hard-real-time flight controller. Physical aircraft and physical-camera testing are still unexecuted.
+Final source tree SHA-256: `9b8aeab4740ff83db42e089cbc93d7ba13f5c086b470a75621e9687d5db9defc`.
