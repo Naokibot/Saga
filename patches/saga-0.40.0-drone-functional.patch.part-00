@@ -1,0 +1,350 @@
+--- /mnt/data/saga039-original/saga-lang-0.39.0-drone-flight-control/saga/stdlib/drone_control.py	2026-08-17 00:00:00.000000000 +0000
++++ saga/stdlib/drone_control.py	2026-08-17 02:37:09.864662654 +0000
+@@ -10,7 +10,7 @@
+ from decimal import Decimal
+ from typing import Iterable
+ 
+-from .machine_control import MachineControlError, PIDController, SafetyLatch
++from .machine_control import PIDController, SafetyLatch
+ 
+ 
+ class DroneControlError(RuntimeError):
+@@ -423,9 +423,18 @@
+ 
+ @dataclass(slots=True)
+ class FlightManager:
++    """Explicit flight state/mode manager.
++
++    Saga 0.40 deliberately performs no automatic in-flight safety transition.
++    Health information is advisory/pre-arm input only; the application decides
++    when to change mode, return, land, or disarm. An external ``SafetyLatch``
++    may still be tripped explicitly by the application or hardware adapter.
++    """
++
+     safety: SafetyLatch
+     minimum_arm_battery: Decimal
+     state: str = "DISARMED"
++    mode: str = "ATTITUDE"
+     home_set: bool = False
+     estimator_healthy: bool = False
+     position_healthy: bool = False
+@@ -433,19 +442,21 @@
+     rc_link: bool = True
+     data_link: bool = True
+     last_reason: str = ""
+-    failsafe_action: str = "NONE"
++
++    _MODES = frozenset({"MANUAL", "RATE", "ATTITUDE", "POSITION", "MISSION", "RTL", "LAND"})
+ 
+     def __post_init__(self) -> None:
+         _finite("minimum_arm_battery", self.minimum_arm_battery)
+         if not D0 < self.minimum_arm_battery <= D1:
+             raise DroneControlError("minimum_arm_battery must be in (0,1]")
+-        self.safety.register_stop(self._safe_stop)
++        self.safety.register_stop(self._external_stop)
+ 
+-    def _safe_stop(self) -> None:
+-        if self.state in {"ARMED", "FAILSAFE"}:
+-            self.state = "FAILSAFE"
+-            self.failsafe_action = "DISARM"
+-            self.last_reason = self.safety.reason or "machine safety trip"
++    def _external_stop(self) -> None:
++        # This is not an automatic drone policy: it only mirrors an explicit
++        # external machine-safety trip into the flight state.
++        if self.state == "ARMED":
++            self.state = "DISARMED"
++            self.last_reason = self.safety.reason or "external safety stop"
+ 
+     def update_health(self, estimator_healthy: bool, position_healthy: bool,
+                       battery_fraction: Decimal, rc_link: bool, data_link: bool, home_set: bool) -> None:
+@@ -478,53 +489,23 @@
+             raise DroneControlError(f"prearm failed: {reason}")
+         self.state = "ARMED"; self.last_reason = ""
+ 
+-    def disarm(self) -> None:
+-        self.state = "DISARMED"; self.last_reason = ""; self.failsafe_action = "NONE"
+-
+-    def evaluate_failsafe(self, geofence_ok: bool, require_position: bool = True,
+-                          critical_battery: Decimal = Decimal("0.10")) -> str:
+-        critical_battery = _finite("critical_battery", critical_battery)
+-        if not D0 <= critical_battery <= D1:
+-            raise DroneControlError("critical_battery must be in 0..1")
++    def disarm(self, reason: str = "") -> None:
++        self.state = "DISARMED"
++        self.last_reason = reason.strip()
++
++    def set_mode(self, mode: str) -> None:
++        mode = mode.strip().upper()
++        if mode not in self._MODES:
++            raise DroneControlError("flight mode must be MANUAL, RATE, ATTITUDE, POSITION, MISSION, RTL, or LAND")
+         if self.state != "ARMED":
+-            return "NONE"
+-        if not self.estimator_healthy:
+-            self.failsafe("attitude estimator unhealthy", "LAND")
+-        elif self.battery_fraction <= critical_battery:
+-            self.failsafe("critical battery", "LAND")
+-        elif require_position and not self.position_healthy:
+-            self.failsafe("position estimate unhealthy", "LAND")
+-        elif not geofence_ok:
+-            self.failsafe("geofence violation", "RTL" if self.position_healthy and self.home_set else "LAND")
+-        elif not self.rc_link and not self.data_link:
+-            self.failsafe("command/control link lost", "RTL" if self.position_healthy and self.home_set else "LAND")
+-        return self.failsafe_action
+-
+-    def failsafe(self, reason: str, action: str = "DISARM") -> None:
+-        reason = reason.strip() or "unspecified drone failsafe"
+-        action = action.strip().upper()
+-        if action not in {"HOLD", "RTL", "LAND", "DISARM"}:
+-            raise DroneControlError("failsafe action must be HOLD, RTL, LAND, or DISARM")
+-        self.last_reason = reason
+-        self.failsafe_action = action
+-        self.state = "FAILSAFE"
+-        # Flight-mode failsafes keep guarded actuation available so the aircraft
+-        # can hold/return/land. DISARM is the hard-stop path and trips the shared
+-        # machine safety latch, which invokes all actuator stop callbacks.
+-        if action == "DISARM":
+-            self.safety.trip(reason)
+-
+-    def clear_failsafe(self) -> None:
+-        if self.state != "FAILSAFE":
+-            raise DroneControlError("failsafe clear requires FAILSAFE state")
+-        self.safety.clear()
+-        self.state = "DISARMED"; self.last_reason = ""; self.failsafe_action = "NONE"
++            raise DroneControlError("flight mode can only change while ARMED")
++        self.mode = mode
+ 
+     def flight_allowed(self) -> bool:
+         return self.state == "ARMED" and not self.safety.tripped
+ 
+     def control_allowed(self) -> bool:
+-        return (self.state == "ARMED" or (self.state == "FAILSAFE" and self.failsafe_action in {"HOLD", "RTL", "LAND"})) and not self.safety.tripped
++        return self.flight_allowed()
+ 
+ 
+ @dataclass(slots=True)
+@@ -773,12 +754,224 @@
+     return mavlink2_encode(0, 50, payload, sequence, system_id, component_id)
+ 
+ 
++MAVLINK_COMMON_CRC_EXTRAS: dict[int, int] = {
++    0: 50, 31: 246, 32: 185, 33: 104, 76: 152, 77: 143,
++    82: 49, 83: 22, 84: 143, 85: 140, 86: 5, 87: 150,
++}
++
++
++def _u8(name: str, value: int, *, allow_zero: bool = True) -> int:
++    low = 0 if allow_zero else 1
++    if not low <= int(value) <= 255:
++        raise DroneControlError(f"{name} outside {low}..255")
++    return int(value)
++
++
++def _u16(name: str, value: int) -> int:
++    if not 0 <= int(value) <= 0xFFFF:
++        raise DroneControlError(f"{name} outside uint16")
++    return int(value)
++
++
++def _u32(name: str, value: int) -> int:
++    if not 0 <= int(value) <= 0xFFFFFFFF:
++        raise DroneControlError(f"{name} outside uint32")
++    return int(value)
++
++
++def _f32(name: str, value: Decimal) -> float:
++    value = _finite(name, value)
++    f = float(value)
++    if not math.isfinite(f):
++        raise DroneControlError(f"{name} cannot be represented as float32")
++    return f
++
++
++def mavlink_set_attitude_target(sequence: int, system_id: int, component_id: int,
++                                target_system: int, target_component: int, type_mask: int,
++                                quaternion: Iterable[Decimal], body_rates: Iterable[Decimal],
++                                thrust: Decimal, time_boot_ms: int = 0) -> bytes:
++    q = _vector4(quaternion, "attitude quaternion")
++    rates = _vector3(body_rates, "body rates")
++    thrust_f = _f32("thrust", thrust)
++    if not -1.0 <= thrust_f <= 1.0:
++        raise DroneControlError("thrust must be in -1..1")
++    payload = struct.pack(
++        "<I4f4fBBB",
++        _u32("time_boot_ms", time_boot_ms),
++        *(_f32("quaternion", v) for v in q),
++        *(_f32("body_rate", v) for v in rates),
++        thrust_f,
++        _u8("target_system", target_system, allow_zero=False),
++        _u8("target_component", target_component),
++        _u8("type_mask", type_mask),
++    )
++    return mavlink2_encode(82, MAVLINK_COMMON_CRC_EXTRAS[82], payload, sequence, system_id, component_id)
++
++
++def mavlink_set_position_target_local_ned(
++    sequence: int, system_id: int, component_id: int, target_system: int, target_component: int,
++    coordinate_frame: int, type_mask: int, position_ned: Iterable[Decimal],
++    velocity_ned: Iterable[Decimal], acceleration_ned: Iterable[Decimal],
++    yaw: Decimal, yaw_rate: Decimal, time_boot_ms: int = 0,
++) -> bytes:
++    position = _vector3(position_ned, "position_ned")
++    velocity = _vector3(velocity_ned, "velocity_ned")
++    accel = _vector3(acceleration_ned, "acceleration_ned")
++    if int(coordinate_frame) not in {1, 7, 8, 9}:
++        raise DroneControlError("local NED coordinate_frame must be 1, 7, 8, or 9")
++    payload = struct.pack(
++        "<I11fHBBB",
++        _u32("time_boot_ms", time_boot_ms),
++        *(_f32("position", v) for v in position),
++        *(_f32("velocity", v) for v in velocity),
++        *(_f32("acceleration", v) for v in accel),
++        _f32("yaw", yaw), _f32("yaw_rate", yaw_rate),
++        _u16("type_mask", type_mask),
++        _u8("target_system", target_system, allow_zero=False),
++        _u8("target_component", target_component),
++        _u8("coordinate_frame", coordinate_frame),
++    )
++    return mavlink2_encode(84, MAVLINK_COMMON_CRC_EXTRAS[84], payload, sequence, system_id, component_id)
++
++
++def mavlink_command_long(sequence: int, system_id: int, component_id: int,
++                         target_system: int, target_component: int, command: int, confirmation: int,
++                         params: Iterable[Decimal]) -> bytes:
++    values = tuple(params)
++    if len(values) != 7:
++        raise DroneControlError("COMMAND_LONG requires exactly seven parameters")
++    payload = struct.pack(
++        "<7fHBBB",
++        *(_f32(f"param{i+1}", v) for i, v in enumerate(values)),
++        _u16("command", command),
++        _u8("target_system", target_system, allow_zero=False),
++        _u8("target_component", target_component),
++        _u8("confirmation", confirmation),
++    )
++    return mavlink2_encode(76, MAVLINK_COMMON_CRC_EXTRAS[76], payload, sequence, system_id, component_id)
++
++
++def mavlink_common_decode(frame: bytes) -> dict[str, object]:
++    if len(frame) < 10 or frame[0] != MAVLINK2_MAGIC:
++        raise DroneControlError("invalid MAVLink 2 frame")
++    msg_id = frame[7] | (frame[8] << 8) | (frame[9] << 16)
++    crc_extra = MAVLINK_COMMON_CRC_EXTRAS.get(msg_id)
++    if crc_extra is None:
++        raise DroneControlError(f"unsupported MAVLink common message id {msg_id}")
++    info = mavlink2_decode(frame, crc_extra)
++    payload = bytes.fromhex(str(info["payload_hex"]))
++    fields: dict[str, object] = {}
++    if msg_id == 0 and len(payload) >= 9:
++        custom, typ, autopilot, base, status, version = struct.unpack_from("<IBBBBB", payload)
++        fields = {"custom_mode": custom, "type": typ, "autopilot": autopilot, "base_mode": base, "system_status": status, "mavlink_version": version}
++    elif msg_id == 31 and len(payload) >= 32:
++        vals = struct.unpack_from("<I7f", payload)
++        fields = {"time_boot_ms": vals[0], "q": list(vals[1:5]), "rollspeed": vals[5], "pitchspeed": vals[6], "yawspeed": vals[7]}
++    elif msg_id == 32 and len(payload) >= 28:
++        vals = struct.unpack_from("<I6f", payload)
++        fields = {"time_boot_ms": vals[0], "x": vals[1], "y": vals[2], "z": vals[3], "vx": vals[4], "vy": vals[5], "vz": vals[6]}
++    elif msg_id == 33 and len(payload) >= 28:
++        vals = struct.unpack_from("<IiiiihhhH", payload)
++        fields = {"time_boot_ms": vals[0], "lat_e7": vals[1], "lon_e7": vals[2], "alt_mm": vals[3], "relative_alt_mm": vals[4], "vx_cms": vals[5], "vy_cms": vals[6], "vz_cms": vals[7], "heading_cdeg": vals[8]}
++    elif msg_id == 77 and len(payload) >= 3:
++        command, result = struct.unpack_from("<HB", payload)
++        fields = {"command": command, "result": result}
++    elif msg_id == 83 and len(payload) >= 37:
++        vals = struct.unpack_from("<I8fB", payload)
++        fields = {"time_boot_ms": vals[0], "q": list(vals[1:5]), "body_roll_rate": vals[5], "body_pitch_rate": vals[6], "body_yaw_rate": vals[7], "thrust": vals[8], "type_mask": vals[9]}
++    elif msg_id == 85 and len(payload) >= 51:
++        vals = struct.unpack_from("<I11fHB", payload)
++        fields = {"time_boot_ms": vals[0], "x": vals[1], "y": vals[2], "z": vals[3], "vx": vals[4], "vy": vals[5], "vz": vals[6], "afx": vals[7], "afy": vals[8], "afz": vals[9], "yaw": vals[10], "yaw_rate": vals[11], "type_mask": vals[12], "coordinate_frame": vals[13]}
++    info["fields"] = fields
++    return info
++
++
++@dataclass(slots=True)
++class MAVLinkStreamParser:
++    """Incremental MAVLink 2 stream parser for UART/UDP companion links."""
++
++    buffer: bytearray = field(default_factory=bytearray)
++    dropped_bytes: int = 0
++    bad_frames: int = 0
++
++    def feed(self, data: bytes) -> list[dict[str, object]]:
++        self.buffer.extend(data)
++        out: list[dict[str, object]] = []
++        while True:
++            while self.buffer and self.buffer[0] != MAVLINK2_MAGIC:
++                del self.buffer[0]
++                self.dropped_bytes += 1
++            if len(self.buffer) < 12:
++                break
++            payload_len = self.buffer[1]
++            signed = bool(self.buffer[2] & MAVLINK2_SIGNED_FLAG)
++            total = 12 + payload_len + (13 if signed else 0)
++            if len(self.buffer) < total:
++                break
++            frame = bytes(self.buffer[:total])
++            msg_id = frame[7] | (frame[8] << 8) | (frame[9] << 16)
++            crc_extra = MAVLINK_COMMON_CRC_EXTRAS.get(msg_id)
++            if crc_extra is None:
++                out.append({"message_id": msg_id, "frame_hex": frame.hex(), "known": False})
++                del self.buffer[:total]
++                continue
++            try:
++                info = mavlink_common_decode(frame)
++            except DroneControlError:
++                del self.buffer[0]
++                self.bad_frames += 1
++                continue
++            info["frame_hex"] = frame.hex()
++            info["known"] = True
++            out.append(info)
++            del self.buffer[:total]
++        return out
++
++
++def dshot_frame(throttle: Decimal, telemetry: bool = False) -> int:
++    """Encode a DShot throttle word; waveform generation remains hardware-specific."""
++    value = _finite("throttle", throttle)
++    if not D0 <= value <= D1:
++        raise DroneControlError("DShot throttle must be in 0..1")
++    throttle_word = 0 if value == 0 else 48 + int((Decimal(1999) * value).to_integral_value())
++    throttle_word = min(2047, throttle_word)
++    packet = (throttle_word << 1) | (1 if telemetry else 0)
++    csum_data = packet
++    checksum = 0
++    for _ in range(3):
++        checksum ^= csum_data
++        csum_data >>= 4
++    return ((packet << 4) | (checksum & 0xF)) & 0xFFFF
++
++
++def pwm_esc_duty(throttle: Decimal, minimum_us: Decimal, maximum_us: Decimal, period_us: Decimal) -> Decimal:
++    throttle = _finite("throttle", throttle)
++    minimum_us = _positive("minimum_us", minimum_us)
++    maximum_us = _positive("maximum_us", maximum_us)
++    period_us = _positive("period_us", period_us)
++    if not D0 <= throttle <= D1:
++        raise DroneControlError("ESC throttle must be in 0..1")
++    if maximum_us <= minimum_us or period_us < maximum_us:
++        raise DroneControlError("ESC PWM timing is invalid")
++    pulse = minimum_us + (maximum_us - minimum_us) * throttle
++    return pulse / period_us
++
++
+ def flight_state_json(manager: FlightManager) -> str:
+     return json.dumps({
+         "state": manager.state,
++        "mode": manager.mode,
+         "flight_allowed": manager.flight_allowed(),
+         "control_allowed": manager.control_allowed(),
+         "reason": manager.last_reason,
+-        "failsafe_action": manager.failsafe_action,
+         "safety_tripped": manager.safety.tripped,
++        "health": {
++            "estimator": manager.estimator_healthy,
++            "position": manager.position_healthy,
++            "battery_fraction": str(manager.battery_fraction),
++            "rc_link": manager.rc_link,
++            "data_link": manager.data_link,
++            "home_set": manager.home_set,
++        },
+     }, separators=(",", ":"))
