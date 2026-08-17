@@ -1,37 +1,23 @@
-# Saga 0.42.0 — Integrated Autonomy + Advanced Machine Control
+# Saga 0.43.0 — Fine-Grained Control + Lightweight Runtime Paths
 
 Saga is an independent general-purpose programming language with its own grammar/type system, module model, native ABI/compiler/runtime, package tooling, an independent Go implementation, and a self-reproducing SH-3 compiler path.
 
-## 0.42 autonomy
+## Fine-grained control
 
-Saga keeps flight policy explicit: the standard `drone` module does **not** automatically select RTL, LAND, DISARM or arm a vehicle from health, link, vision or estimator state.
+Saga 0.43 keeps drone flight policy explicit: the standard library does **not** automatically arm, RTL, LAND, or DISARM from battery, link, estimator, geofence, or vision state.
 
-0.42 adds a MAVLink UDP offboard session for PX4/ArduPilot endpoints, visual-servo commands, timestamped hosted VIO, bounded pose-graph SLAM and multi-drone coordination. A protocol-level takeoff → translate → land E2E runs through real UDP sockets and Saga's MAVLink encode/parse path. Official PX4/ArduPilot SITL execution is reported separately and remains `UNEXECUTED` when those binaries are not installed.
+0.43 adds per-actuator target/min/max/neutral/deadband/slew control, a hosted cyclic clock with jitter/overrun telemetry, independent X/Y/Z velocity/acceleration/jerk trajectory limits, MAVLink attitude setpoints, position batches, and timeout control. Control allocation now caches the topology-dependent projection matrix instead of solving the four-axis system every cyclic update.
 
-The `vision` profile includes real ONNX DNN execution, an OpenCV-Zoo-compatible YOLOX backend, sparse Lucas-Kanade optical flow and calibrated ArUco solvePnP pose estimation. The `media` profile adds structured GStreamer RTP process control, while the browser SH-3 runtime can attach user-media tracks and create WebRTC data channels.
+The machine profile retains LQR/state-space/Kalman, synchronized multi-axis motion, DH robot kinematics/Jacobian/resolved-rate control, PLC/process images, CANopen/CiA-402, Modbus, CAN/CAN-FD, I2C/SPI/UART/PWM/encoder/motor support. Application/control logic can be written in Saga; physical OS/device drivers remain runtime backends.
 
-## Advanced machine control from Saga source
+## Media and external qualification
 
-The `machine` profile exposes discrete LQR design, state-space control, linear Kalman filtering, synchronized jerk-limited multi-axis motion, DH robot kinematics/Jacobians/resolved-rate control, PLC scan/TON/process images, CANopen NMT/SDO/PDO and CiA-402 helpers in addition to existing PID/axis/Modbus/CAN/I2C/SPI/UART/PWM/encoder/motor APIs.
+The 0.43 environment executed real GStreamer through `libgstreamer-1.0`: `videotestsrc -> VP8 -> RTP`, with real RTP bytes received through an OS UDP socket. The real `webrtcbin` plugin loads, but full GStreamer WebRTC ICE is not claimed because `nicesrc/nicesink` are absent.
 
-A Saga application can compose these supported high-level functions without Python/C/Go application glue. Physical NIC, serial/CAN, camera/GPU, DMA/timer and vendor fieldbus drivers remain runtime/OS/device backends.
+Official PX4/ArduPilot SITL binaries and the OpenCV Zoo pretrained YOLOX asset are not locally present, and this execution container blocks outbound binary downloads. Physical camera/drone/servo/PLC/fieldbus devices are also not attached. Those cases remain `UNEXECUTED`; Modbus/CANopen/six-axis machine evidence is explicitly HIL/loopback.
 
-## Validation
+Final source tree SHA-256: `59fdf69e653676cba310b1cd90082f49765640b8026f4e933daaa93e77cf743c`.
 
-Final source tree SHA-256: `f925e9417b83ad3cac6f69add270417fbbe7e0417c278cca16fb3dda91a023ec`.
+Validation highlights: fine-control 7/7, selected drone/machine 65/65, language core 84/84, Python↔Go 48/48, module 14/14, Native Runtime 10/10, Native Codegen 17/17, Python/Go self-conformance 48/48 each, Go tests/vet PASS, internal security audit 0 issues.
 
-- Language core: **84 tests + 6 subtests PASS**
-- Modules/generics/machine/drone/vision/0.42: **80/80 PASS**
-- Autonomy stack qualification: **PASS**
-- Practical drone qualification: **13/13 PASS**
-- Python↔Go differential: **48/48 PASS**
-- Module conformance: **14/14 PASS**
-- Native Runtime: **10/10 PASS**
-- Native Codegen: **17/17 PASS**
-- Python self-conformance: **48/48 PASS**
-- Go self-conformance: **48/48 PASS**
-- SH-3 Stage2 == Stage3 fixed point: **PASS**
-- Internal security audit: **0 issues**
-- Go full tests and `go vet`: **PASS**
-
-Physical aircraft flight, physical camera, physical industrial machinery, hardware-timed DShot/BDShot and hard-real-time inner-loop stabilization remain separately `UNEXECUTED / NOT QUALIFIED` in the current environment.
+Saga hosted control remains **soft real-time**. Physical E-stop/STO/interlocks, deterministic fieldbus masters, DMA/timer waveform generation, and certified safety functions remain separate qualification domains.
