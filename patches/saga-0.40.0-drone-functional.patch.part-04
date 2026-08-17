@@ -1,0 +1,49 @@
+-            "README.md": """# Saga machine-control starter\n\nRun the simulation first: `saga run main.saga`.\n\nPhysical adapters are deny-by-default. Use `--allow-device` only after wiring an independent E-stop/interlock chain. Modbus TCP additionally requires an explicit `--allow-net host:port` grant in the Python hosted runtime. Saga 0.39 is hosted soft real-time; hard real-time current/position loops belong on an MCU, RTOS, servo drive, or safety PLC.\n""",
++            "README.md": """# Saga machine-control starter\n\nRun the simulation first: `saga run main.saga`.\n\nPhysical adapters are deny-by-default. Use `--allow-device` only after wiring an independent E-stop/interlock chain. Modbus TCP additionally requires an explicit `--allow-net host:port` grant in the Python hosted runtime. Saga 0.40 is hosted soft real-time; hard real-time current/position loops belong on an MCU, RTOS, servo drive, or safety PLC.\n""",
+         },
+     ),
+     "drone": ProjectTemplate(
+@@ -167,6 +167,7 @@
+ let flight = drone.flight_manager(safety, 0.25)
+ drone.health_update(flight, true, true, 1.0, true, true, true)
+ drone.arm(flight, true)
++drone.set_mode(flight, "ATTITUDE")
+ 
+ let attitude = drone.quaternion_controller(4.0, 4.0, 2.0, 3.0)
+ let rates = drone.rate_controller(0.5, 0.08, 0.01, 0.35)
+@@ -183,9 +184,14 @@
+ let rtl = drone.rtl(35.0, 139.0, 5.0, 30.0, 2.0)
+ print(drone.rtl_target_json(rtl, 35.001, 139.0, 10.0))
+ 
+-let heartbeat = drone.mavlink_heartbeat(0, 1, 1, 2, 3, 0, 0, 3)
++let heartbeat = drone.mavlink_heartbeat(0, 245, 190, 18, 8, 0, 0, 3)
+ print("MAVLink heartbeat bytes=", len(heartbeat))
+ 
++// Practical companion/offboard output. This only builds the standard MAVLink
++// frame; send it through net.udp_* or machine.uart_* after configuring a real autopilot.
++let setpoint = drone.mavlink_set_attitude_target(1, 245, 190, 1, 1, 7, [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 0.5, 0)
++print("SET_ATTITUDE_TARGET bytes=", len(setpoint))
++
+ let node_status_payload = machine.bytes_from_hex("00000000000000")
+ print(drone.dronecan_single_frame_json(16, 341, 42, 0, node_status_payload))
+ ''',
+@@ -193,7 +199,9 @@
+ 
+ Start with `saga run main.saga`. This starter deliberately performs no physical motor/ESC output.
+ 
+-The `drone` standard module provides attitude/rate/position control, Quad-X allocation, mission/geofence, RTL/landing/failsafe, MAVLink 2 framing/signing, and DroneCAN transport helpers. Connect real sensors/ESCs only through guarded `machine` adapters after SITL/HIL testing and with an independent hardware arming/E-stop strategy. Saga is hosted soft real-time; inner hard-real-time motor commutation and certified flight-safety functions belong on dedicated flight-control/RTOS hardware.
++The `drone` standard module provides attitude/rate/position control, Quad-X allocation, mission/geofence and explicit RTL/landing helpers, MAVLink 2 common offboard messages/framing/signing/stream parsing, and DroneCAN transport helpers. It does not automatically select RTL, LAND, or DISARM from link, battery, estimator, or geofence state.
++
++For practical flight use, prefer Saga as a companion/offboard controller connected to PX4 or ArduPilot over MAVLink. Direct ESC/motor stabilization from the hosted runtime is not qualified because Saga is soft real-time and does not provide a production EKF or hardware-timed DShot waveform backend. Connect real sensors/ESCs only through guarded `machine` adapters after SITL/HIL testing.
+ """,
+         },
+     ),
+@@ -233,7 +241,7 @@
+ formal_name = "Saga Android"
+ description = "Saga language Android host"
+ sources = ["app"]
+-requires = ["saga-language==0.39.0", "toga-android"]
++requires = ["saga-language==0.40.0", "toga-android"]
+ ''',
+             "README.md": "Install Briefcase, then run: briefcase create android && briefcase build android && briefcase run android\nAndroid SDK/Java tooling is required.\n",
+         },
