@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "release": "0.41.0",
+  "source_tree_sha256": "9b8aeab4740ff83db42e089cbc93d7ba13f5c086b470a75621e9687d5db9defc",
+  "independent_language": {
+    "assessment": "YES_WITH_HOSTED_BACKEND_BOUNDARY",
+    "python_self_conformance": "48/48",
+    "go_self_conformance": "48/48",
+    "python_go_differential": "48/48",
+    "module_conformance": "14/14",
+    "sh3_compiler_fixed_point": true,
+    "sh3_compiler_sha256": "8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4"
+  },
+  "advanced_drone": {
+    "qualification": "13/13",
+    "autonomy_vision_comm_cases": "12/12",
+    "physical_flight": "UNEXECUTED",
+    "sole_hard_realtime_flight_controller_qualified": false
+  },
+  "vision": {
+    "aruco_real_pixels": "PASS",
+    "video_real_decode": "PASS",
+    "nms_tracking_camera_geometry": "PASS",
+    "onnx_backend_api": "PASS",
+    "bounded_onnx_tensor_export": "PASS",
+    "arbitrary_reviewed_onnx_model_inference": "UNEXECUTED",
+    "physical_camera": "UNEXECUTED"
+  },
+  "communications": {
+    "mavlink2_udp_loopback": "PASS",
+    "dronecan": "PASS_existing_qualification",
+    "peer_aware_udp": "PASS",
+    "socket_timeouts": "PASS",
+    "go_udp_parity": "PASS"
+  },
+  "runtime": {
+    "native_runtime": "10/10",
+    "native_codegen": "17/17",
+    "machine_control": "PASS",
+    "security_audit_issues": 0
+  },
+  "regressions": {
+    "new_drone_vision_python": "26/26",
+    "language_core": "70/70",
+    "modules_generic": "22/22",
+    "ecosystem": "15/15",
+    "fullstack_runtime_security": "32/32",
+    "go_all_tests": "PASS",
+    "go_vet": "PASS"
+  },
+  "clean_extract": {
+    "manifest": "PASS",
+    "new_drone_vision_python": "26/26",
+    "autonomy_vision_comm": "12/12",
+    "python_go_differential": "48/48",
+    "module": "14/14",
+    "native_runtime": "10/10",
+    "native_codegen": "17/17",
+    "go_all_tests": "PASS",
+    "go_vet": "PASS"
+  }
+}
