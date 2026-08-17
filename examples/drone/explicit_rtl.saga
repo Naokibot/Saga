@@ -1,0 +1,17 @@
+use machine
+use drone
+
+let safety = machine.safety_latch()
+let flight = drone.flight_manager(safety, 0.2)
+drone.health_update(flight, true, true, 0.8, true, true, true)
+drone.arm(flight, true)
+
+// Health telemetry never changes the flight mode automatically.
+drone.health_update(flight, true, true, 0.8, false, false, true)
+print(drone.flight_mode(flight))
+
+// RTL is an explicit application/autopilot decision.
+drone.set_mode(flight, "RTL")
+print(drone.flight_mode(flight))
+let rtl = drone.rtl(35.0, 139.0, 5.0, 30.0, 2.0)
+print(drone.rtl_target_json(rtl, 35.001, 139.0, 10.0))
