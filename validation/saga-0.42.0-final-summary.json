@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "release": "0.42.0",
+  "source_tree_sha256": "f925e9417b83ad3cac6f69add270417fbbe7e0417c278cca16fb3dda91a023ec",
+  "language_core": "84 tests + 6 subtests PASS",
+  "integrated_autonomy_machine": "80/80 PASS",
+  "cross_implementation": "48/48 PASS",
+  "module_conformance": "14/14 PASS",
+  "native_runtime": "10/10 PASS",
+  "native_codegen": "17/17 PASS",
+  "sh3_fixed_point": true,
+  "actual_onnx_forward": true,
+  "real_pixel_optical_flow": true,
+  "aruco_pnp_pose": true,
+  "mavlink_udp_takeoff_translate_land": "PASS_PROTOCOL_EMULATOR",
+  "browser_webrtc_media_tracks": "PASS_NODE_MOCK",
+  "official_px4_sitl": "UNEXECUTED",
+  "official_ardupilot_sitl": "UNEXECUTED",
+  "gstreamer_runtime": "UNEXECUTED",
+  "physical_devices": "UNEXECUTED",
+  "automatic_flight_policy": false
+}
