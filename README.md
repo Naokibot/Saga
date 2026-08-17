@@ -1,23 +1,43 @@
-# Saga 0.43.0 — Fine-Grained Control + Lightweight Runtime Paths
+# Saga 0.44.0 — 4 kHz Hosted Control Profile
 
-Saga is an independent general-purpose programming language with its own grammar/type system, module model, native ABI/compiler/runtime, package tooling, an independent Go implementation, and a self-reproducing SH-3 compiler path.
+Saga 0.44 adds a hosted control profile for **4,000 logical control-state updates per second**, corresponding to a nominal **250 us period**.
 
-## Fine-grained control
+On Linux, the Python reference runtime uses the kernel `timerfd` periodic timer. `machine.cycle_wait_due(clock)` returns the number of logical control ticks that became due since the previous wait, so temporary process pre-emption does not silently erase state updates. The independent Go implementation exposes the same frequency-based cyclic API and due-count semantics with an absolute-deadline sleep/spin scheduler.
 
-Saga 0.43 keeps drone flight policy explicit: the standard library does **not** automatically arm, RTL, LAND, or DISARM from battery, link, estimator, geofence, or vision state.
+Example:
 
-0.43 adds per-actuator target/min/max/neutral/deadband/slew control, a hosted cyclic clock with jitter/overrun telemetry, independent X/Y/Z velocity/acceleration/jerk trajectory limits, MAVLink attitude setpoints, position batches, and timeout control. Control allocation now caches the topology-dependent projection matrix instead of solving the four-axis system every cyclic update.
+```saga
+use machine
+let clock = machine.cyclic_clock(4000)
+while true {
+    let due = machine.cycle_wait_due(clock)
+    var i = 0
+    while i < due {
+        # one deterministic control-state update
+        i = i + 1
+    }
+}
+```
 
-The machine profile retains LQR/state-space/Kalman, synchronized multi-axis motion, DH robot kinematics/Jacobian/resolved-rate control, PLC/process images, CANopen/CiA-402, Modbus, CAN/CAN-FD, I2C/SPI/UART/PWM/encoder/motor support. Application/control logic can be written in Saga; physical OS/device drivers remain runtime backends.
+## Qualification
 
-## Media and external qualification
+Final reviewed source tree SHA-256: `cc58a362d0118f1b489f339cb90920e2423cfbf76a5ea3ad6dd44d05c5b07eb0`.
 
-The 0.43 environment executed real GStreamer through `libgstreamer-1.0`: `videotestsrc -> VP8 -> RTP`, with real RTP bytes received through an OS UDP socket. The real `webrtcbin` plugin loads, but full GStreamer WebRTC ICE is not claimed because `nicesrc/nicesink` are absent.
+Source-bound 0.44 qualification observed:
+- 4,000 logical ticks in **1.000011849 s**: **3999.95 Hz**
+- Integrated full logical control workload: **4000 ticks / 1.000047906 s**, **3999.81 Hz**
+- Cached allocator + compact state-space + 8-channel actuator conditioning: **p99 56.142 us**, below the 250 us compute budget
+- Selected Python regression: **138/138 PASS**
+- Python self-conformance: **48/48 PASS**
+- Go self-conformance: **48/48 PASS**
+- Python↔Go differential: **48/48 PASS**
+- Module conformance: **14/14 PASS**
+- Native Runtime: **10/10 PASS**
+- Native Codegen: **17/17 PASS**
+- Go tests and `go vet`: **PASS**
 
-Official PX4/ArduPilot SITL binaries and the OpenCV Zoo pretrained YOLOX asset are not locally present, and this execution container blocks outbound binary downloads. Physical camera/drone/servo/PLC/fieldbus devices are also not attached. Those cases remain `UNEXECUTED`; Modbus/CANopen/six-axis machine evidence is explicitly HIL/loopback.
+## Timing boundary
 
-Final source tree SHA-256: `59fdf69e653676cba310b1cd90082f49765640b8026f4e933daaa93e77cf743c`.
+This is still **hosted soft real-time**. The host scheduler produced catch-up events (`cycle_wait_due() > 1`) in the qualification environment. Therefore this evidence proves that Saga can preserve and execute 4,000 logical state updates per second; it does **not** prove that a physical PWM/GPIO/CAN/EtherCAT edge occurred on every exact 250 us deadline.
 
-Validation highlights: fine-control 7/7, selected drone/machine 65/65, language core 84/84, Python↔Go 48/48, module 14/14, Native Runtime 10/10, Native Codegen 17/17, Python/Go self-conformance 48/48 each, Go tests/vet PASS, internal security audit 0 issues.
-
-Saga hosted control remains **soft real-time**. Physical E-stop/STO/interlocks, deterministic fieldbus masters, DMA/timer waveform generation, and certified safety functions remain separate qualification domains.
+Hard-deadline motor-current/FOC loops, deterministic fieldbus timing, hardware-timed waveforms, and certified safety motion require a qualified RTOS/PREEMPT_RT/drive/FPGA/hardware-specific backend. Physical E-stop/STO/interlocks remain external.
