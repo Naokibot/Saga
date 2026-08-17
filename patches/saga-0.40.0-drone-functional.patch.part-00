@@ -346,5 +346,3 @@
 +            "rc_link": manager.rc_link,
 +            "data_link": manager.data_link,
 +            "home_set": manager.home_set,
-+        },
-     }, separators=(",", ":"))
