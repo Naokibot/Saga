@@ -1,0 +1,13 @@
+fn main() -> int {
+  let abc = machine.clarke(8.0, -3.0, -5.0)
+  let dq = machine.park(abc[0], abc[1], 0.65)
+  let commanded = machine.inverse_park(dq[0] + 0.25, dq[1] - 0.10, 0.65)
+  let duty = machine.svpwm(commanded[0], commanded[1], 48.0)
+
+  io.println("d = " + string(dq[0]))
+  io.println("q = " + string(dq[1]))
+  io.println("duty_a = " + string(duty[0]))
+  io.println("duty_b = " + string(duty[1]))
+  io.println("duty_c = " + string(duty[2]))
+  return 0
+}

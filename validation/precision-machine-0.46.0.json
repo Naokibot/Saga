@@ -1,0 +1,15 @@
+{
+  "schema": "saga-precision-machine-qualification/v1",
+  "version": "0.46.0",
+  "source_tree_sha256": "586e700d07a716bcb516476cf01ad33688a8d05990070cd140b576000d7b6023",
+  "source_manifest_sha256": "e078014b56a1edd2fe13bdb8e8e027d0483524aee1c2130656d2da9d53ecdd55",
+  "summary": {"passed": 5, "total": 5},
+  "cases": [
+    {"name": "pid2-observer-feedforward", "status": "pass"},
+    {"name": "foc-transform-svpwm", "status": "pass"},
+    {"name": "notch-cross-implementation", "status": "pass"},
+    {"name": "deadline-budget-report-shape", "status": "pass"},
+    {"name": "static-pid2-type-mismatch", "status": "pass", "diagnostic": "SAGA-T105"}
+  ],
+  "physical_qualification": "unexecuted"
+}

@@ -1,0 +1,33 @@
+fn main() -> int {
+  let controller = machine.pid2(5.0, 22.0, 0.08, 0.7, 0.003, 6.0, -48.0, 48.0)
+  let observer = machine.alpha_beta(0.8, 0.12, 0.0, 0.0)
+  let notch = machine.notch(1000.0, 120.0, 4.0)
+  let budget = machine.deadline_budget(1000, 650)
+
+  let target_position = 1.5
+  let target_velocity = 0.4
+  let target_acceleration = 0.0
+  var measured_position = 0.0
+  let dt = 0.001
+
+  var i = 0
+  while i < 20 {
+    machine.budget_begin(budget)
+
+    let estimate = machine.alpha_beta_step(observer, measured_position, dt)
+    let estimated_position = estimate[0]
+    let feedforward = machine.motor_feedforward(0.2, 4.0, 0.3, target_velocity, target_acceleration)
+    let raw_command = machine.pid2_step(controller, target_position, estimated_position, feedforward, dt)
+    let command = machine.filter_step(notch, raw_command)
+
+    measured_position = measured_position + command * 0.00002
+    let within_budget = machine.budget_end(budget)
+    if not within_budget {
+      io.println("control budget miss")
+    }
+    i = i + 1
+  }
+
+  io.println(machine.budget_stats_json(budget))
+  return 0
+}
