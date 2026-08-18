@@ -1,8 +1,36 @@
-# Saga 0.40 functional change set
+# Saga focused patch sets
 
-`Saga 0.40.0` was reviewed from the frozen Saga 0.39 drone release. The focused implementation change set is stored here as five numbered review segments because the connected GitHub writer operates on text files.
+## Saga 0.45.0 — Language Synthesis
 
-Read the parts in numeric order. They cover the complete focused drone change set: removal of automatic RTL/LAND/DISARM policy, explicit flight modes, Python and Go MAVLink offboard builders/parsers, ESC protocol helpers, type-checker updates, tests, qualification, and project-template changes.
+Saga 0.45.0 was reviewed from the frozen Saga 0.44.0 4 kHz hosted-control source tree. The repository carries the release documentation and the focused implementation change set; the full historical monorepo source remains distributed separately as the reviewed source ZIP.
+
+The 0.44→0.45 patch is stored as five numbered UTF-8 text parts because this connected GitHub writer operates on text files. Concatenate the parts in numeric order before applying them:
+
+```bash
+cat patches/saga-0.44.0-to-0.45.0-language-synthesis.patch.part-* > saga-0.44.0-to-0.45.0-language-synthesis.patch
+cd saga-lang-0.44.0-4khz-control
+patch -p1 < ../saga-0.44.0-to-0.45.0-language-synthesis.patch
+```
+
+Frozen reviewed Saga 0.45 source tree SHA-256:
+
+`cb06d5ac6e6ff7532c37499e3d38b51753a573d9110a42b5fcfabfba4729e804`
+
+Full reviewed source ZIP SHA-256:
+
+`bcb6fb350d20befea983dabf4458381e95b21d71bdc3361ccf518bb14c22f97b`
+
+Canonical local focused patch SHA-256:
+
+`73d60309157fab0cf212d115444cad972f2b01e4415b6538a1c5350b55dc08ff`
+
+The patch promotes common `async` / `await`, `taskgroup`, `defer`, `using`, resource `move`, Python/Go async module ABI parity, and common Go/Python task-pool operations while retaining the 0.44 machine/drone/control profiles.
+
+As with earlier focused patch sets, the repository snapshot is review-oriented and should not be treated as a byte-for-byte mirror of the separately distributed full source ZIP.
+
+## Historical Saga 0.40 change set
+
+Saga 0.40.0 was reviewed from the frozen Saga 0.39 drone release. Its focused implementation change set is stored here as five numbered review segments covering the drone-policy/offboard changes.
 
 Frozen reviewed Saga 0.40 source tree SHA-256:
 
@@ -15,7 +43,3 @@ Full reviewed source ZIP SHA-256:
 Canonical local focused patch SHA-256:
 
 `7e6743bee1ead27c92f52f618de6e1534c6c7d8e2592b71786ead257059a6d41`
-
-The canonical patch is distributed with the reviewed artifacts. The five GitHub files are review-oriented text segments and are not claimed to reconstruct that patch byte-for-byte because the connector may normalize text representation.
-
-The repository currently carries the review material, examples, release documentation, validation summary, and the focused 0.39→0.40 drone implementation changes. The full historical monorepo source is distributed separately in the reviewed source ZIP; do not treat this repository snapshot as a byte-for-byte mirror of that ZIP.
