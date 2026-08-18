@@ -4,10 +4,12 @@
 
 Saga 0.45.0 was reviewed from the frozen Saga 0.44.0 4 kHz hosted-control source tree. The repository carries the release documentation and the focused implementation change set; the full historical monorepo source remains distributed separately as the reviewed source ZIP.
 
-The 0.44→0.45 patch is stored as five numbered UTF-8 text parts because this connected GitHub writer operates on text files. Concatenate the parts in numeric order before applying them:
+To keep the connected GitHub writer within conservative text-file limits, the 0.44→0.45 focused patch is transported as eight numbered **gzip+base64 UTF-8 parts**. Concatenate, decode and decompress them before applying the patch:
 
 ```bash
-cat patches/saga-0.44.0-to-0.45.0-language-synthesis.patch.part-* > saga-0.44.0-to-0.45.0-language-synthesis.patch
+cat patches/saga-0.44.0-to-0.45.0-language-synthesis.patch.gz.b64.part-* > saga-0.45.patch.gz.b64
+base64 -d saga-0.45.patch.gz.b64 > saga-0.45.patch.gz
+gzip -dc saga-0.45.patch.gz > saga-0.44.0-to-0.45.0-language-synthesis.patch
 cd saga-lang-0.44.0-4khz-control
 patch -p1 < ../saga-0.44.0-to-0.45.0-language-synthesis.patch
 ```
@@ -20,9 +22,13 @@ Full reviewed source ZIP SHA-256:
 
 `bcb6fb350d20befea983dabf4458381e95b21d71bdc3361ccf518bb14c22f97b`
 
-Canonical local focused patch SHA-256:
+Canonical decoded focused patch SHA-256:
 
 `73d60309157fab0cf212d115444cad972f2b01e4415b6538a1c5350b55dc08ff`
+
+Concatenated gzip+base64 transport SHA-256:
+
+`528832e15ebf97edcbb89c1198b5abedd4b9c9263649656ceb2b16902df33796`
 
 The patch promotes common `async` / `await`, `taskgroup`, `defer`, `using`, resource `move`, Python/Go async module ABI parity, and common Go/Python task-pool operations while retaining the 0.44 machine/drone/control profiles.
 
