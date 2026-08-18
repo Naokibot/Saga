@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "release": "0.45.0",
+  "source_manifest_sha256": "21db5c9ee8cb0c370f87d169be5d253c3fc27af2a997a5bc0bbe8ca142719b2f",
+  "source_tree_sha256": "cb06d5ac6e6ff7532c37499e3d38b51753a573d9110a42b5fcfabfba4729e804",
+  "profile": "Language Synthesis 0.45",
+  "total": 6,
+  "passed": 6,
+  "pass": true,
+  "cases": [
+    {
+      "id": "async-await-defer",
+      "expected": "cleanup\n42",
+      "python_output": "cleanup\n42",
+      "go_output": "cleanup\n42",
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "pass": true
+    },
+    {
+      "id": "contextual-words",
+      "expected": "42\n43\n44\n45\n46",
+      "python_output": "42\n43\n44\n45\n46",
+      "go_output": "42\n43\n44\n45\n46",
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "pass": true
+    },
+    {
+      "id": "taskgroup",
+      "expected": "worker\ndone",
+      "python_output": "worker\ndone",
+      "go_output": "worker\ndone",
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "pass": true
+    },
+    {
+      "id": "task-pool-using-move",
+      "expected": "9\nok",
+      "python_output": "9\nok",
+      "go_output": "9\nok",
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "pass": true
+    },
+    {
+      "id": "use-after-move-static-rejection",
+      "expected_diagnostic_id": "SAGA-T180",
+      "python_diagnostic_id": "SAGA-T180",
+      "go_diagnostic_id": "SAGA-T180",
+      "pass": true
+    },
+    {
+      "id": "async-module-abi-parity",
+      "python_return": "future[int]",
+      "python_abi_sha256": "68bfded7d0e8833c69448a25c90075a6e8ba7abd17f73f5eb07512037630fefc",
+      "go_abi_sha256": "68bfded7d0e8833c69448a25c90075a6e8ba7abd17f73f5eb07512037630fefc",
+      "pass": true
+    }
+  ],
+  "boundaries": {
+    "hosted_async_is_hard_real_time": false,
+    "move_is_general_borrow_checker": false,
+    "physical_hardware_qualification_changed": false
+  }
+}
