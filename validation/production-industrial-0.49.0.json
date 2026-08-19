@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "release": "0.49.0",
+  "profile": "Production & Industrial 0.49",
+  "source_manifest_sha256": "bf444323fd5f2140932a61ab2c19436febfd8d812b6d47107574f32d1c3718e2",
+  "source_tree_sha256": "e749ba6d78c616a386f81139b9f4a3bb5e254b2f75080afa17cd7fb1623c698f",
+  "checks": [
+    {
+      "name": "Production & Industrial focused",
+      "pass": true,
+      "tests": 7,
+      "evidence": "validation/logs-049/production-focused.txt"
+    },
+    {
+      "name": "Language/type/module regression",
+      "pass": true,
+      "tests": 92,
+      "evidence": "validation/logs-049/language-module.txt"
+    },
+    {
+      "name": "Ecosystem/fullstack/runtime/security regression",
+      "pass": true,
+      "tests": 38,
+      "evidence": "validation/logs-049/runtime-security.txt"
+    },
+    {
+      "name": "Native runtime/codegen",
+      "pass": true,
+      "tests": 18,
+      "evidence": "validation/logs-049/native-runtime-codegen.txt"
+    },
+    {
+      "name": "Native object/aggregate GC",
+      "pass": true,
+      "tests": 19,
+      "evidence": "validation/logs-049/native-object-gc.txt"
+    },
+    {
+      "name": "Production + retained machine control",
+      "pass": true,
+      "tests": 59,
+      "evidence": "validation/logs-049/machine.txt"
+    },
+    {
+      "name": "Go full regression",
+      "pass": true,
+      "evidence": "validation/logs-049/go-test.txt"
+    },
+    {
+      "name": "Go vet",
+      "pass": true,
+      "evidence": "validation/logs-049/go-vet.txt"
+    },
+    {
+      "name": "Go race industrial paths",
+      "pass": true,
+      "evidence": "validation/logs-049/go-race.txt"
+    },
+    {
+      "name": "Module conformance",
+      "pass": true,
+      "tests": 14,
+      "evidence": "validation/logs-049/module-conformance.txt"
+    },
+    {
+      "name": "Python-Go differential conformance",
+      "pass": true,
+      "tests": 48,
+      "evidence": "validation/logs-049/cross-implementation.txt"
+    },
+    {
+      "name": "Python self-conformance",
+      "pass": true,
+      "tests": 48,
+      "evidence": "validation/logs-049/python-self-conformance.txt"
+    },
+    {
+      "name": "Go self-conformance",
+      "pass": true,
+      "tests": 48,
+      "evidence": "validation/logs-049/go-self-conformance.txt"
+    },
+    {
+      "name": "Internal security audit",
+      "pass": true,
+      "evidence": "validation/internal-security-audit-0.49.0.json"
+    },
+    {
+      "name": "Machine-control software qualification",
+      "pass": true,
+      "evidence": "validation/machine-control-0.49.0.json"
+    },
+    {
+      "name": "Workspace production gate with native reproducibility",
+      "pass": true,
+      "evidence": "validation/logs-049/production-native-gate.json"
+    }
+  ],
+  "pass": true,
+  "local_production_candidate": true,
+  "unconditional_go_rust_cpp_replacement_claimed": false,
+  "external_blockers": [
+    "independent third-party security audit",
+    "physical native Windows/macOS release qualification",
+    "public signed registry live qualification",
+    "long-duration field reliability/adoption evidence",
+    "physical industrial HIL and applicable SIL/PL certification"
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "schema": 2,
+  "release": "0.49.0",
+  "target": "Saga GA 1.0",
+  "source_manifest_sha256": "bf444323fd5f2140932a61ab2c19436febfd8d812b6d47107574f32d1c3718e2",
+  "source_tree_sha256": "e749ba6d78c616a386f81139b9f4a3bb5e254b2f75080afa17cd7fb1623c698f",
+  "ga_ready": false,
+  "core_gates": {
+    "language-spec-1.0-final": {
+      "status": "BLOCKED",
+      "reason": "Final 1.0 bytes must exactly match the independently approved proposed_final_sha256.",
+      "evidence": {
+        "spec": null,
+        "review": null
+      }
+    },
+    "compiler-runtime-conformance": {
+      "status": "BLOCKED",
+      "reason": "evidence missing or malformed"
+    },
+    "self-host-fixed-point": {
+      "status": "BLOCKED",
+      "reason": "evidence missing or malformed"
+    },
+    "second-implementation": {
+      "status": "PASS",
+      "reason": "exact current-source-bound evidence passed",
+      "evidence": "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/validation/cross-implementation-0.49.0.json"
+    },
+    "native-desktop-hosts": {
+      "status": "BLOCKED",
+      "reason": "Native-host execution must be current-source-bound and pass on Linux, Windows and macOS; missing/non-pass: linux, windows, macos",
+      "evidence": [
+        {
+          "host": "linux",
+          "path": "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/validation/native-host-linux-0.49.0.json",
+          "pass": false,
+          "reason": "evidence missing or malformed"
+        },
+        {
+          "host": "windows",
+          "path": "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/validation/native-host-windows-0.49.0.json",
+          "pass": false,
+          "reason": "evidence missing or malformed"
+        },
+        {
+          "host": "macos",
+          "path": "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/validation/native-host-macos-0.49.0.json",
+          "pass": false,
+          "reason": "evidence missing or malformed"
+        }
+      ]
+    },
+    "live-signed-registry": {
+      "status": "BLOCKED",
+      "reason": "evidence missing or malformed"
+    },
+    "security-evidence": {
+      "status": "BLOCKED",
+      "reason": "internal: exact current-source-bound evidence passed; external: evidence missing or malformed",
+      "evidence": {
+        "internal": "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/validation/internal-security-audit-0.49.0.json",
+        "external": null
+      }
+    },
+    "production-industrial-local": {
+      "status": "PASS",
+      "reason": "exact current-source-bound evidence passed",
+      "evidence": "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/validation/production-industrial-0.49.0.json"
+    },
+    "developer-workflow": {
+      "status": "BLOCKED",
+      "reason": "Formatter/linter/tests/LSP/debugger/package tooling must exist and the full current-source-bound release qualification must pass.",
+      "evidence": [
+        "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/saga/formatter.py",
+        "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/saga/linter.py",
+        "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/saga/lsp.py",
+        "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/saga/debugger.py",
+        "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/saga/registry.py",
+        "/mnt/data/saga049/saga-lang-0.49.0-production-industrial/docs/GA_READINESS_1.0.md"
+      ]
+    }
+  },
+  "optional_platform_profiles": {
+    "vulkan-swapchain-present": {
+      "status": "NO_EVIDENCE"
+    },
+    "machine-control-software": {
+      "status": "NO_EVIDENCE"
+    },
+    "physical-machine-control": {
+      "status": "NO_EVIDENCE"
+    },
+    "physical-gamepad": {
+      "status": "NO_EVIDENCE"
+    },
+    "aws-live-account": {
+      "status": "NO_EVIDENCE"
+    },
+    "physical-gpio": {
+      "status": "NO_EVIDENCE"
+    },
+    "spark-runtime": {
+      "status": "NO_EVIDENCE"
+    },
+    "pygame-runtime": {
+      "status": "NO_EVIDENCE"
+    },
+    "android-device": {
+      "status": "NO_EVIDENCE"
+    },
+    "ios-device": {
+      "status": "NO_EVIDENCE"
+    }
+  },
+  "note": "GA 1.0 is a project production-readiness designation, not ISO/IEC approval."
+}
