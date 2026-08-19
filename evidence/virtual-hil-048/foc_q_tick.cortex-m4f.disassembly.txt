@@ -1,0 +1,28 @@
+
+/mnt/data/saga-hil048/saga-lang-0.47.0-virtual-hil-qualification/evidence/virtual-hil-048/foc_q_tick.cortex-m4f.o:	file format elf32-littlearm
+
+Disassembly of section .text:
+
+00000000 <saga_foc_q_tick>:
+       0: ee30 6a60    	vsub.f32	s12, s0, s1
+       4: ee26 2a02    	vmul.f32	s4, s12, s4
+       8: ee22 2a05    	vmul.f32	s4, s4, s10
+       c: ee32 1a01    	vadd.f32	s2, s4, s2
+      10: ee23 2a84    	vmul.f32	s4, s7, s8
+      14: ee32 2a24    	vadd.f32	s4, s4, s9
+      18: ee22 2a03    	vmul.f32	s4, s4, s6
+      1c: ee22 0a80    	vmul.f32	s0, s5, s0
+      20: ee30 0a02    	vadd.f32	s0, s0, s4
+      24: ee21 2a86    	vmul.f32	s4, s3, s12
+      28: ee32 1a01    	vadd.f32	s2, s4, s2
+      2c: ee31 0a00    	vadd.f32	s0, s2, s0
+      30: eeb4 0a65    	vcmp.f32	s0, s11
+      34: eeb1 1a65    	vneg.f32	s2, s11
+      38: eef1 fa10    	vmrs	APSR_nzcv, fpscr
+      3c: bfc8         	it	gt
+      3e: eeb0 0a65    	vmovgt.f32	s0, s11
+      42: eeb4 0a41    	vcmp.f32	s0, s2
+      46: eef1 fa10    	vmrs	APSR_nzcv, fpscr
+      4a: bf48         	it	mi
+      4c: eeb0 0a41    	vmovmi.f32	s0, s2
+      50: 4770         	bx	lr

@@ -1,0 +1,37 @@
+{
+  "base_saga_0_47_tree_sha256": "87a5d5065d969ff173ec53919bea7de6ff07581e7473e036783dfd4e53db4a3a",
+  "files": [
+    {
+      "bytes": 6594,
+      "path": "tools/control_tick_c_codegen_048.py",
+      "sha256": "3d3186d67833bc93cc8653d14f2f1f695d1703a4db640e9239ee32aaa6cb0684"
+    },
+    {
+      "bytes": 27692,
+      "path": "tools/virtual_hil_qualification_048.py",
+      "sha256": "e16e3b4aa84b847a157c35e2149ac674ff5bc5a14a5ac6c5d12dcdc9cddb781f"
+    },
+    {
+      "bytes": 1445,
+      "path": "tests/test_virtual_hil_048.py",
+      "sha256": "d3a127b81902af4b9ee874ad6cacfa80ba11c5e2c85440887273d36c65d726ca"
+    },
+    {
+      "bytes": 2730,
+      "path": "saga-HIL-QUALIFICATION-0.48.md",
+      "sha256": "0c0d48971fdfe054b04bda1ea954e0c8976f08d6621f1773787c0ffa708212a8"
+    },
+    {
+      "bytes": 728,
+      "path": "RELEASE_NOTES_HIL_0.48.md",
+      "sha256": "47f8c0a209b3e62931fc43604f39ec29cae1d0e55191e92f580069cd942eb2c0"
+    },
+    {
+      "bytes": 5785,
+      "path": "validation/virtual-hil-0.48.0.json",
+      "sha256": "83872fa61dd6507e6bb721644586cb22ea4b1872c1a2d2a5f599e9d8d615556c"
+    }
+  ],
+  "overlay_sha256": "97a4c51678d832201af86100723a9d3286ce8d836392c56d4d0544fe2b5f0f94",
+  "schema": 1
+}
