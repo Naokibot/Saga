@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "release": "0.47.0",
+  "source_manifest_sha256": "7f6acbac56f680d69e89ef1f101bc2c5577e659c7afc65c78e8e227acb337d23",
+  "source_tree_sha256": "87a5d5065d969ff173ec53919bea7de6ff07581e7473e036783dfd4e53db4a3a",
+  "cases": [
+    {"id":"foc-encoder-parity","pass":true},
+    {"id":"online-identification-axis-sync-parity","pass":true},
+    {"id":"mpc-dob-friction-parity","pass":true},
+    {"id":"ethercat-codec-profile-parity","pass":true},
+    {"id":"control-tick-bounded-accepted","pass":true},
+    {"id":"control-tick-allocation-rejected","expected_diagnostic_id":"SAGA-C471","python_diagnostic_id":"SAGA-C471","go_diagnostic_id":"SAGA-C471","pass":true},
+    {"id":"control-tick-blocking-io-rejected","expected_diagnostic_id":"SAGA-C479","python_diagnostic_id":"SAGA-C479","go_diagnostic_id":"SAGA-C479","pass":true}
+  ],
+  "passed": 7,
+  "total": 7,
+  "pass": true
+}

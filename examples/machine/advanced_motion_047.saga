@@ -1,0 +1,23 @@
+use machine
+
+let foc = machine.foc_current(2.0, 80.0, 2.0, 80.0, 0.08, 0.00012, 0.00012, 0.018, 25.0, 24.0, 12.0)
+machine.foc_step(foc, 0.0, 4.0, 0.2, -0.1, -0.1, 0.25, 40.0, 48.0, 0.0001)
+print(machine.foc_duty(foc, 0))
+
+let encoder = machine.encoder_integrated(4096, 1.0, 4096, 1, 0.25)
+machine.encoder_sample(encoder, 4090, 1000000000)
+machine.encoder_sample(encoder, 2, 1001000000)
+print(machine.encoder_position_deg(encoder))
+print(machine.encoder_integrated_velocity_rpm(encoder))
+
+let identify = machine.rls2(0.995, 100.0)
+machine.rls2_update(identify, 1.0, 0.25, 1.875)
+print(machine.rls2_theta0(identify))
+
+let sync = machine.axis_sync(2, 0.5, 1.0, 0.2)
+machine.axis_sync_config(sync, 1, 2.0, 0.0)
+machine.axis_sync_begin(sync, 1.0)
+print(machine.axis_sync_correction(sync, 1, 1.9))
+
+let datagram = machine.ethercat_lrw(1, 4096, machine.bytes_from_hex("11223344"))
+print(machine.ethercat_first_datagram_json(datagram))
