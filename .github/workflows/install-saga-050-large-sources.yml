@@ -1,0 +1,138 @@
+name: Install Saga 0.50 large sources
+
+on:
+  push:
+    branches:
+      - release/0.50.0-production-ga
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    if: ${{ !contains(github.event.head_commit.message, '[saga-direct-source]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct reviewed 0.50 source from canonical patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=/tmp/saga-049
+          patch_xz=/tmp/saga-050.patch.xz
+          patch=/tmp/saga-050.patch
+
+          git worktree add --detach "$base" 02157c5a8c1ff22c4c5ecb72b8e99d723d8dac08
+
+          cat patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-00 \
+              patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-01 \
+              patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-02 \
+              patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-03 \
+              patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-04 \
+              patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-05 \
+            > "$patch_xz"
+
+          echo '7ac568fb419396e47cc5582fafb37838ced613a886871e449043d947980923b9  '"$patch_xz" | sha256sum -c -
+          xz -dc "$patch_xz" > "$patch"
+          echo '24e60b4a2f5da9bdadc4e191ef6845ed471d2431a3e6dde5d933a4b5edf4e85c  '"$patch" | sha256sum -c -
+
+          (
+            cd "$base"
+            git apply --check "$patch"
+            git apply "$patch"
+          )
+
+          targets=(
+            implementations/go/cmd/saga-go/checker.go
+            implementations/go/cmd/saga-go/parser.go
+            release/source-manifest-0.50.0.json
+            saga/aot.py
+            saga/checker.py
+            saga/cli.py
+            saga/mobile.py
+            saga/native_codegen.py
+            saga/parser.py
+            saga/stdlib/modules.py
+          )
+
+          for path in "${targets[@]}"; do
+            mkdir -p "$(dirname "$path")"
+            cp "$base/$path" "$path"
+          done
+
+      - name: Verify exact Git blob identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          check() {
+            local expected="$1"
+            local path="$2"
+            local actual
+            actual="$(git hash-object "$path")"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "blob mismatch: $path expected=$expected actual=$actual" >&2
+              exit 1
+            fi
+            printf '%s  %s\n' "$actual" "$path"
+          }
+
+          check 3d006106d5cdc70e096a3b08d637a0ffdd467c4e implementations/go/cmd/saga-go/checker.go
+          check d0f3805d0c03f65b3e05dde62238cdb09c69e659 implementations/go/cmd/saga-go/parser.go
+          check 2007e441f3975335980979f6d700d14dd66f1203 release/source-manifest-0.50.0.json
+          check 545726d015629a43ae61693c4001bee2ab609e8e saga/aot.py
+          check 6c09cf162232595d650f4e87e736d69fc62d74a3 saga/checker.py
+          check f92f04350e55f6fb37fc121b9c318b189494f0b9 saga/cli.py
+          check 3c12a70f9ef6924f233a744743773a5a4039ece8 saga/mobile.py
+          check 1b1f2dc3534e6b4c99d5e8f1f2cf20ecef2258bc saga/native_codegen.py
+          check 5910b64c487cebcae8797bf00cb6fa3fb928e3f7 saga/parser.py
+          check 4ccfee216eeb6a485139e720dd21724f250b999a saga/stdlib/modules.py
+
+      - name: Commit exact sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Hotaru(Naokibot)'
+          git config user.email 'sagakatsuyuki.555@gmail.com'
+
+          git add -- \
+            implementations/go/cmd/saga-go/checker.go \
+            implementations/go/cmd/saga-go/parser.go \
+            release/source-manifest-0.50.0.json \
+            saga/aot.py \
+            saga/checker.py \
+            saga/cli.py \
+            saga/mobile.py \
+            saga/native_codegen.py \
+            saga/parser.py \
+            saga/stdlib/modules.py
+
+          git rm -- .github/workflows/install-saga-050-large-sources.yml
+
+          expected=$(cat <<'EOF'
+.github/workflows/install-saga-050-large-sources.yml
+implementations/go/cmd/saga-go/checker.go
+implementations/go/cmd/saga-go/parser.go
+release/source-manifest-0.50.0.json
+saga/aot.py
+saga/checker.py
+saga/cli.py
+saga/mobile.py
+saga/native_codegen.py
+saga/parser.py
+saga/stdlib/modules.py
+EOF
+)
+          actual="$(git diff --cached --name-only | sort)"
+          expected_sorted="$(printf '%s\n' "$expected" | sort)"
+          if [[ "$actual" != "$expected_sorted" ]]; then
+            echo 'unexpected staged paths:' >&2
+            git diff --cached --name-status >&2
+            exit 1
+          fi
+
+          git commit -m 'Install remaining verified Saga 0.50 sources [saga-direct-source]'
+          git push origin HEAD:release/0.50.0-production-ga
