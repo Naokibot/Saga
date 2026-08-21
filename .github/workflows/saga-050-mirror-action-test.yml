@@ -1,0 +1,27 @@
+name: Saga 0.50 mirror action test
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  marker:
+    if: ${{ github.event.issue.title == 'SAGA-050-MIRROR-ACTION-TEST' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/0.50.0-production-ga
+          fetch-depth: 0
+      - name: Write marker
+        run: |
+          set -euo pipefail
+          printf '%s\n' "${GITHUB_RUN_ID}" > .github/saga-050-actions-marker
+          git config user.name 'Saga release automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -- .github/saga-050-actions-marker
+          git commit -m 'Verify Saga mirror Actions path [saga-action-test]'
+          git push origin HEAD:release/0.50.0-production-ga
