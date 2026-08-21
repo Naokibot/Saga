@@ -28,17 +28,60 @@ jobs:
 
           git worktree add --detach "$base" 02157c5a8c1ff22c4c5ecb72b8e99d723d8dac08
 
-          cat patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-00 \
-              patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-01 \
-              patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-02 \
-              patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-03 \
-              patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-04 \
-              patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-05 \
-            > "$patch_xz"
+          parts=(
+            patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-00
+            patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-01
+            patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-02
+            patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-03
+            patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-04
+            patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-05
+          )
+          cat "${parts[@]}" > "$patch_xz"
 
           echo '7ac568fb419396e47cc5582fafb37838ced613a886871e449043d947980923b9  '"$patch_xz" | sha256sum -c -
           xz -dc "$patch_xz" > "$patch"
           echo '24e60b4a2f5da9bdadc4e191ef6845ed471d2431a3e6dde5d933a4b5edf4e85c  '"$patch" | sha256sum -c -
+
+          python - <<'PY'
+          from __future__ import annotations
+          import hashlib, json
+          from pathlib import Path
+
+          parts = [
+              Path(f"patches/saga-0.49.0-to-0.50.0-production-ga.patch.xz.part-{i:02d}")
+              for i in range(6)
+          ]
+          combined = Path('/tmp/saga-050.patch.xz').read_bytes()
+          patch = Path('/tmp/saga-050.patch').read_bytes()
+          evidence = {
+              'schema': 1,
+              'release': '0.50.0',
+              'source': 'GitHub release/0.50.0-production-ga',
+              'chunks': [
+                  {
+                      'path': str(path),
+                      'size': path.stat().st_size,
+                      'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                  }
+                  for path in parts
+              ],
+              'concatenated_xz_size': len(combined),
+              'concatenated_xz_sha256': hashlib.sha256(combined).hexdigest(),
+              'expected_concatenated_xz_sha256': '7ac568fb419396e47cc5582fafb37838ced613a886871e449043d947980923b9',
+              'decompressed_patch_size': len(patch),
+              'decompressed_patch_sha256': hashlib.sha256(patch).hexdigest(),
+              'expected_decompressed_patch_sha256': '24e60b4a2f5da9bdadc4e191ef6845ed471d2431a3e6dde5d933a4b5edf4e85c',
+              'pass': (
+                  hashlib.sha256(combined).hexdigest() == '7ac568fb419396e47cc5582fafb37838ced613a886871e449043d947980923b9'
+                  and hashlib.sha256(patch).hexdigest() == '24e60b4a2f5da9bdadc4e191ef6845ed471d2431a3e6dde5d933a4b5edf4e85c'
+              ),
+          }
+          Path('validation/github-patch-verification-0.50.0.json').write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          if not evidence['pass']:
+              raise SystemExit('GitHub patch evidence did not match the canonical hashes')
+          PY
 
           (
             cd "$base"
@@ -91,11 +134,11 @@ jobs:
           check 5910b64c487cebcae8797bf00cb6fa3fb928e3f7 saga/parser.py
           check 4ccfee216eeb6a485139e720dd21724f250b999a saga/stdlib/modules.py
 
-      - name: Commit exact sources
+      - name: Commit exact sources and patch evidence
         shell: bash
         run: |
           set -euo pipefail
-          git config user.name 'Hotaru(Naokibot)'
+          git config user.name 'Hotaru'
           git config user.email 'sagakatsuyuki.555@gmail.com'
 
           git add -- \
@@ -105,10 +148,10 @@ jobs:
             saga/aot.py \
             saga/checker.py \
             saga/cli.py \
-            saga/mobile.py \
             saga/native_codegen.py \
             saga/parser.py \
-            saga/stdlib/modules.py
+            saga/stdlib/modules.py \
+            validation/github-patch-verification-0.50.0.json
 
           git rm -- .github/workflows/install-saga-050-large-sources.yml
 
@@ -120,10 +163,10 @@ release/source-manifest-0.50.0.json
 saga/aot.py
 saga/checker.py
 saga/cli.py
-saga/mobile.py
 saga/native_codegen.py
 saga/parser.py
 saga/stdlib/modules.py
+validation/github-patch-verification-0.50.0.json
 EOF
 )
           actual="$(git diff --cached --name-only | sort)"
