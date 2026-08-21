@@ -4,13 +4,17 @@ on:
   push:
     branches:
       - release/0.50.0-production-ga
+  pull_request:
+    branches:
+      - release/0.50.0-production-ga
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 jobs:
   install:
-    if: ${{ !contains(github.event.head_commit.message, '[saga-direct-source]') }}
+    if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '[saga-direct-source]') }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out release branch
