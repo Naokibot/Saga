@@ -22,4 +22,4 @@
 
 ## Scope of the GA designation
 
-0.50 is intended as a Production GA language/toolchain release for machine-control development. It is not a functional-safety certificate for a machine. Hardware-specific hard real time, WCET, HIL, fieldbus, motor/drive and SIL/PL evidence remain deployment-specific and are deliberately fail-closed by the machine-production gate when absent.
+0.50 is intended as a Production GA language/toolchain release for machine-control development. It is not a functional-safety certificate for a machine. Hardware-specific hard real-time, WCET, HIL, fieldbus, motor/drive and SIL/PL evidence remain deployment-specific and are deliberately fail-closed by the machine-production gate when absent.

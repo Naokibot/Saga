@@ -1,3 +1,13 @@
+# Saga 0.50.0 — Production GA Control Hardening
+
+Saga 0.50 closes the main source-level gap between a bounded control function and a production control call graph. `@control_tick(rate_hz, budget_us)` now has a transitive companion, `@control_safe`: hidden helper I/O/allocation, recursion, indirect calls, shared mutation and unapproved external calls are rejected before execution.
+
+For deployment qualification, `saga production-check --native --machine` fails closed unless the project has explicit timing contracts and source-bound hazard/WCET/HIL evidence plus declared independent E-stop, STO/interlock and hardware-watchdog layers. The language/toolchain can be released as Production GA; a physical machine still requires its own target and safety qualification.
+
+See `spec/SAGA_PRODUCTION_GA_CONTROL_0.50.md`, `docs/PRODUCTION_GA_CONTROL_0.50.md`, `RELEASE_NOTES_0.50.0.md`, `saga-REVIEW_REPORT-0.50.0.md`, and `saga-VALIDATION-0.50.0.md`.
+
+---
+
 # Saga 0.49.0 — Production & Industrial Profile
 
 Saga is an independent general-purpose language designed to remain readable while scaling into native systems and physical-machine control. 0.49 adds first-class large-system production gates and explicit periodic-control contracts on top of the 0.47 advanced-motion stack.
