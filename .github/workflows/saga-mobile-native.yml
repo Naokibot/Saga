@@ -1,6 +1,11 @@
 name: Saga native mobile build evidence
+
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
+
 jobs:
   android-build:
     runs-on: ubuntu-24.04
@@ -9,7 +14,9 @@ jobs:
       - uses: actions/setup-python@v6
         with: {python-version: '3.13'}
       - uses: actions/setup-go@v7
-        with: {go-version: '1.26.x'}
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: implementations/go/go.mod
       - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with: {gradle-version: '9.5.0'}
@@ -34,7 +41,9 @@ jobs:
       - uses: actions/setup-python@v6
         with: {python-version: '3.13'}
       - uses: actions/setup-go@v7
-        with: {go-version: '1.26.x'}
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: implementations/go/go.mod
       - run: python -m pip install -e .
       - name: Install gomobile
         run: go install golang.org/x/mobile/cmd/gomobile@latest && go install golang.org/x/mobile/cmd/gobind@latest && "$(go env GOPATH)/bin/gomobile" init
