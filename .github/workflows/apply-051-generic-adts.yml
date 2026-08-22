@@ -1,9 +1,13 @@
 name: Apply Saga 0.51 Generic ADTs
 
-# This second branch update intentionally triggers the workflow after it exists.
 on:
   push:
     branches: [feature/saga-051-generic-adts]
+    paths:
+      - 'tools/apply_051_generic_adts.py'
+      - '.github/workflows/apply-051-generic-adts.yml'
+  pull_request:
+    branches: [main]
     paths:
       - 'tools/apply_051_generic_adts.py'
       - '.github/workflows/apply-051-generic-adts.yml'
@@ -13,6 +17,7 @@ permissions:
 
 jobs:
   integrate:
+    if: github.event_name == 'push' || github.head_ref == 'feature/saga-051-generic-adts'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
@@ -44,6 +49,7 @@ jobs:
       - name: Remove integration scaffolding
         run: rm -f tools/apply_051_generic_adts.py .github/workflows/apply-051-generic-adts.yml
       - name: Commit integrated source
+        if: github.event_name == 'push'
         run: |
           git config user.name "K.Saga"
           git config user.email "SagaK-dev@users.noreply.github.com"
