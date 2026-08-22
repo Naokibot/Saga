@@ -5,12 +5,16 @@ on:
     branches: [feature/saga-052-generic-abstractions]
     paths:
       - '.github/workflows/apply-052-generic-abstractions.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, reopened]
 
 permissions:
   contents: write
 
 jobs:
   integrate:
+    if: github.head_ref == 'feature/saga-052-generic-abstractions' || github.ref_name == 'feature/saga-052-generic-abstractions'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
