@@ -5,22 +5,29 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "saga-language"
 version = "0.50.0"
-description = "Reference implementation of the beginner-first, exact-number, capability-secured Saga programming language"
+description = "Reference implementation of the readable, exact-number, capability-secured Saga programming language"
 readme = "README.md"
 requires-python = ">=3.13"
 license = {text = "MIT"}
 authors = [{name = "Saga Language Project"}]
-keywords = ["programming-language", "education", "exact-arithmetic", "capability-security"]
+keywords = ["programming-language", "compiler", "interpreter", "systems-programming", "machine-control", "exact-arithmetic", "capability-security"]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
   "Intended Audience :: Developers",
   "Intended Audience :: Education",
   "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Compilers",
   "Topic :: Software Development :: Interpreters",
 ]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/SagaK-dev/Saga"
+Repository = "https://github.com/SagaK-dev/Saga"
+Issues = "https://github.com/SagaK-dev/Saga/issues"
 
 [project.optional-dependencies]
 websocket = ["websocket-client"]
