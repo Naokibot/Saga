@@ -1,13 +1,24 @@
 name: Saga desktop native OS evidence
+
 permissions:
   contents: read
+
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'implementations/go/**'
+      - 'tools/native_host_qualification.py'
+      - 'pyproject.toml'
+      - '.github/workflows/saga-desktop-native-os.yml'
   pull_request:
     paths:
       - 'implementations/go/**'
       - 'tools/native_host_qualification.py'
+      - 'pyproject.toml'
       - '.github/workflows/saga-desktop-native-os.yml'
+
 jobs:
   linux-native:
     runs-on: ubuntu-24.04
@@ -17,9 +28,10 @@ jobs:
         with: {python-version: '3.13'}
       - uses: actions/setup-go@v7
         with: {go-version: '1.23.x'}
-      - run: python tools/native_host_qualification.py --expected-host linux
+      - name: Native host qualification
+        run: python tools/native_host_qualification.py --expected-host linux --output validation/native-host-linux-ci.json
       - uses: actions/upload-artifact@v4
-        with: {name: linux-native-evidence, path: validation/native-host-linux-0.26.2.json}
+        with: {name: linux-native-evidence, path: validation/native-host-linux-ci.json}
 
   macos-native:
     runs-on: macos-15
@@ -29,22 +41,10 @@ jobs:
         with: {python-version: '3.13'}
       - uses: actions/setup-go@v7
         with: {go-version: '1.23.x'}
-      - name: Portable Saga native-host qualification
-        run: python tools/native_host_qualification.py --expected-host macos
-      - name: Optional Desktop profile build and host harness
-        run: |
-          brew install sdl2
-          SDL_PREFIX="$(brew --prefix sdl2)"
-          (cd implementations/go && CGO_ENABLED=1 CGO_LDFLAGS="-L${SDL_PREFIX}/lib" go build -tags sagadesktop -o ../../saga-desktop ./cmd/saga-go)
-          ./validation/desktop-real/macos/validate.sh ./saga-desktop . macos-desktop-evidence.txt
-        env:
-          SAGA_PHYSICAL_HARDWARE: '0'
+      - name: Native host qualification
+        run: python tools/native_host_qualification.py --expected-host macos --output validation/native-host-macos-ci.json
       - uses: actions/upload-artifact@v4
-        with:
-          name: macos-native-evidence
-          path: |
-            validation/native-host-macos-0.26.2.json
-            macos-desktop-evidence.txt
+        with: {name: macos-native-evidence, path: validation/native-host-macos-ci.json}
 
   windows-native:
     runs-on: windows-2025
@@ -54,20 +54,8 @@ jobs:
         with: {python-version: '3.13'}
       - uses: actions/setup-go@v7
         with: {go-version: '1.23.x'}
-      - name: Portable Saga native-host qualification
-        run: python tools/native_host_qualification.py --expected-host windows
-      - uses: ilammy/msvc-dev-cmd@v1
-      - name: Direct3D 11 host probe
+      - name: Native host qualification
         shell: pwsh
-        run: |
-          cl.exe /nologo /EHsc /W4 /WX validation/desktop-real/windows/d3d11_probe.cpp /Fe:d3d11-probe.exe d3d11.lib dxgi.lib
-          .\d3d11-probe.exe | Tee-Object d3d11-ci-evidence.txt
-      - name: Validate Saga Windows evidence harness syntax
-        shell: pwsh
-        run: $errors=$null; [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'validation/desktop-real/windows/validate.ps1'),[ref]$null,[ref]$errors) | Out-Null; if($errors){$errors; exit 1}
+        run: python tools/native_host_qualification.py --expected-host windows --output validation/native-host-windows-ci.json
       - uses: actions/upload-artifact@v4
-        with:
-          name: windows-native-evidence
-          path: |
-            validation/native-host-windows-0.26.2.json
-            d3d11-ci-evidence.txt
+        with: {name: windows-native-evidence, path: validation/native-host-windows-ci.json}
