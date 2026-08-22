@@ -1,8 +1,11 @@
 name: Saga live registry qualification
+
 permissions:
   contents: read
+
 on:
   workflow_dispatch:
+
 jobs:
   live-registry:
     runs-on: ubuntu-24.04
@@ -23,7 +26,7 @@ jobs:
         env:
           SAGA_REGISTRY_SIGNING_KEY_PEM: ${{ secrets.SAGA_REGISTRY_SIGNING_KEY_PEM }}
       - name: Signed publish/search/install roundtrip over HTTPS
-        run: python tools/registry_live_qualification.py
+        run: python tools/registry_live_qualification_current.py --output validation/public-registry-live-ci.json
         env:
           SAGA_REGISTRY_LIVE: '1'
           SAGA_REGISTRY_URL: ${{ vars.SAGA_REGISTRY_URL }}
@@ -31,4 +34,4 @@ jobs:
           SAGA_REGISTRY_SIGNING_KEY: ${{ runner.temp }}/saga-registry-signing.pem
           SAGA_REGISTRY_QUALIFICATION_PACKAGE: ${{ vars.SAGA_REGISTRY_QUALIFICATION_PACKAGE }}
       - uses: actions/upload-artifact@v4
-        with: {name: saga-public-registry-live, path: validation/public-registry-live-0.26.2.json}
+        with: {name: saga-public-registry-live, path: validation/public-registry-live-ci.json}
