@@ -30,6 +30,7 @@ Repository = "https://github.com/SagaK-dev/Saga"
 Issues = "https://github.com/SagaK-dev/Saga/issues"
 
 [project.optional-dependencies]
+dev = ["pytest>=8"]
 websocket = ["websocket-client"]
 crypto = ["cryptography"]
 media = ["Pillow", "opencv-python"]
