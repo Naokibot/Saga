@@ -1,0 +1,21 @@
+enum Maybe[T] {
+    None,
+    Some(T)
+}
+
+enum Either[L, R] {
+    Left(L),
+    Right(R)
+}
+
+let answer = Maybe.Some(42)
+match answer {
+    case Maybe.Some(value) { print(value) }
+    case Maybe.None { print(0) }
+}
+
+let state: Either[int, text] = Either.Left(7)
+match state {
+    case Either.Left(value) { print(value) }
+    case Either.Right(message) { print(message) }
+}

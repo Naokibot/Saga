@@ -57,13 +57,14 @@ type Checker struct {
 	LocalFunctions     map[*FnDecl]FuncInfo
 	Enums              map[string]map[string]bool
 	EnumPayloads       map[string]map[string][]Type
+	EnumTypeParams     map[string][]string
 	SourceModules      map[string]SourceModuleInfo
 	UnsafeDepth        int
 	CurrentConstraints map[string][]Type
 }
 
 func NewChecker() *Checker {
-	return &Checker{Scopes: []map[string]VarInfo{{}}, Functions: map[string]FuncInfo{}, Classes: map[string]*ClassInfo{}, LocalFunctions: map[*FnDecl]FuncInfo{}, Enums: map[string]map[string]bool{}, EnumPayloads: map[string]map[string][]Type{}, SourceModules: map[string]SourceModuleInfo{}, CurrentConstraints: map[string][]Type{}}
+	return &Checker{Scopes: []map[string]VarInfo{{}}, Functions: map[string]FuncInfo{}, Classes: map[string]*ClassInfo{}, LocalFunctions: map[*FnDecl]FuncInfo{}, Enums: map[string]map[string]bool{}, EnumPayloads: map[string]map[string][]Type{}, EnumTypeParams: map[string][]string{}, SourceModules: map[string]SourceModuleInfo{}, CurrentConstraints: map[string][]Type{}}
 }
 
 func sagaEditDistance(a, b string) int {
@@ -269,6 +270,13 @@ func (c *Checker) declareEnum(d *EnumDecl) error {
 	if _, ok := c.Functions[d.Name]; ok {
 		return c.err(d.Tok, "SAGA-T108", "duplicate name "+d.Name)
 	}
+	if hasDupStrings(d.TypeParams) {
+		return c.err(d.Tok, "SAGA-T108", "duplicate enum type parameter")
+	}
+	vars := map[string]bool{}
+	for _, name := range d.TypeParams {
+		vars[name] = true
+	}
 	variants := map[string]bool{}
 	payloads := map[string][]Type{}
 	for _, v := range d.Variants {
@@ -277,11 +285,12 @@ func (c *Checker) declareEnum(d *EnumDecl) error {
 		}
 		variants[v.Name] = true
 		for _, r := range v.Payload {
-			payloads[v.Name] = append(payloads[v.Name], typeFromRef(r, map[string]bool{}))
+			payloads[v.Name] = append(payloads[v.Name], typeFromRef(r, vars))
 		}
 	}
 	c.Enums[d.Name] = variants
 	c.EnumPayloads[d.Name] = payloads
+	c.EnumTypeParams[d.Name] = append([]string{}, d.TypeParams...)
 	return c.define(d.Name, VarInfo{Typ: Type{Name: "enumtype:" + d.Name}}, d.Tok)
 }
 func (c *Checker) declareClassShell(d *ClassDecl) error {
@@ -1232,7 +1241,7 @@ func (c *Checker) loadSourceModuleInterface(x *SourceModuleStmt) error {
 	for _, item := range iface.Exports {
 		kind, _ := item["kind"].(string)
 		name, _ := item["name"].(string)
-		if (kind == "class" || kind == "interface") && name != "" {
+		if (kind == "class" || kind == "interface" || kind == "enum") && name != "" {
 			publicClasses[name] = true
 		}
 	}
@@ -1333,6 +1342,29 @@ func (c *Checker) loadSourceModuleInterface(x *SourceModuleStmt) error {
 				ps = append(ps, ci.Fields[n].Typ)
 			}
 			members[name] = fnT(ps, objectT(qualified, retArgs...))
+		case "enum":
+			qualified := bind + "." + name
+			typeParams := interfaceStringList(item["type_params"])
+			variants := map[string]bool{}
+			payloads := map[string][]Type{}
+			for _, rawVariant := range interfaceMapList(item["variants"]) {
+				variantName, _ := rawVariant["name"].(string)
+				if variantName == "" {
+					continue
+				}
+				variants[variantName] = true
+				for _, raw := range interfaceStringList(rawVariant["payload"]) {
+					t, err := moduleInterfaceType(raw, typeParams)
+					if err != nil {
+						return err
+					}
+					payloads[variantName] = append(payloads[variantName], qualifySourceModuleType(t, bind, publicClasses))
+				}
+			}
+			c.Enums[qualified] = variants
+			c.EnumPayloads[qualified] = payloads
+			c.EnumTypeParams[qualified] = append([]string{}, typeParams...)
+			members[name] = Type{Name: "enumtype:" + qualified}
 		case "var":
 			raw, _ := item["type"].(string)
 			t, err := moduleInterfaceType(raw, nil)
@@ -1447,6 +1479,7 @@ func (c *Checker) loadSourceModuleBody(x *SourceModuleStmt) error {
 				}
 				c.Enums[qualified] = variants
 				c.EnumPayloads[qualified] = payloads
+				c.EnumTypeParams[qualified] = append([]string{}, child.EnumTypeParams[d.Name]...)
 				members[d.Name] = Type{Name: "enumtype:" + qualified}
 			}
 		}
@@ -1493,8 +1526,9 @@ func (c *Checker) refreshSourceModuleConstructors() {
 	}
 }
 
-func (c *Checker) enumMatchPattern(e Expr, enumName string) (string, map[string]VarInfo, bool, error) {
-	if enumName == "" {
+func (c *Checker) enumMatchPattern(e Expr, enumType Type) (string, map[string]VarInfo, bool, error) {
+	enumName := objectTypeName(enumType)
+	if enumName == "" || c.Enums[enumName] == nil {
 		return "", nil, false, nil
 	}
 	callee := e
@@ -1512,7 +1546,12 @@ func (c *Checker) enumMatchPattern(e Expr, enumName string) (string, map[string]
 	if owner != enumName || !c.Enums[enumName][variant] {
 		return "", nil, false, nil
 	}
-	payload := c.EnumPayloads[enumName][variant]
+	mapping := typeParamMap(c.EnumTypeParams[enumName], enumType.Args)
+	rawPayload := c.EnumPayloads[enumName][variant]
+	payload := make([]Type, 0, len(rawPayload))
+	for _, typ := range rawPayload {
+		payload = append(payload, substitute(typ, mapping))
+	}
 	if len(args) != len(payload) {
 		return "", nil, true, c.err(e.token(), "SAGA-T103", fmt.Sprintf("enum variant %s.%s expects %d payload values", enumName, variant, len(payload)))
 	}
@@ -1592,7 +1631,7 @@ func (c *Checker) checkStmt(s Stmt) error {
 		}
 		covered := map[string]bool{}
 		for _, mc := range x.Cases {
-			variant, bindings, matched, pe := c.enumMatchPattern(mc.Pattern, enumName)
+			variant, bindings, matched, pe := c.enumMatchPattern(mc.Pattern, vt)
 			if pe != nil {
 				return pe
 			}
@@ -2184,7 +2223,7 @@ func (c *Checker) checkExpr(x Expr, expected *Type) (Type, error) {
 		}
 		return TAny, c.err(v.Tok, "SAGA-T103", "indexing requires list or text")
 	case *Member:
-		return c.checkMember(v)
+		return c.checkMember(v, expected)
 	case *Call:
 		return c.checkCall(v, expected)
 	}
@@ -2262,7 +2301,7 @@ func (c *Checker) checkBinary(v *Binary) (Type, error) {
 	}
 	return TAny, c.err(v.Op, "SAGA-T103", "unsupported operator")
 }
-func (c *Checker) checkMember(v *Member) (Type, error) {
+func (c *Checker) checkMember(v *Member, expected *Type) (Type, error) {
 	t, e := c.checkExpr(v.Target, nil)
 	if e != nil {
 		return TAny, e
@@ -2331,10 +2370,22 @@ func (c *Checker) checkMember(v *Member) (Type, error) {
 		n := strings.TrimPrefix(t.Name, "enumtype:")
 		if c.Enums[n][v.Name] {
 			ps := c.EnumPayloads[n][v.Name]
-			if len(ps) > 0 {
-				return fnT(ps, objectT(n)), nil
+			params := c.EnumTypeParams[n]
+			retArgs := []Type{}
+			for _, name := range params {
+				retArgs = append(retArgs, typeVar(name))
 			}
-			return objectT(n), nil
+			result := objectT(n, retArgs...)
+			if len(ps) > 0 {
+				return fnT(ps, result), nil
+			}
+			if len(params) == 0 {
+				return result, nil
+			}
+			if expected != nil && expected.Name == result.Name && len(expected.Args) == len(params) {
+				return *expected, nil
+			}
+			return TAny, c.err(v.Tok, "SAGA-T113", "cannot infer generic enum variant "+n+"."+v.Name+"; add a "+n+"[...] type annotation")
 		}
 		return TAny, c.err(v.Tok, "SAGA-T106", "unknown enum variant "+n+"."+v.Name)
 	}
@@ -3638,6 +3689,15 @@ func (c *Checker) checkCall(v *Call, expected *Type) (Type, error) {
 			return TAny, c.err(v.Args[i].token(), "SAGA-T105", fmt.Sprintf("argument %d type mismatch: expected %s, got %s", i+1, ct.Args[i], args[i]))
 		}
 	}
+	enumConstructor := ""
+	if member, ok := v.Callee.(*Member); ok {
+		if targetType, err := c.checkExpr(member.Target, nil); err == nil && strings.HasPrefix(targetType.Name, "enumtype:") {
+			enumConstructor = strings.TrimPrefix(targetType.Name, "enumtype:")
+		}
+	}
+	if enumConstructor != "" && expected != nil && ct.Result != nil && expected.Name == ct.Result.Name {
+		unify(*ct.Result, *expected, m)
+	}
 	if q, ok := v.Callee.(*Variable); ok {
 		if f, ok := c.Functions[q.Name]; ok && f.Decl != nil {
 			if e := c.validateGenericConstraints(f.Decl, m, v.Tok); e != nil {
@@ -3675,7 +3735,22 @@ func (c *Checker) checkCall(v *Call, expected *Type) (Type, error) {
 		return TUnit, nil
 	}
 	resolved := substitute(*ct.Result, m)
+	if enumConstructor != "" && containsTypeVar(resolved) {
+		return TAny, c.err(v.Tok, "SAGA-T113", "cannot fully infer generic enum constructor "+enumConstructor+"; add an explicit "+enumConstructor+"[...] result type")
+	}
 	return c.resolveAssociatedType(resolved, m, v.Tok)
+}
+
+func containsTypeVar(t Type) bool {
+	if isTypeVar(t) {
+		return true
+	}
+	for _, arg := range t.Args {
+		if containsTypeVar(arg) {
+			return true
+		}
+	}
+	return t.Result != nil && containsTypeVar(*t.Result)
 }
 
 func (c *Checker) checkClosure(v *ClosureExpr, expected *Type) (Type, error) {

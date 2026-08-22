@@ -384,6 +384,7 @@ type EnumVariant struct {
 
 type EnumDecl struct {
 	Name       string
+	TypeParams []string
 	Variants   []EnumVariant
 	Visibility string
 	Tok        Token

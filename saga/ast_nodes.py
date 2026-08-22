@@ -153,6 +153,7 @@ class EnumDecl(Stmt):
     name: Token
     variants: list[EnumVariantDecl]
     visibility: str = "internal"
+    type_params: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)

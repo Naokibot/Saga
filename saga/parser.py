@@ -188,6 +188,7 @@ class Parser:
 
     def _enum(self, keyword: Token) -> EnumDecl:
         name = self._consume_name("enum 名が必要です")
+        type_params = self._type_params()
         self._consume(TokenKind.LBRACE, "enum 本体には '{' が必要です")
         variants: list[EnumVariantDecl] = []
         seen: set[str] = set()
@@ -212,7 +213,7 @@ class Parser:
         self._consume(TokenKind.RBRACE, "enum 本体を閉じる '}' が必要です")
         if not variants:
             self._error(name, "enum には1つ以上のvariantが必要です", diagnostic_id="SAGA-P102")
-        return EnumDecl(keyword, name, variants)
+        return EnumDecl(keyword, name, variants, type_params=type_params)
 
     def _class(self, keyword: Token, annotations: list[Annotation], *, interface: bool, abstract: bool) -> ClassDecl:
         name = self._consume_name("クラスまたはインターフェース名が必要です")

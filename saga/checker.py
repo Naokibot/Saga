@@ -93,6 +93,7 @@ class TypeChecker:
         self.classes: dict[str, ClassInfo] = {}
         self.enums: dict[str, set[str]] = {}
         self.enum_payloads: dict[str, dict[str, tuple[Type, ...]]] = {}
+        self.enum_type_params: dict[str, list[str]] = {}
         self.current_return_type: Type | None = None
         self.current_function: ast.FunctionDecl | None = None
         self.current_class: str | None = None
@@ -151,14 +152,18 @@ class TypeChecker:
         variants = [variant.name.lexeme for variant in stmt.variants]
         if len(set(variants)) != len(variants):
             self._error(stmt.name, f"enum '{name}' のvariantが重複しています", diagnostic_id="SAGA-T108")
+        if len(set(stmt.type_params)) != len(stmt.type_params):
+            self._error(stmt.name, f"enum '{name}' の型引数が重複しています", diagnostic_id="SAGA-T108")
+        type_vars = set(stmt.type_params)
         payloads: dict[str, tuple[Type, ...]] = {}
         for variant in stmt.variants:
             try:
-                payloads[variant.name.lexeme] = tuple(parse_type(text) for text in variant.payload_types)
+                payloads[variant.name.lexeme] = tuple(parse_type(text, type_vars) for text in variant.payload_types)
             except ValueError as exc:
                 self._error(variant.name, str(exc), diagnostic_id="SAGA-T106")
         self.enums[name] = set(variants)
         self.enum_payloads[name] = payloads
+        self.enum_type_params[name] = list(stmt.type_params)
         self.scopes[-1][name] = VariableInfo(Type(f"enumtype:{name}"), False)
 
     def _declare_class_shell(self, stmt: ast.ClassDecl) -> None:
@@ -223,8 +228,9 @@ class TypeChecker:
         if value.name.startswith("object:"):
             name = value.name.split(":", 1)[1]
             if name in self.enums:
-                if value.args:
-                    self._error(token, f"enum型 '{name}' は型引数を取りません")
+                params = self.enum_type_params.get(name, [])
+                if len(value.args) != len(params):
+                    self._error(token, f"enum型 '{name}' には {len(params)} 個の型引数が必要です", diagnostic_id="SAGA-T103")
                 return
             info = self.classes.get(name)
             if info is None:
@@ -464,6 +470,8 @@ class TypeChecker:
         for item in exports:
             if item.get("kind") == "enum":
                 name = str(item["name"]); qualified = f"{bind}.{name}"
+                type_params = [str(v) for v in item.get("type_params", [])]
+                vars_ = set(type_params)
                 raw_variants = item.get("variants", [])
                 variants: set[str] = set()
                 payloads: dict[str, tuple[Type, ...]] = {}
@@ -476,10 +484,11 @@ class TypeChecker:
                     if not vname:
                         continue
                     variants.add(vname)
-                    parsed = tuple(self._qualify_module_type(self._interface_type(t), bind, public_classes) for t in payload_text)
+                    parsed = tuple(self._qualify_module_type(self._interface_type(t, vars_), bind, public_classes) for t in payload_text)
                     payloads[vname] = parsed
                 self.enums[qualified] = variants
                 self.enum_payloads[qualified] = payloads
+                self.enum_type_params[qualified] = type_params
                 members[name] = Type(f"enumtype:{qualified}")
         # Class shells first so public signatures can refer forward to other
         # exported classes without re-checking the implementation body.
@@ -564,6 +573,7 @@ class TypeChecker:
                     variant: tuple(self._qualify_module_type(t, bind, public_names) for t in payload)
                     for variant, payload in child.enum_payloads.get(d.name.lexeme, {}).items()
                 }
+                self.enum_type_params[qualified] = list(child.enum_type_params.get(d.name.lexeme, []))
                 members[d.name.lexeme] = Type(f"enumtype:{qualified}")
             elif isinstance(d, ast.ClassDecl) and d.visibility == "public":
                 ci = child.classes[d.name.lexeme]
@@ -575,8 +585,11 @@ class TypeChecker:
         self.source_modules[bind] = SourceModuleInfo(stmt.name, members)
         self.scopes[-1][bind] = VariableInfo(Type(f"srcmodule:{bind}"), False)
 
-    def _enum_match_pattern(self, expr: ast.Expr, enum_name: str | None) -> tuple[str, dict[str, VariableInfo]] | None:
-        if enum_name is None:
+    def _enum_match_pattern(self, expr: ast.Expr, enum_type: Type | None) -> tuple[str, dict[str, VariableInfo]] | None:
+        if enum_type is None or not enum_type.name.startswith("object:"):
+            return None
+        enum_name = enum_type.name.split(":", 1)[1]
+        if enum_name not in self.enums:
             return None
         callee: ast.Expr = expr.callee if isinstance(expr, ast.Call) else expr
         qname = self._qualified_expr_name(callee)
@@ -585,7 +598,9 @@ class TypeChecker:
         owner, variant = qname.rsplit(".", 1)
         if owner != enum_name or variant not in self.enums.get(enum_name, set()):
             return None
-        payload = self.enum_payloads.get(enum_name, {}).get(variant, ())
+        params = self.enum_type_params.get(enum_name, [])
+        mapping = {name: arg for name, arg in zip(params, enum_type.args)}
+        payload = tuple(substitute(t, mapping) for t in self.enum_payloads.get(enum_name, {}).get(variant, ()))
         args = expr.arguments if isinstance(expr, ast.Call) else []
         if len(args) != len(payload):
             token = getattr(expr, "paren", None) or getattr(expr, "name", None) or getattr(callee, "name", None)
@@ -652,7 +667,7 @@ class TypeChecker:
             seen: set[str] = set()
             covered: set[str] = set()
             for case in stmt.cases:
-                enum_pattern = self._enum_match_pattern(case.pattern, enum_name)
+                enum_pattern = self._enum_match_pattern(case.pattern, value_type if enum_name is not None else None)
                 if enum_pattern is not None:
                     variant, bindings = enum_pattern
                     key = f"{enum_name}.{variant}"
@@ -993,7 +1008,7 @@ class TypeChecker:
             if target.name == "list": return target.args[0]
             if target == TEXT: return TEXT
             self._error(expr.bracket, "[] で取り出せるのはリストまたは文字列です")
-        if isinstance(expr, ast.Member): return self._check_member(expr)
+        if isinstance(expr, ast.Member): return self._check_member(expr, expected)
         raise AssertionError(f"unknown expression: {expr!r}")
 
 
@@ -1101,7 +1116,7 @@ class TypeChecker:
             return f"{base}.{expr.name.lexeme}" if base else None
         return None
 
-    def _check_member(self, expr: ast.Member) -> Type:
+    def _check_member(self, expr: ast.Member, expected: Type | None = None) -> Type:
         target = self._check_expr(expr.target)
         if target.name.startswith("enumtype:"):
             enum_name = target.name.split(":", 1)[1]
@@ -1109,8 +1124,20 @@ class TypeChecker:
             if variants is None or expr.name.lexeme not in variants:
                 self._error(expr.name, f"enum variant '{enum_name}.{expr.name.lexeme}' が見つかりません", diagnostic_id="SAGA-T106")
             payload = self.enum_payloads.get(enum_name, {}).get(expr.name.lexeme, ())
-            result = Type(f"object:{enum_name}")
-            return FUNCTION(list(payload), result) if payload else result
+            params = self.enum_type_params.get(enum_name, [])
+            result = Type(f"object:{enum_name}", tuple(TYPEVAR(name) for name in params))
+            if payload:
+                return FUNCTION(list(payload), result)
+            if not params:
+                return result
+            if expected is not None and expected.name == result.name and len(expected.args) == len(params):
+                return expected
+            self._error(
+                expr.name,
+                f"generic enum variant '{enum_name}.{expr.name.lexeme}' の型引数を推論できません",
+                f"例: let value: {enum_name}[int] = {enum_name}.{expr.name.lexeme}",
+                "SAGA-T113",
+            )
         if target.name.startswith("srcmodule:"):
             bind = target.name.split(":", 1)[1]
             module = self.source_modules.get(bind)
@@ -1221,10 +1248,34 @@ class TypeChecker:
             if len(arg_types) < (min_args or len(callee_type.args)): self._error(expr.paren, f"引数は最低 {min_args or len(callee_type.args)} 個必要です", diagnostic_id="SAGA-T105")
         elif len(arg_types) != len(callee_type.args): self._error(expr.paren, f"引数は {len(callee_type.args)} 個必要です", diagnostic_id="SAGA-T105")
         mapping: dict[str, Type] = {}
-        for expected, actual in zip(callee_type.args, arg_types):
+        for parameter_type, actual in zip(callee_type.args, arg_types):
             matcher = self._unify_native_contract if native_contract else self._unify
-            if not matcher(expected, actual, mapping): self._error(expr.paren, f"引数の型が一致しません。必要: {expected}、実際: {actual}", diagnostic_id="SAGA-T105")
-        return substitute(callee_type.result or ANY, mapping)
+            if not matcher(parameter_type, actual, mapping): self._error(expr.paren, f"引数の型が一致しません。必要: {parameter_type}、実際: {actual}", diagnostic_id="SAGA-T105")
+        enum_constructor = None
+        if isinstance(expr.callee, ast.Member):
+            target_type = self._check_expr(expr.callee.target)
+            if target_type.name.startswith("enumtype:"):
+                enum_constructor = target_type.name.split(":", 1)[1]
+        raw_result = callee_type.result or ANY
+        if enum_constructor is not None and expected is not None and expected.name == raw_result.name:
+            self._unify(raw_result, expected, mapping)
+        resolved = substitute(raw_result, mapping)
+        if enum_constructor is not None and self._contains_typevar(resolved):
+            self._error(
+                expr.paren,
+                f"generic enum constructor '{enum_constructor}.{expr.callee.name.lexeme}' の型引数を完全に推論できません",
+                f"変数または戻り値に {enum_constructor}[...] の型注釈を追加してください",
+                "SAGA-T113",
+            )
+        return resolved
+
+    @staticmethod
+    def _contains_typevar(value: Type) -> bool:
+        if is_typevar(value):
+            return True
+        if any(TypeChecker._contains_typevar(arg) for arg in value.args):
+            return True
+        return value.result is not None and TypeChecker._contains_typevar(value.result)
 
     def _check_extension_call(self, target: Type, name: str, args: list[ast.Expr], token: Token) -> Type | None:
         if target.name == "list":

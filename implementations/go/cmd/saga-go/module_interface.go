@@ -299,14 +299,18 @@ func buildModuleInterface(source, output string, recursive bool, active map[stri
 		case *EnumDecl:
 			if d.Visibility == "public" {
 				variants := []map[string]interface{}{}
+				vars := map[string]bool{}
+				for _, name := range d.TypeParams {
+					vars[name] = true
+				}
 				for _, v := range d.Variants {
 					payload := []string{}
 					for _, r := range v.Payload {
-						payload = append(payload, moduleTypeText(typeFromRef(r, map[string]bool{})))
+						payload = append(payload, moduleTypeText(typeFromRef(r, vars)))
 					}
 					variants = append(variants, map[string]interface{}{"name": v.Name, "payload": payload})
 				}
-				exports = append(exports, map[string]interface{}{"kind": "enum", "name": d.Name, "variants": variants})
+				exports = append(exports, map[string]interface{}{"kind": "enum", "name": d.Name, "type_params": append([]string{}, d.TypeParams...), "variants": variants})
 			}
 		case *ClassDecl:
 			if d.Visibility == "public" {
