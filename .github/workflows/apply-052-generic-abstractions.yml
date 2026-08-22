@@ -29,6 +29,17 @@ jobs:
           cache-dependency-path: implementations/go/go.mod
       - name: Apply 0.52 generic abstraction changes
         run: python tools/apply_052_generic_abstractions.py
+      - name: Repair generated Go expected-output literals
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('implementations/go/cmd/saga-go/generic_abstractions_052_test.go')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('"42\n7"', '`42\n7`')
+          text = text.replace('"5\nboom"', '`5\nboom`')
+          text = text.replace('"3\n9"', '`3\n9`')
+          p.write_text(text, encoding='utf-8')
+          PY
       - name: Format Go implementation
         run: gofmt -w implementations/go/cmd/saga-go
       - name: Install Saga
