@@ -10,18 +10,19 @@ Requirements:
 - Go toolchain compatible with `implementations/go`
 - Git
 
-Create an isolated Python environment, then install the project in editable mode:
+Create an isolated Python environment, then install the project and development test dependency in editable mode:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e '.[dev]'
 ```
 
 On Windows PowerShell, activate with:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
 ```
 
 ## Before opening a pull request
@@ -31,6 +32,7 @@ Run at least:
 ```bash
 python -m compileall -q saga tools
 python -m unittest tests.test_control_ga_050 tests.test_production_industrial_049 tests.test_virtual_hil_048 tests.test_advanced_motion_047 tests.test_precision_machine_046 tests.test_language_synthesis_045
+python -m pytest -q tests/test_machine_control_028.py tests/test_machine_control_036.py tests/test_precision_machine_046.py tests/test_advanced_motion_047.py tests/test_production_industrial_049.py
 cd implementations/go
 go test ./...
 go vet ./...
