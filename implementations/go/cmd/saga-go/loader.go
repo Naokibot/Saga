@@ -254,6 +254,10 @@ func loadProgram(entry string) ([]Stmt, error) {
 		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 			return nil, &SagaError{Code: "SAGA-I001", ID: "SAGA-I110", Message: "source import escapes project root: " + path, File: path, Line: 1, Col: 1}
 		}
+		// Keep the lexical directory for resolving relative imports. Using the
+		// canonical directory here would reintroduce the alias mismatch on the
+		// next recursive load.
+		lexicalDir := filepath.Dir(ap)
 		// Once the lexical path has passed the project-boundary and symlink
 		// checks, canonicalize it for stable cycle/dedup identity and I/O.
 		if rp, e := filepath.EvalSymlinks(ap); e == nil {
@@ -309,7 +313,7 @@ func loadProgram(entry string) ([]Stmt, error) {
 		out := []Stmt{}
 		for _, s := range stmts {
 			if u, ok := s.(*UseStmt); ok && u.SourcePath != "" {
-				dep := filepath.Join(filepath.Dir(ap), filepath.FromSlash(u.SourcePath))
+				dep := filepath.Join(lexicalDir, filepath.FromSlash(u.SourcePath))
 				if strings.HasPrefix(u.SourcePath, "pkg:") {
 					dep, err = resolvePackageImport(root, u.SourcePath)
 					if err != nil {
