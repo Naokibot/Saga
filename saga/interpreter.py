@@ -772,8 +772,10 @@ class Interpreter:
         elif isinstance(stmt, ast.MatchStmt):
             value = self._evaluate(stmt.value)
             for case in stmt.cases:
-                payload_match = self._match_enum_payload_pattern(value, case.pattern)
-                if payload_match is not None:
+                enum_pattern, payload_match = self._match_enum_payload_pattern(value, case.pattern)
+                if enum_pattern:
+                    if payload_match is None:
+                        continue
                     env = Environment(self.environment)
                     for name, item in payload_match.items():
                         env.define(name, item, False)
@@ -924,30 +926,39 @@ class Interpreter:
             self._defer_frames.pop()
             if restore: self.environment = previous
 
-    def _match_enum_payload_pattern(self, value: object, pattern: ast.Expr) -> dict[str, object] | None:
+    def _match_enum_payload_pattern(
+        self, value: object, pattern: ast.Expr
+    ) -> tuple[bool, dict[str, object] | None]:
+        """Recognize a payload enum pattern without evaluating its bind variables.
+
+        The boolean distinguishes "not an enum payload pattern" from "recognized
+        enum pattern whose variant did not match".  Conflating those states made
+        a failed `Some(item)` case fall back to normal expression evaluation,
+        where `item` was incorrectly looked up as a runtime variable.
+        """
         if not isinstance(value, EnumValue) or not isinstance(pattern, ast.Call):
-            return None
+            return False, None
         callee = pattern.callee
         if not isinstance(callee, ast.Member):
-            return None
+            return False, None
         qname = self._qualified_expr_name_runtime(callee.target)
         if qname is None:
-            return None
+            return False, None
         expected_enum = qname
         # Module aliases are part of the observable enum identity in the
-        # interpreter.  Accept exact identity and the local/unqualified form.
+        # interpreter. Accept exact identity and the local/unqualified form.
         if value.enum_name != expected_enum and not value.enum_name.endswith("." + expected_enum):
-            return None
+            return False, None
         if value.variant != callee.name.lexeme or len(value.payload) != len(pattern.arguments):
-            return None
+            return True, None
         bindings: dict[str, object] = {}
         for expr, item in zip(pattern.arguments, value.payload):
             if not isinstance(expr, ast.Variable):
-                return None
+                return True, None
             name = expr.name.lexeme
             if name != "_":
                 bindings[name] = item
-        return bindings
+        return True, bindings
 
     @staticmethod
     def _qualified_expr_name_runtime(expr: ast.Expr) -> str | None:

@@ -418,7 +418,14 @@ func (i *Interpreter) exec(s Stmt) error {
 				if call, ok := mc.Pattern.(*Call); ok {
 					if m, ok := call.Callee.(*Member); ok {
 						owner, qok := sourceQualifiedExprName(m.Target)
-						if qok && (ev.Enum == owner || strings.HasSuffix(ev.Enum, "."+owner)) && ev.Variant == m.Name && len(ev.Payload) == len(call.Args) {
+						if qok && (ev.Enum == owner || strings.HasSuffix(ev.Enum, "."+owner)) {
+							// A payload pattern belonging to the matched enum is
+							// syntactic data, not an expression to evaluate. If its
+							// variant does not match, continue to the next case instead
+							// of resolving binding names as ordinary variables.
+							if ev.Variant != m.Name || len(ev.Payload) != len(call.Args) {
+								continue
+							}
 							env := newEnv(i.Env)
 							valid := true
 							for idx, a := range call.Args {
@@ -434,6 +441,7 @@ func (i *Interpreter) exec(s Stmt) error {
 							if valid {
 								return i.execBlock(mc.Body.Stmts, env)
 							}
+							continue
 						}
 					}
 				}

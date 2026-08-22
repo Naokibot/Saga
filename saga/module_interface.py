@@ -210,6 +210,7 @@ def build_module_interface(
             elif isinstance(stmt, ast.EnumDecl) and stmt.visibility == "public":
                 exports.append({
                     "kind": "enum", "name": stmt.name.lexeme,
+                    "type_params": list(stmt.type_params),
                     # Declaration order is ABI-significant because the Native
                     # tagged-union discriminant is the variant index.
                     "variants": [

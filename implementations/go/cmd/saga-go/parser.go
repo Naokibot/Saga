@@ -523,7 +523,11 @@ func (p *Parser) enumDecl(anns []Annotation) (Stmt, error) {
 	if e != nil {
 		return nil, e
 	}
-	d := &EnumDecl{Name: name.Lex, Tok: name}
+	typeParams, e := p.typeParams()
+	if e != nil {
+		return nil, e
+	}
+	d := &EnumDecl{Name: name.Lex, TypeParams: typeParams, Tok: name}
 	if _, e = p.need(LBRACE, "{"); e != nil {
 		return nil, e
 	}
