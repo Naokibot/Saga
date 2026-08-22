@@ -194,6 +194,7 @@ func resolvePackageImport(root, spec string) (string, error) {
 	}
 	return target, nil
 }
+
 func sourceProjectRoot(entryAbs string) (string, error) {
 	start := filepath.Dir(entryAbs)
 	current := start
@@ -204,11 +205,14 @@ func sourceProjectRoot(entryAbs string) (string, error) {
 				return "", &SagaError{Code: "SAGA-I001", ID: "SAGA-I112", Message: "project manifest may not be a symbolic link: " + manifest, File: manifest, Line: 1, Col: 1}
 			}
 			if !info.IsDir() {
-				project, e := loadProject(manifest)
-				if e != nil {
+				// Validate the project manifest, but preserve the lexical root used
+				// to reach it. macOS (/var -> /private/var) and Windows 8.3
+				// paths can have multiple spellings for the same directory.
+				// Containment and symlink-policy checks must use one spelling.
+				if _, e := loadProject(manifest); e != nil {
 					return "", e
 				}
-				return project.Root, nil
+				return current, nil
 			}
 		} else if !os.IsNotExist(err) {
 			return "", err
@@ -243,12 +247,17 @@ func loadProgram(entry string) ([]Stmt, error) {
 		if hasSymlinkComponent(ap, root) {
 			return nil, &SagaError{Code: "SAGA-I001", ID: "SAGA-I112", Message: "source path uses a symbolic link: " + path, File: path, Line: 1, Col: 1}
 		}
-		if rp, e := filepath.EvalSymlinks(ap); e == nil {
-			ap = rp
-		}
+		// Check containment before resolving OS-level path aliases. Resolving
+		// only the source path makes equivalent macOS /var and /private/var
+		// paths (and Windows short/long names) look like different roots.
 		rel, err := filepath.Rel(root, ap)
 		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 			return nil, &SagaError{Code: "SAGA-I001", ID: "SAGA-I110", Message: "source import escapes project root: " + path, File: path, Line: 1, Col: 1}
+		}
+		// Once the lexical path has passed the project-boundary and symlink
+		// checks, canonicalize it for stable cycle/dedup identity and I/O.
+		if rp, e := filepath.EvalSymlinks(ap); e == nil {
+			ap = rp
 		}
 		if active[ap] {
 			return nil, &SagaError{Code: "SAGA-I001", ID: "SAGA-I111", Message: "cyclic source import: " + path, File: path, Line: 1, Col: 1}
