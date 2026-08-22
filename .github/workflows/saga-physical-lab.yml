@@ -1,20 +1,25 @@
 name: Saga physical hardware lab
+
 on:
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   hardware-lab:
     # A project-controlled machine with real GPU, gamepad and optional GPIO.
     # GitHub-hosted VMs are intentionally not accepted as physical evidence.
     runs-on: [self-hosted, saga-hardware-lab]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with: {python-version: '3.13'}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with: {go-version: '1.26.x'}
       - run: python -m pip install -e '.[game,iot]'
       - name: Physical qualification
-        run: python tools/platform_qualification.py --output validation/physical-lab.json
+        run: python tools/platform_qualification_current.py --output validation/physical-lab.json
         env:
           SAGA_PHYSICAL_GAMEPAD: '1'
           SAGA_GPIO_LIVE: ${{ vars.SAGA_GPIO_LIVE }}
