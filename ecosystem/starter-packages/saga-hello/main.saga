@@ -1,0 +1,2 @@
+fn greeting(name:text) -> text = $"Hello, ${name}!"
+print(greeting("Saga"))

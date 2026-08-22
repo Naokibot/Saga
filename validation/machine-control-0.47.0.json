@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "release": "0.47.0",
+  "source_manifest_sha256": "7f6acbac56f680d69e89ef1f101bc2c5577e659c7afc65c78e8e227acb337d23",
+  "source_tree_sha256": "87a5d5065d969ff173ec53919bea7de6ff07581e7473e036783dfd4e53db4a3a",
+  "generated_at_utc": "2026-08-18T02:59:35.917954+00:00",
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64"
+  },
+  "timing_class": "hosted-soft-realtime",
+  "industrial_protocols": [
+    "modbus-rtu",
+    "modbus-tcp",
+    "socketcan",
+    "can-fd",
+    "ethercat-framing",
+    "canopen-framing",
+    "i2c-dev",
+    "spidev",
+    "uart",
+    "plc-process-image"
+  ],
+  "motion_control": [
+    "pid",
+    "two-dof-pid",
+    "foc-current-loop",
+    "integrated-encoder",
+    "online-rls",
+    "mpc2",
+    "disturbance-observer",
+    "stribeck-friction",
+    "electronic-gearing",
+    "motor-feedforward",
+    "alpha-beta-observer",
+    "biquad-notch",
+    "clarke-park",
+    "svpwm",
+    "deadline-budget-observer",
+    "trapezoidal-profile",
+    "jerk-limited-s-curve",
+    "supervised-axis",
+    "synchronized-multi-axis",
+    "state-space",
+    "lqr-design",
+    "linear-kalman",
+    "dh-kinematics",
+    "resolved-rate",
+    "watchdog",
+    "safety-latch"
+  ],
+  "saga_only_application_surface": true,
+  "saga_only_scope": "Supported control algorithms, sequencing, protocol framing and process-image logic are callable from Saga source; physical drivers remain runtime/OS/device backends.",
+  "hard_realtime_claimed": false,
+  "physical_motion_executed": false,
+  "checks": [
+    {
+      "name": "Python machine-control regression",
+      "pass": true,
+      "detail": "..................................................                       [100%]\n50 passed in 1.05s\n"
+    },
+    {
+      "name": "Go Native machine-control regression",
+      "pass": true,
+      "detail": "ok  \tsaga-go/cmd/saga-go\t0.112s\n"
+    },
+    {
+      "name": "Go Native machine-control vet",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Python checker: advanced_control.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/advanced_control.saga\n"
+    },
+    {
+      "name": "Python checker: advanced_motion_047.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/advanced_motion_047.saga\n"
+    },
+    {
+      "name": "Python checker: allocation_free_tick_047.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/allocation_free_tick_047.saga\n"
+    },
+    {
+      "name": "Python checker: axis_supervisor.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/axis_supervisor.saga\n"
+    },
+    {
+      "name": "Python checker: control_4khz.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/control_4khz.saga\n"
+    },
+    {
+      "name": "Python checker: encoder_velocity.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/encoder_velocity.saga\n"
+    },
+    {
+      "name": "Python checker: fine_control.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/fine_control.saga\n"
+    },
+    {
+      "name": "Python checker: foc_math.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/foc_math.saga\n"
+    },
+    {
+      "name": "Python checker: i2c_register_read.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/i2c_register_read.saga\n"
+    },
+    {
+      "name": "Python checker: modbus_plc.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/modbus_plc.saga\n"
+    },
+    {
+      "name": "Python checker: pid_axis.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/pid_axis.saga\n"
+    },
+    {
+      "name": "Python checker: precision_servo.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/precision_servo.saga\n"
+    },
+    {
+      "name": "Python checker: safe_hbridge.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga-work/src047/saga-lang-0.47.0-advanced-motion-control/examples/machine/safe_hbridge.saga\n"
+    }
+  ],
+  "hardware_inventory": {
+    "i2c": [],
+    "spi": [],
+    "uart": [],
+    "pwm": [],
+    "iio": [],
+    "can": []
+  },
+  "physical_qualification": "UNEXECUTED",
+  "physical_qualification_reason": "Default qualification is deliberately non-destructive. Physical buses, motors, servos, encoders, interlocks, and emergency-stop circuitry require an operator-controlled hardware lab.",
+  "pass": true
+}

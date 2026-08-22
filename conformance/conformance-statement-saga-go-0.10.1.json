@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "implementation": "saga-go",
+  "implementation_version": "0.10.1",
+  "language": "Saga",
+  "language_version": "0.9",
+  "profiles": [
+    "Standard Core"
+  ],
+  "unicode_identifier_profile": "15.1.0-vendored",
+  "host_runtime": "Go native executable",
+  "diagnostic_schema": 2,
+  "diagnostic_formats": [
+    "text",
+    "json"
+  ],
+  "lock_schema": 1,
+  "hosted_modules": [],
+  "independence": "Does not invoke saga-python for lexing, parsing, type checking, evaluation, project locking, verification, or canonical packaging.",
+  "self_conformance": "10/10 embedded Standard Core checks",
+  "cross_implementation_suite": "30/30 candidate cases including exhaustive 62 builtins and byte-identical lock/package evidence",
+  "qualification": "Independent implementation maintained in the same project; not an independent laboratory certificate",
+  "report": "validation/go-standard-core-cross-0.10.1.txt"
+}

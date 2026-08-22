@@ -1,0 +1,10 @@
+use io
+use time
+
+try {
+    io.write_text("output/note.txt", "Saga file example")
+    print(io.read_text("output/note.txt"))
+    print(time.format(time.now(), "%Y-%m-%d %H:%M"))
+} catch error {
+    print(error.kind, error.message)
+}

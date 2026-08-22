@@ -1,0 +1,3 @@
+let language = "Saga"
+let year = 2026
+print("Hello from", language, year)

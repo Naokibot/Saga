@@ -1,0 +1,7 @@
+name = "immutable by default"
+var count = 0
+for n in 1..3 {
+    count = count + n
+}
+print(name)
+print(count)

@@ -1,0 +1,3 @@
+values = [1, 2, 3, 4]
+total = values.fold(0) { acc, value -> acc + value }
+print(total)

@@ -1,0 +1,29 @@
+use drone
+
+// Explicit visual-servoing: this computes a body-frame command only.
+let servo = drone.visual_servo(1.0, 1.0, 2.0, 1.0, 3.0, 2.0, 1.0, 0.01)
+print(drone.visual_servo_step_json(servo, 400.0, 260.0, 640, 480, 0.05, 0.10))
+
+// Hosted VIO propagation + explicit visual correction.
+let vio = drone.vio()
+drone.vio_imu(vio, 0.0, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+drone.vio_imu(vio, 0.01, [0.0, 0.0, 0.0], [1.0, 0.0, 0.0])
+drone.vio_visual_position(vio, [0.001, 0.0, 0.0], 0.5)
+print(drone.vio_state_json(vio))
+
+// Bounded pose-graph SLAM.
+let slam = drone.slam(128)
+let p0 = drone.slam_add_pose(slam, 0.0, 0.0, 0.0)
+let p1 = drone.slam_add_pose(slam, 1.1, 0.0, 0.0)
+let p2 = drone.slam_add_pose(slam, 2.1, 0.1, 0.0)
+drone.slam_add_constraint(slam, p0, p1, 1.0, 0.0, 0.0, 1.0)
+drone.slam_add_constraint(slam, p1, p2, 1.0, 0.0, 0.0, 1.0)
+drone.slam_optimize(slam, 20, 0.05)
+print(drone.slam_json(slam))
+
+// Multi-drone coordination remains explicitly invoked by the application.
+let fleet = drone.coordinator(2.0, 5.0)
+drone.coordinator_update(fleet, 1, [0.0, 0.0, -5.0], [0.0, 0.0, 0.0])
+drone.coordinator_update(fleet, 2, [1.0, 0.0, -5.0], [0.0, 0.0, 0.0])
+print(drone.coordinator_plan_json(fleet, "{\"1\":[10,0,-5],\"2\":[10,3,-5]}", 0.8, 1.5))
+print(drone.coordinator_conflicts_json(fleet))

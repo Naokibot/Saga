@@ -1,0 +1,10 @@
+fn square(value: int) = value * value
+fn is_even(value: int) = value % 2 == 0
+
+let values = unique(sort([4, 2, 1, 2, 3]))
+print(transform(square, values))
+print(filter(is_even, values))
+
+let profile = map_of("name", "Aki", "language", "Saga")
+print(map_get(profile, "name", "unknown"))
+print(set_union(set_of("safe"), set_of("easy")))

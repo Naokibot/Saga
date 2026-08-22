@@ -1,0 +1,40 @@
+edition 2027
+use web
+use sys
+use app
+
+let ev = sys.args()
+web.set_html("saga-root", "<section id=\"panel\"><input id=\"name\" value=\"\"><input id=\"check\" type=\"checkbox\"><button id=\"btn\">Click</button><select id=\"sel\"><option>A</option><option>B</option></select><canvas id=\"cv\"></canvas></section>")
+web.set_title("Saga Chromium PASS")
+web.add_class("panel", "ready")
+web.set_attr("panel", "data-api", "expanded")
+web.set_style("panel", "display", "block")
+web.set_value("name", "Saga")
+web.set_checked("check", true)
+web.set_selected_index("sel", 1)
+web.on_click("btn", "click-action")
+web.on_event("name", "input", "input-action")
+web.canvas_set_size("cv", 64, 32)
+web.canvas_clear("cv", "#ffffff")
+web.canvas_fill_rect("cv", 2, 2, 20, 10, "#000000")
+web.canvas_line("cv", 0, 0, 63, 31, "#ff0000")
+web.canvas_circle("cv", 32, 16, 5, "#00ff00")
+web.canvas_text("cv", "S", 48, 20, "#0000ff", "12px sans-serif")
+if len(ev) == 0 {
+    web.set_timeout(30, "timer-action")
+    web.fetch("GET", "data:text/plain,probe-ok", "", "text/plain", "fetch-action")
+    app.invoke_async("permission.query", "{\"name\":\"geolocation\"}", "permission-action")
+    app.on("resize", "resize-action")
+}
+print(web.browser_available())
+print(web.capability("dom"))
+print(web.capability("fetch"))
+print(web.capability("storage"))
+
+print(app.host())
+print(app.capability("browser"))
+print(app.operation_supported("crypto.random_uuid"))
+let app_snapshot = app.invoke("system.snapshot", "{}")
+print(is_ok(app_snapshot))
+let app_uuid = app.invoke("crypto.random_uuid", "{}")
+print(is_ok(app_uuid))

@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "implementation": "saga-python",
+  "implementation_version": "0.8.0",
+  "language": "Saga",
+  "language_version": "0.8",
+  "profiles": ["Standard Core", "Hosted Standard (declared modules)"],
+  "unicode_identifier_profile": "15.1.0-vendored",
+  "host_runtime": "Python >=3.13",
+  "diagnostic_schema": 1,
+  "lock_schema": 1,
+  "hosted_modules": [
+    "cloud", "crypto", "data", "db", "docdb", "game", "http", "image", "io",
+    "iot", "json", "ml", "orm", "plugin", "process", "reflect", "science", "spark",
+    "system", "task", "tcp", "time", "udp", "ui", "video", "websocket"
+  ],
+  "qualification": "Project-generated conformance evidence; not an independent certificate",
+  "report": "validation/standard-core-conformance-0.8.0.json"
+}

@@ -1,0 +1,19 @@
+use game
+if not game.desktop_available() {
+    print("DESKTOP_BACKEND_UNAVAILABLE")
+} else {
+    let window = unwrap_ok(game.window_open("Saga SIR1 Smoke", 160, 120))
+    let renderer = unwrap_ok(game.renderer(window))
+    let framebuffer = game.framebuffer(64, 48)
+    game.fb_clear(framebuffer, 40, 90, 180, 255)
+    let sir = "SIR1\nstage fragment\nsample\ninvert\nmul 1 0.8 0.6 1\n"
+    let shader = unwrap_ok(game.shader_ir(renderer, sir))
+    unwrap_ok(game.present_shader(renderer, framebuffer, shader))
+    print(game.shader_ir_compile(sir, "hlsl5"))
+    print(game.shader_ir_compile(sir, "msl2"))
+    print(game.shader_ir_compile(sir, "wgsl"))
+    print("SIR1_OPENGL_EXECUTION_PASS")
+    game.shader_close(shader)
+    game.renderer_close(renderer)
+    game.window_close(window)
+}

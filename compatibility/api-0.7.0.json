@@ -1,0 +1,295 @@
+{
+  "schema": 1,
+  "language": "Saga",
+  "version": "0.8.0",
+  "grammar_sha256": "95282b1a2cb827d8c2acd02ae1476d9003191e17472b94237d078a291abdd108",
+  "keywords": [
+    "abstract",
+    "and",
+    "break",
+    "catch",
+    "class",
+    "continue",
+    "else",
+    "extends",
+    "false",
+    "finally",
+    "fn",
+    "for",
+    "if",
+    "implements",
+    "in",
+    "interface",
+    "let",
+    "not",
+    "or",
+    "override",
+    "private",
+    "public",
+    "return",
+    "throw",
+    "true",
+    "try",
+    "use",
+    "var",
+    "while"
+  ],
+  "builtins": [
+    "abs",
+    "all",
+    "any",
+    "append",
+    "assert",
+    "ceil",
+    "contains",
+    "decimal",
+    "ends_with",
+    "filter",
+    "find",
+    "find_text",
+    "floor",
+    "get",
+    "int",
+    "is_none",
+    "is_some",
+    "join",
+    "len",
+    "lower",
+    "map_contains",
+    "map_get",
+    "map_keys",
+    "map_of",
+    "map_put",
+    "map_remove",
+    "map_values",
+    "max",
+    "mean",
+    "min",
+    "none",
+    "precision",
+    "prepend",
+    "print",
+    "ratio",
+    "reduce",
+    "repeat",
+    "replace",
+    "reverse",
+    "round",
+    "set_add",
+    "set_at",
+    "set_contains",
+    "set_intersection",
+    "set_of",
+    "set_remove",
+    "set_union",
+    "slice",
+    "some",
+    "sort",
+    "split",
+    "sqrt",
+    "starts_with",
+    "substring",
+    "sum",
+    "text",
+    "transform",
+    "trim",
+    "unique",
+    "unwrap",
+    "unwrap_or",
+    "upper"
+  ],
+  "modules": {
+    "cloud": [
+      "aws_client",
+      "call",
+      "env"
+    ],
+    "console": [
+      "input",
+      "write"
+    ],
+    "crypto": [
+      "aes_decrypt",
+      "aes_encrypt",
+      "base64_decode",
+      "base64_encode",
+      "constant_equal",
+      "hmac_sha256",
+      "password_hash",
+      "password_verify",
+      "random",
+      "sha256"
+    ],
+    "data": [
+      "chunks",
+      "csv_read",
+      "csv_write",
+      "group_count"
+    ],
+    "db": [
+      "begin",
+      "close",
+      "commit",
+      "execute",
+      "open",
+      "query",
+      "rollback",
+      "transaction"
+    ],
+    "docdb": [
+      "get",
+      "keys",
+      "open",
+      "put",
+      "remove"
+    ],
+    "game": [
+      "available",
+      "run_demo"
+    ],
+    "gpio": [
+      "close",
+      "off",
+      "on",
+      "output"
+    ],
+    "http": [
+      "bytes",
+      "get",
+      "header",
+      "port",
+      "post",
+      "query",
+      "request_header",
+      "request_method",
+      "request_path",
+      "request_text",
+      "response",
+      "serve",
+      "status",
+      "stop",
+      "text",
+      "wait"
+    ],
+    "image": [
+      "height",
+      "open",
+      "resize",
+      "save",
+      "width"
+    ],
+    "io": [
+      "append_text",
+      "copy",
+      "decode",
+      "encode",
+      "exists",
+      "list",
+      "mkdir",
+      "read_bytes",
+      "read_text",
+      "remove",
+      "write_bytes",
+      "write_text"
+    ],
+    "json": [
+      "decode",
+      "encode",
+      "pretty"
+    ],
+    "ml": [
+      "linear_regression",
+      "predict"
+    ],
+    "net": [
+      "accept",
+      "close",
+      "receive",
+      "send",
+      "tcp_connect",
+      "tcp_listen",
+      "udp",
+      "udp_bind",
+      "udp_receive",
+      "udp_send"
+    ],
+    "orm": [
+      "all",
+      "create_table",
+      "insert"
+    ],
+    "plugin": [
+      "call",
+      "load"
+    ],
+    "process": [
+      "run"
+    ],
+    "reflect": [
+      "annotations",
+      "class_of",
+      "fields",
+      "get",
+      "methods",
+      "type_name"
+    ],
+    "science": [
+      "dot",
+      "linspace",
+      "matrix_multiply",
+      "mean"
+    ],
+    "spark": [
+      "session",
+      "stop"
+    ],
+    "task": [
+      "all",
+      "await",
+      "parallel_map",
+      "pool",
+      "shutdown",
+      "spawn",
+      "submit"
+    ],
+    "time": [
+      "add_days",
+      "add_seconds",
+      "diff",
+      "format",
+      "iso",
+      "now",
+      "parse",
+      "seconds",
+      "sleep",
+      "utc_now"
+    ],
+    "ui": [
+      "after",
+      "button",
+      "close",
+      "get",
+      "input",
+      "label",
+      "run",
+      "set",
+      "window"
+    ],
+    "video": [
+      "close",
+      "frame_count",
+      "open"
+    ],
+    "websocket": [
+      "close",
+      "connect",
+      "receive",
+      "send"
+    ]
+  },
+  "semantic_changes": [
+    "class_instance_equality_is_identity",
+    "all_task_submission_apis_enforce_send",
+    "stable_cli_exit_status_profile"
+  ]
+}

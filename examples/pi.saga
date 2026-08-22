@@ -1,0 +1,23 @@
+# Machinの公式で円周率を計算する例です。
+# pi = 16*atan(1/5) - 4*atan(1/239)
+
+fn arctan_inverse(inverse: int, terms: int) -> rational {
+    var total: rational = 0
+
+    for k in 0..terms - 1 {
+        let exponent = 2 * k + 1
+        let term = 1 / (exponent * (inverse ** exponent))
+
+        if k % 2 == 0 {
+            total = total + term
+        } else {
+            total = total - term
+        }
+    }
+
+    return total
+}
+
+precision(100)
+let pi = 16 * arctan_inverse(5, 100) - 4 * arctan_inverse(239, 40)
+print(decimal(pi))

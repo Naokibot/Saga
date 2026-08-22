@@ -1,0 +1,1485 @@
+package main
+
+import (
+	"bufio"
+	"errors"
+	"fmt"
+	"math/big"
+	"os"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+)
+
+const version = "0.10.0"
+
+type Kind int
+
+const (
+	EOF Kind = iota
+	IDENT
+	INT
+	DECIMAL
+	STRING
+	LET
+	VAR
+	FN
+	RETURN
+	IF
+	ELSE
+	FOR
+	IN
+	TRUE
+	FALSE
+	CLASS
+	INTERFACE
+	IMPLEMENTS
+	PRIVATE
+	PUBLIC
+	TRY
+	CATCH
+	FINALLY
+	THROW
+	OVERRIDE
+	LPAREN
+	RPAREN
+	LBRACE
+	RBRACE
+	LBRACKET
+	RBRACKET
+	COMMA
+	COLON
+	DOT
+	RANGE
+	ARROW
+	PLUS
+	MINUS
+	STAR
+	SLASH
+	EQUAL
+	EQEQ
+)
+
+type Token struct {
+	kind      Kind
+	lex       string
+	line, col int
+}
+
+var keywords = map[string]Kind{
+	"let": LET, "var": VAR, "fn": FN, "return": RETURN, "if": IF, "else": ELSE, "for": FOR, "in": IN,
+	"true": TRUE, "false": FALSE, "class": CLASS, "interface": INTERFACE, "implements": IMPLEMENTS,
+	"private": PRIVATE, "public": PUBLIC, "try": TRY, "catch": CATCH, "finally": FINALLY, "throw": THROW,
+	"override": OVERRIDE,
+}
+
+type Lexer struct {
+	src            []rune
+	pos, line, col int
+}
+
+func lex(src string) ([]Token, error) {
+	l := &Lexer{src: []rune(src), line: 1, col: 1}
+	out := []Token{}
+	for !l.end() {
+		c := l.peek()
+		line, col := l.line, l.col
+		if unicode.IsSpace(c) {
+			l.advance()
+			continue
+		}
+		if c == '#' {
+			for !l.end() && l.peek() != '\n' {
+				l.advance()
+			}
+			continue
+		}
+		if c == '/' && l.peekN(1) == '/' {
+			for !l.end() && l.peek() != '\n' {
+				l.advance()
+			}
+			continue
+		}
+		if isStart(c) {
+			start := l.pos
+			l.advance()
+			for !l.end() && isContinue(l.peek()) {
+				l.advance()
+			}
+			text := string(l.src[start:l.pos])
+			if normalizeNFC(text) != text {
+				return nil, fmt.Errorf("line %d:%d 識別子はUnicode NFCで正規化してください", line, col)
+			}
+			k := IDENT
+			if v, ok := keywords[text]; ok {
+				k = v
+			}
+			out = append(out, Token{k, text, line, col})
+			continue
+		}
+		if c >= '0' && c <= '9' {
+			start := l.pos
+			l.advance()
+			for !l.end() && ((l.peek() >= '0' && l.peek() <= '9') || l.peek() == '_') {
+				l.advance()
+			}
+			k := INT
+			if !l.end() && l.peek() == '.' && l.peekN(1) == '_' {
+				return nil, fmt.Errorf("line %d:%d underscore cannot immediately follow decimal point", line, col)
+			}
+			if !l.end() && l.peek() == '.' && l.peekN(1) != '.' && (l.peekN(1) >= '0' && l.peekN(1) <= '9') {
+				k = DECIMAL
+				l.advance()
+				for !l.end() && ((l.peek() >= '0' && l.peek() <= '9') || l.peek() == '_') {
+					l.advance()
+				}
+			}
+			raw := string(l.src[start:l.pos])
+			for _, part := range strings.Split(raw, ".") {
+				if part == "" || strings.HasPrefix(part, "_") || strings.HasSuffix(part, "_") || strings.Contains(part, "__") {
+					return nil, fmt.Errorf("line %d:%d numeric '_' separators must occur singly between digits", line, col)
+				}
+			}
+			out = append(out, Token{k, raw, line, col})
+			continue
+		}
+		if unicode.IsDigit(c) {
+			return nil, fmt.Errorf("line %d:%d numeric literals use ASCII digits 0-9", line, col)
+		}
+		if c == '"' || c == '\'' {
+			q := c
+			l.advance()
+			var b strings.Builder
+			for !l.end() && l.peek() != q {
+				r := l.advance()
+				if r == '\\' {
+					if l.end() {
+						return nil, fmt.Errorf("unterminated escape")
+					}
+					e := l.advance()
+					switch e {
+					case 'n':
+						b.WriteRune('\n')
+					case 't':
+						b.WriteRune('\t')
+					case 'r':
+						b.WriteRune('\r')
+					case '\\', '"', '\'':
+						b.WriteRune(e)
+					default:
+						return nil, fmt.Errorf("unsupported escape")
+					}
+				} else {
+					b.WriteRune(r)
+				}
+			}
+			if l.end() {
+				return nil, fmt.Errorf("unterminated string")
+			}
+			l.advance()
+			out = append(out, Token{STRING, b.String(), line, col})
+			continue
+		}
+		l.advance()
+		if isBidiControl(c) {
+			return nil, fmt.Errorf("line %d:%d 双方向テキスト制御文字はソースコード中で使用できません", line, col)
+		}
+		switch c {
+		case '(':
+			out = append(out, Token{LPAREN, "(", line, col})
+		case ')':
+			out = append(out, Token{RPAREN, ")", line, col})
+		case '{':
+			out = append(out, Token{LBRACE, "{", line, col})
+		case '}':
+			out = append(out, Token{RBRACE, "}", line, col})
+		case '[':
+			out = append(out, Token{LBRACKET, "[", line, col})
+		case ']':
+			out = append(out, Token{RBRACKET, "]", line, col})
+		case ',':
+			out = append(out, Token{COMMA, ",", line, col})
+		case ':':
+			out = append(out, Token{COLON, ":", line, col})
+		case '+':
+			out = append(out, Token{PLUS, "+", line, col})
+		case '*':
+			out = append(out, Token{STAR, "*", line, col})
+		case '/':
+			out = append(out, Token{SLASH, "/", line, col})
+		case '-':
+			if l.match('>') {
+				out = append(out, Token{ARROW, "->", line, col})
+			} else {
+				out = append(out, Token{MINUS, "-", line, col})
+			}
+		case '.':
+			if l.match('.') {
+				out = append(out, Token{RANGE, "..", line, col})
+			} else {
+				out = append(out, Token{DOT, ".", line, col})
+			}
+		case '=':
+			if l.match('=') {
+				out = append(out, Token{EQEQ, "==", line, col})
+			} else {
+				out = append(out, Token{EQUAL, "=", line, col})
+			}
+		default:
+			return nil, fmt.Errorf("line %d:%d unsupported character %q", line, col, c)
+		}
+	}
+	out = append(out, Token{EOF, "", l.line, l.col})
+	return out, nil
+}
+func (l *Lexer) end() bool { return l.pos >= len(l.src) }
+func (l *Lexer) peek() rune {
+	if l.end() {
+		return 0
+	}
+	return l.src[l.pos]
+}
+func (l *Lexer) peekN(n int) rune {
+	if l.pos+n >= len(l.src) {
+		return 0
+	}
+	return l.src[l.pos+n]
+}
+func (l *Lexer) advance() rune {
+	r := l.src[l.pos]
+	l.pos++
+	if r == '\n' {
+		l.line++
+		l.col = 1
+	} else {
+		l.col++
+	}
+	return r
+}
+func (l *Lexer) match(r rune) bool {
+	if l.peek() != r {
+		return false
+	}
+	l.advance()
+	return true
+}
+func inRuneRanges(r rune, ranges []runeRange) bool {
+	lo, hi := 0, len(ranges)
+	for lo < hi {
+		mid := lo + (hi-lo)/2
+		item := ranges[mid]
+		if r < item.lo {
+			hi = mid
+		} else if r > item.hi {
+			lo = mid + 1
+		} else {
+			return true
+		}
+	}
+	return false
+}
+func isStart(r rune) bool    { return inRuneRanges(r, xidStartRanges) }
+func isContinue(r rune) bool { return inRuneRanges(r, xidContinueRanges) }
+
+func decomposeRune(r rune, out *[]rune) {
+	const (
+		sBase  = 0xAC00
+		lBase  = 0x1100
+		vBase  = 0x1161
+		tBase  = 0x11A7
+		lCount = 19
+		vCount = 21
+		tCount = 28
+		nCount = vCount * tCount
+		sCount = lCount * nCount
+	)
+	if r >= sBase && r < sBase+sCount {
+		sIndex := int(r - sBase)
+		l := rune(lBase + sIndex/nCount)
+		v := rune(vBase + (sIndex%nCount)/tCount)
+		t := rune(tBase + sIndex%tCount)
+		*out = append(*out, l, v)
+		if t != tBase {
+			*out = append(*out, t)
+		}
+		return
+	}
+	if seq, ok := canonicalDecomp[r]; ok {
+		for _, part := range seq {
+			decomposeRune(part, out)
+		}
+		return
+	}
+	*out = append(*out, r)
+}
+func composePair(a, b rune) (rune, bool) {
+	const (
+		sBase  = 0xAC00
+		lBase  = 0x1100
+		vBase  = 0x1161
+		tBase  = 0x11A7
+		lCount = 19
+		vCount = 21
+		tCount = 28
+		nCount = vCount * tCount
+		sCount = lCount * nCount
+	)
+	if a >= lBase && a < lBase+lCount && b >= vBase && b < vBase+vCount {
+		return sBase + (a-lBase)*nCount + (b-vBase)*tCount, true
+	}
+	if a >= sBase && a < sBase+sCount && (a-sBase)%tCount == 0 && b > tBase && b < tBase+tCount {
+		return a + (b - tBase), true
+	}
+	r, ok := canonicalCompose[[2]rune{a, b}]
+	return r, ok
+}
+func normalizeNFC(text string) string {
+	decomp := make([]rune, 0, len([]rune(text)))
+	for _, r := range text {
+		decomposeRune(r, &decomp)
+	}
+	for i := 1; i < len(decomp); i++ {
+		c := combiningClass[decomp[i]]
+		if c == 0 {
+			continue
+		}
+		j := i
+		for j > 0 {
+			p := combiningClass[decomp[j-1]]
+			if p == 0 || p <= c {
+				break
+			}
+			decomp[j], decomp[j-1] = decomp[j-1], decomp[j]
+			j--
+		}
+	}
+	if len(decomp) == 0 {
+		return ""
+	}
+	out := []rune{decomp[0]}
+	starterPos := 0
+	starter := decomp[0]
+	lastCCC := uint8(0)
+	for _, r := range decomp[1:] {
+		ccc := combiningClass[r]
+		if composed, ok := composePair(starter, r); ok && (lastCCC < ccc || lastCCC == 0) {
+			out[starterPos] = composed
+			starter = composed
+			continue
+		}
+		out = append(out, r)
+		if ccc == 0 {
+			starterPos = len(out) - 1
+			starter = r
+		}
+		lastCCC = ccc
+	}
+	return string(out)
+}
+func isBidiControl(r rune) bool {
+	switch r {
+	case 0x061C, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069:
+		return true
+	}
+	return false
+}
+
+// AST
+type Expr interface{ expr() }
+type Literal struct{ v Value }
+
+func (*Literal) expr() {}
+
+type Variable struct{ name string }
+
+func (*Variable) expr() {}
+
+type Binary struct {
+	left  Expr
+	op    Kind
+	right Expr
+}
+
+func (*Binary) expr() {}
+
+type Call struct {
+	callee Expr
+	args   []Expr
+}
+
+func (*Call) expr() {}
+
+type Get struct {
+	object Expr
+	name   string
+}
+
+func (*Get) expr() {}
+
+type Index struct{ object, index Expr }
+
+func (*Index) expr() {}
+
+type ListExpr struct{ items []Expr }
+
+func (*ListExpr) expr() {}
+
+type Stmt interface{ stmt() }
+type VarDecl struct {
+	name    string
+	mutable bool
+	value   Expr
+}
+
+func (*VarDecl) stmt() {}
+
+type Assign struct {
+	name  string
+	value Expr
+}
+
+func (*Assign) stmt() {}
+
+type ExprStmt struct{ x Expr }
+
+func (*ExprStmt) stmt() {}
+
+type Block struct{ items []Stmt }
+
+func (*Block) stmt() {}
+
+type IfStmt struct {
+	cond  Expr
+	then  *Block
+	other *Block
+}
+
+func (*IfStmt) stmt() {}
+
+type ForStmt struct {
+	name       string
+	start, end Expr
+	body       *Block
+}
+
+func (*ForStmt) stmt() {}
+
+type FnDecl struct {
+	name   string
+	params []string
+	body   Expr
+}
+
+func (*FnDecl) stmt() {}
+
+type ClassDecl struct {
+	name    string
+	fields  []Field
+	methods []*FnDecl
+}
+
+func (*ClassDecl) stmt() {}
+
+type Field struct {
+	name    string
+	private bool
+}
+type TryStmt struct {
+	body      *Block
+	catchName string
+	catch     *Block
+	finally   *Block
+}
+
+func (*TryStmt) stmt() {}
+
+type ThrowStmt struct{ x Expr }
+
+func (*ThrowStmt) stmt() {}
+
+type Parser struct {
+	t []Token
+	p int
+}
+
+func parse(tokens []Token) ([]Stmt, error) {
+	p := &Parser{t: tokens}
+	var out []Stmt
+	for !p.check(EOF) {
+		s, e := p.decl()
+		if e != nil {
+			return nil, e
+		}
+		out = append(out, s)
+	}
+	return out, nil
+}
+func (p *Parser) decl() (Stmt, error) {
+	if p.match(LET, VAR) {
+		return p.varDecl(p.prev().kind == VAR)
+	}
+	if p.match(FN) {
+		return p.fnDecl()
+	}
+	if p.match(INTERFACE) {
+		return p.interfaceDecl()
+	}
+	if p.match(CLASS) {
+		return p.classDecl()
+	}
+	return p.statement()
+}
+func (p *Parser) varDecl(mut bool) (Stmt, error) {
+	name, e := p.need(IDENT, "identifier")
+	if e != nil {
+		return nil, e
+	}
+	if p.match(COLON) {
+		if _, e = p.need(IDENT, "type"); e != nil {
+			return nil, e
+		}
+		if p.match(LBRACKET) {
+			for !p.match(RBRACKET) {
+				p.p++
+			}
+		}
+	}
+	if _, e = p.need(EQUAL, "="); e != nil {
+		return nil, e
+	}
+	x, e := p.expression()
+	return &VarDecl{name.lex, mut, x}, e
+}
+func (p *Parser) fnDecl() (*FnDecl, error) {
+	name, e := p.need(IDENT, "function name")
+	if e != nil {
+		return nil, e
+	}
+	return p.fnTail(name.lex)
+}
+func (p *Parser) fnTail(name string) (*FnDecl, error) {
+	if _, e := p.need(LPAREN, "("); e != nil {
+		return nil, e
+	}
+	var params []string
+	if !p.check(RPAREN) {
+		for {
+			n, e := p.need(IDENT, "parameter")
+			if e != nil {
+				return nil, e
+			}
+			params = append(params, n.lex)
+			if p.match(COLON) {
+				if _, e = p.need(IDENT, "type"); e != nil {
+					return nil, e
+				}
+			}
+			if !p.match(COMMA) {
+				break
+			}
+		}
+	}
+	if _, e := p.need(RPAREN, ")"); e != nil {
+		return nil, e
+	}
+	if p.match(ARROW) {
+		if _, e := p.need(IDENT, "return type"); e != nil {
+			return nil, e
+		}
+	}
+	if _, e := p.need(EQUAL, "="); e != nil {
+		return nil, e
+	}
+	body, e := p.expression()
+	return &FnDecl{name, params, body}, e
+}
+func (p *Parser) interfaceDecl() (Stmt, error) {
+	name, e := p.need(IDENT, "interface name")
+	if e != nil {
+		return nil, e
+	}
+	if _, e = p.need(LBRACE, "{"); e != nil {
+		return nil, e
+	}
+	for !p.match(RBRACE) {
+		if _, e = p.need(FN, "fn"); e != nil {
+			return nil, e
+		}
+		if _, e = p.need(IDENT, "method"); e != nil {
+			return nil, e
+		}
+		if _, e = p.need(LPAREN, "("); e != nil {
+			return nil, e
+		}
+		depth := 1
+		for depth > 0 {
+			t := p.advance()
+			if t.kind == LPAREN {
+				depth++
+			}
+			if t.kind == RPAREN {
+				depth--
+			}
+		}
+		if p.match(ARROW) {
+			if _, e = p.need(IDENT, "type"); e != nil {
+				return nil, e
+			}
+		}
+	}
+	return &ClassDecl{name: name.lex}, nil
+}
+func (p *Parser) classDecl() (Stmt, error) {
+	name, e := p.need(IDENT, "class name")
+	if e != nil {
+		return nil, e
+	}
+	var fields []Field
+	if p.match(LPAREN) {
+		if !p.check(RPAREN) {
+			for {
+				priv := p.match(PRIVATE)
+				p.match(PUBLIC)
+				p.match(LET, VAR)
+				n, e := p.need(IDENT, "field")
+				if e != nil {
+					return nil, e
+				}
+				fields = append(fields, Field{n.lex, priv})
+				if p.match(COLON) {
+					if _, e = p.need(IDENT, "type"); e != nil {
+						return nil, e
+					}
+				}
+				if !p.match(COMMA) {
+					break
+				}
+			}
+		}
+		if _, e = p.need(RPAREN, ")"); e != nil {
+			return nil, e
+		}
+	}
+	if p.match(IMPLEMENTS) {
+		if _, e = p.need(IDENT, "interface"); e != nil {
+			return nil, e
+		}
+		for p.match(COMMA) {
+			if _, e = p.need(IDENT, "interface"); e != nil {
+				return nil, e
+			}
+		}
+	}
+	if _, e = p.need(LBRACE, "{"); e != nil {
+		return nil, e
+	}
+	var methods []*FnDecl
+	for !p.match(RBRACE) {
+		p.match(PUBLIC, PRIVATE)
+		p.match(OVERRIDE)
+		if _, e = p.need(FN, "fn"); e != nil {
+			return nil, e
+		}
+		mn, e := p.need(IDENT, "method")
+		if e != nil {
+			return nil, e
+		}
+		m, e := p.fnTail(mn.lex)
+		if e != nil {
+			return nil, e
+		}
+		methods = append(methods, m)
+	}
+	return &ClassDecl{name.lex, fields, methods}, nil
+}
+func (p *Parser) statement() (Stmt, error) {
+	if p.match(IF) {
+		return p.ifStmt()
+	}
+	if p.match(FOR) {
+		return p.forStmt()
+	}
+	if p.match(TRY) {
+		return p.tryStmt()
+	}
+	if p.match(THROW) {
+		x, e := p.expression()
+		return &ThrowStmt{x}, e
+	}
+	if p.check(IDENT) && p.peekN(1).kind == EQUAL {
+		name := p.advance().lex
+		p.advance()
+		x, e := p.expression()
+		return &Assign{name, x}, e
+	}
+	x, e := p.expression()
+	return &ExprStmt{x}, e
+}
+func (p *Parser) ifStmt() (Stmt, error) {
+	c, e := p.expression()
+	if e != nil {
+		return nil, e
+	}
+	b, e := p.block()
+	if e != nil {
+		return nil, e
+	}
+	var o *Block
+	if p.match(ELSE) {
+		o, e = p.block()
+	}
+	return &IfStmt{c, b, o}, e
+}
+func (p *Parser) forStmt() (Stmt, error) {
+	n, e := p.need(IDENT, "loop variable")
+	if e != nil {
+		return nil, e
+	}
+	if _, e = p.need(IN, "in"); e != nil {
+		return nil, e
+	}
+	a, e := p.expressionUntil(RANGE)
+	if e != nil {
+		return nil, e
+	}
+	if _, e = p.need(RANGE, ".."); e != nil {
+		return nil, e
+	}
+	b, e := p.expression()
+	if e != nil {
+		return nil, e
+	}
+	body, e := p.block()
+	return &ForStmt{n.lex, a, b, body}, e
+}
+func (p *Parser) tryStmt() (Stmt, error) {
+	body, e := p.block()
+	if e != nil {
+		return nil, e
+	}
+	var cn string
+	var cb, fb *Block
+	if p.match(CATCH) {
+		n, e := p.need(IDENT, "catch variable")
+		if e != nil {
+			return nil, e
+		}
+		cn = n.lex
+		cb, e = p.block()
+		if e != nil {
+			return nil, e
+		}
+	}
+	if p.match(FINALLY) {
+		fb, e = p.block()
+	}
+	if cb == nil && fb == nil {
+		return nil, p.err("try requires catch or finally")
+	}
+	return &TryStmt{body, cn, cb, fb}, e
+}
+func (p *Parser) block() (*Block, error) {
+	if _, e := p.need(LBRACE, "{"); e != nil {
+		return nil, e
+	}
+	var a []Stmt
+	for !p.check(RBRACE) && !p.check(EOF) {
+		s, e := p.decl()
+		if e != nil {
+			return nil, e
+		}
+		a = append(a, s)
+	}
+	if _, e := p.need(RBRACE, "}"); e != nil {
+		return nil, e
+	}
+	return &Block{a}, nil
+}
+func (p *Parser) expressionUntil(stop Kind) (Expr, error) { return p.equalityStop(stop) }
+func (p *Parser) expression() (Expr, error)               { return p.equalityStop(EOF) }
+func (p *Parser) equalityStop(stop Kind) (Expr, error) {
+	x, e := p.add()
+	if e != nil {
+		return nil, e
+	}
+	for p.check(EQEQ) && p.peek().kind != stop {
+		op := p.advance().kind
+		r, e := p.add()
+		if e != nil {
+			return nil, e
+		}
+		x = &Binary{x, op, r}
+	}
+	return x, nil
+}
+func (p *Parser) add() (Expr, error) {
+	x, e := p.mul()
+	if e != nil {
+		return nil, e
+	}
+	for p.match(PLUS, MINUS) {
+		op := p.prev().kind
+		r, e := p.mul()
+		if e != nil {
+			return nil, e
+		}
+		x = &Binary{x, op, r}
+	}
+	return x, nil
+}
+func (p *Parser) mul() (Expr, error) {
+	x, e := p.postfix()
+	if e != nil {
+		return nil, e
+	}
+	for p.match(STAR, SLASH) {
+		op := p.prev().kind
+		r, e := p.postfix()
+		if e != nil {
+			return nil, e
+		}
+		x = &Binary{x, op, r}
+	}
+	return x, nil
+}
+func (p *Parser) postfix() (Expr, error) {
+	x, e := p.primary()
+	if e != nil {
+		return nil, e
+	}
+	for {
+		if p.match(LPAREN) {
+			var a []Expr
+			if !p.check(RPAREN) {
+				for {
+					v, e := p.expression()
+					if e != nil {
+						return nil, e
+					}
+					a = append(a, v)
+					if !p.match(COMMA) {
+						break
+					}
+				}
+			}
+			if _, e = p.need(RPAREN, ")"); e != nil {
+				return nil, e
+			}
+			x = &Call{x, a}
+		} else if p.match(DOT) {
+			n, e := p.need(IDENT, "property")
+			if e != nil {
+				return nil, e
+			}
+			x = &Get{x, n.lex}
+		} else if p.match(LBRACKET) {
+			i, e := p.expression()
+			if e != nil {
+				return nil, e
+			}
+			if _, e = p.need(RBRACKET, "]"); e != nil {
+				return nil, e
+			}
+			x = &Index{x, i}
+		} else {
+			break
+		}
+	}
+	return x, nil
+}
+func (p *Parser) primary() (Expr, error) {
+	if p.match(TRUE) {
+		return &Literal{true}, nil
+	}
+	if p.match(FALSE) {
+		return &Literal{false}, nil
+	}
+	if p.match(STRING) {
+		return &Literal{p.prev().lex}, nil
+	}
+	if p.match(INT) {
+		n, e := newNumber(p.prev().lex, "int")
+		return &Literal{n}, e
+	}
+	if p.match(DECIMAL) {
+		n, e := newNumber(p.prev().lex, "decimal")
+		return &Literal{n}, e
+	}
+	if p.match(IDENT) {
+		return &Variable{p.prev().lex}, nil
+	}
+	if p.match(LBRACKET) {
+		var items []Expr
+		if !p.check(RBRACKET) {
+			for {
+				v, e := p.expression()
+				if e != nil {
+					return nil, e
+				}
+				items = append(items, v)
+				if !p.match(COMMA) {
+					break
+				}
+			}
+		}
+		if _, e := p.need(RBRACKET, "]"); e != nil {
+			return nil, e
+		}
+		return &ListExpr{items}, nil
+	}
+	if p.match(LPAREN) {
+		x, e := p.expression()
+		if e != nil {
+			return nil, e
+		}
+		if _, e = p.need(RPAREN, ")"); e != nil {
+			return nil, e
+		}
+		return x, nil
+	}
+	return nil, p.err("expression expected")
+}
+func (p *Parser) match(k ...Kind) bool {
+	for _, x := range k {
+		if p.check(x) {
+			p.advance()
+			return true
+		}
+	}
+	return false
+}
+func (p *Parser) check(k Kind) bool { return p.peek().kind == k }
+func (p *Parser) advance() Token {
+	if !p.check(EOF) {
+		p.p++
+	}
+	return p.t[p.p-1]
+}
+func (p *Parser) peek() Token { return p.t[p.p] }
+func (p *Parser) peekN(n int) Token {
+	if p.p+n >= len(p.t) {
+		return p.t[len(p.t)-1]
+	}
+	return p.t[p.p+n]
+}
+func (p *Parser) prev() Token { return p.t[p.p-1] }
+func (p *Parser) need(k Kind, label string) (Token, error) {
+	if p.check(k) {
+		return p.advance(), nil
+	}
+	return Token{}, p.err("expected " + label)
+}
+func (p *Parser) err(msg string) error {
+	t := p.peek()
+	return fmt.Errorf("line %d:%d %s near %q", t.line, t.col, msg, t.lex)
+}
+
+// Runtime
+type Value any
+type Number struct {
+	r    *big.Rat
+	kind string
+}
+
+func newNumber(text, kind string) (Number, error) {
+	text = strings.ReplaceAll(text, "_", "")
+	r := new(big.Rat)
+	if _, ok := r.SetString(text); !ok {
+		return Number{}, fmt.Errorf("invalid number %s", text)
+	}
+	return Number{r, kind}, nil
+}
+func (n Number) String() string {
+	if n.kind == "decimal" {
+		s := n.r.FloatString(decimalPlaces(n.r))
+		s = strings.TrimRight(strings.TrimRight(s, "0"), ".")
+		if s == "" || s == "-0" {
+			return "0"
+		}
+		return s
+	}
+	if n.r.IsInt() {
+		return n.r.Num().String()
+	}
+	return n.r.RatString()
+}
+func decimalPlaces(r *big.Rat) int {
+	d := new(big.Int).Set(r.Denom())
+	two := 0
+	five := 0
+	z := big.NewInt(0)
+	for new(big.Int).Mod(d, big.NewInt(2)).Cmp(z) == 0 {
+		d.Div(d, big.NewInt(2))
+		two++
+	}
+	for new(big.Int).Mod(d, big.NewInt(5)).Cmp(z) == 0 {
+		d.Div(d, big.NewInt(5))
+		five++
+	}
+	if d.Cmp(big.NewInt(1)) == 0 {
+		if two > five {
+			return two
+		}
+		return five
+	}
+	return 50
+}
+
+type Cell struct {
+	v   Value
+	mut bool
+}
+type Env struct {
+	parent *Env
+	v      map[string]Cell
+}
+
+func newEnv(parent *Env) *Env { return &Env{parent: parent, v: map[string]Cell{}} }
+func (e *Env) get(n string) (Value, error) {
+	if c, ok := e.v[n]; ok {
+		return c.v, nil
+	}
+	if e.parent != nil {
+		return e.parent.get(n)
+	}
+	return nil, fmt.Errorf("undefined name %s", n)
+}
+func (e *Env) set(n string, v Value) error {
+	if c, ok := e.v[n]; ok {
+		if !c.mut {
+			return fmt.Errorf("'%s' は let なので変更できません", n)
+		}
+		c.v = v
+		e.v[n] = c
+		return nil
+	}
+	if e.parent != nil {
+		return e.parent.set(n, v)
+	}
+	return fmt.Errorf("undefined name %s", n)
+}
+
+type Function struct {
+	params  []string
+	body    Expr
+	closure *Env
+}
+type Class struct {
+	name    string
+	fields  []Field
+	methods map[string]*Function
+}
+type Instance struct {
+	class  *Class
+	fields map[string]Value
+}
+type Bound struct {
+	fn   *Function
+	self *Instance
+}
+type ErrorObj struct{ kind, message string }
+type thrown struct{ err ErrorObj }
+
+func (t thrown) Error() string { return t.err.message }
+
+type Interpreter struct {
+	globals  *Env
+	out      *bufio.Writer
+	suppress bool
+}
+
+func New(out *bufio.Writer, suppress bool) *Interpreter {
+	i := &Interpreter{newEnv(nil), out, suppress}
+	i.globals.v["print"] = Cell{v: "<builtin print>"}
+	return i
+}
+func (i *Interpreter) run(stmts []Stmt) error {
+	for _, s := range stmts {
+		if e := i.exec(s, i.globals); e != nil {
+			return e
+		}
+	}
+	return nil
+}
+func (i *Interpreter) exec(s Stmt, e *Env) error {
+	switch x := s.(type) {
+	case *VarDecl:
+		v, er := i.eval(x.value, e)
+		if er != nil {
+			return er
+		}
+		e.v[x.name] = Cell{v, x.mutable}
+		return nil
+	case *Assign:
+		v, er := i.eval(x.value, e)
+		if er != nil {
+			return er
+		}
+		return e.set(x.name, v)
+	case *ExprStmt:
+		_, er := i.eval(x.x, e)
+		return er
+	case *Block:
+		return i.block(x, e)
+	case *IfStmt:
+		v, er := i.eval(x.cond, e)
+		if er != nil {
+			return er
+		}
+		b, ok := v.(bool)
+		if !ok {
+			return fmt.Errorf("if の条件は bool である必要があります")
+		}
+		if b {
+			return i.block(x.then, e)
+		}
+		if x.other != nil {
+			return i.block(x.other, e)
+		}
+		return nil
+	case *ForStmt:
+		a, er := i.eval(x.start, e)
+		if er != nil {
+			return er
+		}
+		b, er := i.eval(x.end, e)
+		if er != nil {
+			return er
+		}
+		an, ok := a.(Number)
+		if !ok || !an.r.IsInt() {
+			return fmt.Errorf("range requires int")
+		}
+		bn, ok := b.(Number)
+		if !ok || !bn.r.IsInt() {
+			return fmt.Errorf("range requires int")
+		}
+		start := new(big.Int).Set(an.r.Num())
+		end := new(big.Int).Set(bn.r.Num())
+		step := big.NewInt(1)
+		if end.Cmp(start) < 0 {
+			step = big.NewInt(-1)
+		}
+		loop := newEnv(e)
+		for n := new(big.Int).Set(start); ; n.Add(n, step) {
+			loop.v[x.name] = Cell{Number{new(big.Rat).SetInt(new(big.Int).Set(n)), "int"}, false}
+			if er = i.block(x.body, loop); er != nil {
+				return er
+			}
+			if n.Cmp(end) == 0 {
+				break
+			}
+		}
+		return nil
+	case *FnDecl:
+		e.v[x.name] = Cell{&Function{x.params, x.body, e}, false}
+		return nil
+	case *ClassDecl:
+		m := map[string]*Function{}
+		for _, d := range x.methods {
+			m[d.name] = &Function{d.params, d.body, e}
+		}
+		e.v[x.name] = Cell{&Class{x.name, x.fields, m}, false}
+		return nil
+	case *TryStmt:
+		er := i.block(x.body, e)
+		if er != nil && x.catch != nil {
+			var t thrown
+			if errors.As(er, &t) {
+				ce := newEnv(e)
+				ce.v[x.catchName] = Cell{ErrorObj{t.err.kind, t.err.message}, false}
+				er = i.block(x.catch, ce)
+			}
+		}
+		if x.finally != nil {
+			if fe := i.block(x.finally, e); fe != nil {
+				return fe
+			}
+		}
+		return er
+	case *ThrowStmt:
+		v, er := i.eval(x.x, e)
+		if er != nil {
+			return er
+		}
+		if eo, ok := v.(ErrorObj); ok {
+			return thrown{eo}
+		}
+		return thrown{ErrorObj{"Thrown", format(v)}}
+	}
+	return fmt.Errorf("unsupported statement")
+}
+func (i *Interpreter) block(b *Block, parent *Env) error {
+	e := newEnv(parent)
+	for _, s := range b.items {
+		if er := i.exec(s, e); er != nil {
+			return er
+		}
+	}
+	return nil
+}
+func (i *Interpreter) eval(x Expr, e *Env) (Value, error) {
+	switch v := x.(type) {
+	case *Literal:
+		return v.v, nil
+	case *Variable:
+		return e.get(v.name)
+	case *ListExpr:
+		a := make([]Value, len(v.items))
+		for n, z := range v.items {
+			q, er := i.eval(z, e)
+			if er != nil {
+				return nil, er
+			}
+			a[n] = q
+		}
+		return a, nil
+	case *Binary:
+		a, er := i.eval(v.left, e)
+		if er != nil {
+			return nil, er
+		}
+		b, er := i.eval(v.right, e)
+		if er != nil {
+			return nil, er
+		}
+		return binary(a, v.op, b)
+	case *Index:
+		o, er := i.eval(v.object, e)
+		if er != nil {
+			return nil, er
+		}
+		idx, er := i.eval(v.index, e)
+		if er != nil {
+			return nil, er
+		}
+		list, ok := o.([]Value)
+		if !ok {
+			return nil, fmt.Errorf("index target is not list")
+		}
+		n, ok := idx.(Number)
+		if !ok || !n.r.IsInt() {
+			return nil, fmt.Errorf("index must be int")
+		}
+		indexValue := n.r.Num()
+		if indexValue.Sign() < 0 || indexValue.Cmp(big.NewInt(int64(len(list)))) >= 0 {
+			return nil, fmt.Errorf("添字 %s は範囲外です", indexValue.String())
+		}
+		p := int(indexValue.Int64())
+		return list[p], nil
+	case *Get:
+		o, er := i.eval(v.object, e)
+		if er != nil {
+			return nil, er
+		}
+		switch z := o.(type) {
+		case *Instance:
+			for _, f := range z.class.fields {
+				if f.name == v.name {
+					if f.private {
+						return nil, fmt.Errorf("private フィールド '%s' にはアクセスできません", v.name)
+					}
+					return z.fields[v.name], nil
+				}
+			}
+			if m, ok := z.class.methods[v.name]; ok {
+				return &Bound{m, z}, nil
+			}
+			return nil, fmt.Errorf("unknown property %s", v.name)
+		case ErrorObj:
+			if v.name == "kind" {
+				return z.kind, nil
+			}
+			if v.name == "message" {
+				return z.message, nil
+			}
+		}
+		return nil, fmt.Errorf("property access unsupported")
+	case *Call:
+		c, er := i.eval(v.callee, e)
+		if er != nil {
+			return nil, er
+		}
+		args := make([]Value, len(v.args))
+		for n, a := range v.args {
+			args[n], er = i.eval(a, e)
+			if er != nil {
+				return nil, er
+			}
+		}
+		return i.call(c, args)
+	}
+	return nil, fmt.Errorf("unsupported expression")
+}
+func (i *Interpreter) call(c Value, args []Value) (Value, error) {
+	switch f := c.(type) {
+	case string:
+		if f == "<builtin print>" {
+			if !i.suppress {
+				parts := make([]string, len(args))
+				for n, a := range args {
+					parts[n] = format(a)
+				}
+				fmt.Fprintln(i.out, strings.Join(parts, " "))
+			}
+			return nil, nil
+		}
+	case *Function:
+		return i.callFn(f, args, nil)
+	case *Bound:
+		return i.callFn(f.fn, args, f.self)
+	case *Class:
+		if len(args) != len(f.fields) {
+			return nil, fmt.Errorf("constructor argument count")
+		}
+		inst := &Instance{f, map[string]Value{}}
+		for n, field := range f.fields {
+			inst.fields[field.name] = args[n]
+		}
+		return inst, nil
+	}
+	return nil, fmt.Errorf("value is not callable")
+}
+func (i *Interpreter) callFn(f *Function, args []Value, self *Instance) (Value, error) {
+	if len(args) != len(f.params) {
+		return nil, fmt.Errorf("argument count")
+	}
+	e := newEnv(f.closure)
+	for n, p := range f.params {
+		e.v[p] = Cell{args[n], false}
+	}
+	if self != nil {
+		e.v["self"] = Cell{self, false}
+	}
+	return i.eval(f.body, e)
+}
+func binary(a Value, op Kind, b Value) (Value, error) {
+	if op == EQEQ {
+		return equal(a, b), nil
+	}
+	an, aok := a.(Number)
+	bn, bok := b.(Number)
+	if aok && bok {
+		r := new(big.Rat)
+		kind := promote(an.kind, bn.kind, op)
+		switch op {
+		case PLUS:
+			r.Add(an.r, bn.r)
+		case MINUS:
+			r.Sub(an.r, bn.r)
+		case STAR:
+			r.Mul(an.r, bn.r)
+		case SLASH:
+			if bn.r.Sign() == 0 {
+				return nil, fmt.Errorf("0で割ることはできません")
+			}
+			r.Quo(an.r, bn.r)
+			if an.kind == "int" && bn.kind == "int" {
+				kind = "rational"
+			}
+		default:
+			return nil, fmt.Errorf("operator unsupported")
+		}
+		return Number{r, kind}, nil
+	}
+	if op == PLUS {
+		as, aok := a.(string)
+		bs, bok := b.(string)
+		if aok && bok {
+			return as + bs, nil
+		}
+	}
+	return nil, fmt.Errorf("type mismatch")
+}
+func promote(a, b string, op Kind) string {
+	if a == "decimal" || b == "decimal" {
+		return "decimal"
+	}
+	if a == "rational" || b == "rational" {
+		return "rational"
+	}
+	return "int"
+}
+func equal(a, b Value) bool {
+	switch x := a.(type) {
+	case Number:
+		y, ok := b.(Number)
+		return ok && x.r.Cmp(y.r) == 0
+	case string:
+		y, ok := b.(string)
+		return ok && x == y
+	case bool:
+		y, ok := b.(bool)
+		return ok && x == y
+	}
+	return a == b
+}
+func format(v Value) string {
+	switch x := v.(type) {
+	case nil:
+		return "unit"
+	case Number:
+		return x.String()
+	case bool:
+		if x {
+			return "true"
+		}
+		return "false"
+	case string:
+		return x
+	case ErrorObj:
+		return x.kind + " " + x.message
+	case []Value:
+		p := make([]string, len(x))
+		for n, z := range x {
+			p[n] = format(z)
+		}
+		return "[" + strings.Join(p, ", ") + "]"
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+func main() {
+	if len(os.Args) == 2 && os.Args[1] == "--version" {
+		fmt.Println("Saga Go", version)
+		return
+	}
+	if len(os.Args) != 3 || (os.Args[1] != "run" && os.Args[1] != "check") {
+		fmt.Fprintln(os.Stderr, "usage: saga-go run|check FILE")
+		os.Exit(2)
+	}
+	data, err := os.ReadFile(os.Args[2])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(66)
+	}
+	if !utf8.Valid(data) {
+		fmt.Fprintln(os.Stderr, "[SAGA-L001] source is not UTF-8")
+		os.Exit(2)
+	}
+	toks, err := lex(string(data))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[SAGA-L001]", err)
+		os.Exit(2)
+	}
+	stmts, err := parse(toks)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[SAGA-P001]", err)
+		os.Exit(3)
+	}
+	w := bufio.NewWriter(os.Stdout)
+	defer w.Flush()
+	err = New(w, os.Args[1] == "check").run(stmts)
+	if err != nil {
+		if os.Args[1] == "check" {
+			fmt.Fprintln(os.Stderr, "[SAGA-T001]", err)
+			os.Exit(4)
+		}
+		fmt.Fprintln(os.Stderr, "[SAGA-R001]", err)
+		os.Exit(5)
+	}
+	if os.Args[1] == "check" {
+		fmt.Println("OK:", os.Args[2])
+	}
+}

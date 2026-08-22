@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "release": "0.26.0",
+  "profile": "Saga Defensive Cybersecurity Profile 1",
+  "native_security_functions": [
+    "sha512",
+    "hmac_sha256",
+    "constant_equal",
+    "random_hex",
+    "password_hash",
+    "password_verify",
+    "file_sha256",
+    "ip_valid",
+    "cidr_contains",
+    "certificate_info",
+    "tls_probe"
+  ],
+  "crypto_extensions": [
+    "sha512",
+    "hmac_sha256",
+    "constant_equal",
+    "random_hex",
+    "password_hash",
+    "password_verify",
+    "aes_gcm_encrypt",
+    "aes_gcm_decrypt"
+  ],
+  "security_properties": {
+    "password_kdf": "PBKDF2-HMAC-SHA256, 210000 iterations, random 16-byte salt, 32-byte derived key",
+    "password_verify_iteration_cap": 1000000,
+    "aead": "AES-GCM with random nonce and caller-supplied AAD",
+    "tls_minimum": "TLS 1.2",
+    "tls_certificate_verification": true,
+    "constant_time_secret_compare": true,
+    "file_hash_streaming": true
+  },
+  "scope": [
+    "defensive cryptography",
+    "credential storage primitives",
+    "file integrity verification",
+    "IP/CIDR policy checks",
+    "X.509 certificate inspection",
+    "verified TLS endpoint inspection"
+  ],
+  "non_goals": [
+    "credential theft",
+    "malware deployment",
+    "exploit automation",
+    "stealth or persistence",
+    "raw packet attack tooling"
+  ]
+}

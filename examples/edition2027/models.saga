@@ -1,0 +1,13 @@
+module models
+
+public interface Source {
+    type Item
+    fn get() -> Item
+}
+
+public class IntSource(let value: int) implements Source {
+    type Item = int
+    override fn get() -> int = self.value
+}
+
+fn implementation_detail() -> int = 99

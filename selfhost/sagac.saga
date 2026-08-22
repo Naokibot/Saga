@@ -1,0 +1,60 @@
+use sys
+use compiler
+
+let args = sys.args()
+
+if len(args) == 0 {
+    throw "usage: sagac <check|build|self-build|version> <source> [-o output]"
+}
+
+if args[0] == "version" {
+    print("Saga Self-Hosted Compiler 0.26.2")
+    print(compiler.version())
+} else {
+    if len(args) < 2 {
+        throw "source path required"
+    }
+
+    let source = args[1]
+
+    if args[0] == "check" {
+        compiler.check(source)
+        print("OK")
+    } else {
+        if args[0] == "build" {
+            var output = ""
+            if len(args) >= 4 {
+                if args[2] == "-o" {
+                    output = args[3]
+                } else {
+                    if args[2] == "--output" {
+                        output = args[3]
+                    } else {
+                        throw "expected -o or --output"
+                    }
+                }
+            }
+            let built = compiler.build(source, output)
+            print("Built:", built)
+        } else {
+            if args[0] == "self-build" {
+                var output = ""
+                if len(args) >= 4 {
+                    if args[2] == "-o" {
+                        output = args[3]
+                    } else {
+                        if args[2] == "--output" {
+                            output = args[3]
+                        } else {
+                            throw "expected -o or --output"
+                        }
+                    }
+                }
+                let built = compiler.self_build(source, output)
+                print("Built self-host compiler:", built)
+            } else {
+                throw "unknown compiler command"
+            }
+        }
+    }
+}

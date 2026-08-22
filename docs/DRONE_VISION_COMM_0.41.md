@@ -12,18 +12,18 @@ For practical deployment, Saga is intended to generate high-level/offboard setpo
 
 The `vision` module provides class-aware NMS, centroid tracking, pinhole-camera bearing conversion and ArUco fiducial recognition. `video.open`/`video.read_frame` provide decoded frames and `video.open_camera` provides capability-gated physical camera input when a camera is available.
 
-`vision.onnx_load` uses the optional OpenCV DNN backend to load ONNX models. `vision.onnx_forward_json` exposes a bounded total number of output tensor values together with shape/truncation metadata. The language core does not depend on OpenCV. Model-specific inference compatibility depends on the operators/backend supported by the installed OpenCV build and must be qualified with the exact deployment model.
+`vision.onnx_load` uses the optional OpenCV DNN backend to load ONNX models. The language core does not depend on OpenCV. Model-specific inference compatibility depends on the operators/backend supported by the installed OpenCV build and therefore must be qualified with the exact model used in deployment.
 
 ## Communications
 
-Saga supports MAVLink 2 framing/common offboard messages, signing/replay checks, stream parsing, DroneCAN transfer helpers, TCP, UDP and WebSocket networking. `net.set_timeout_ms` lets long-running communication loops use bounded socket waits. `net.udp_receive_from_json` retains source host/port metadata. `drone.link_monitor` measures MAVLink sequence gaps, duplicates, ordering and latency without changing flight mode automatically.
+Saga supports MAVLink 2 framing/common offboard messages, signing/replay checks, stream parsing, DroneCAN transfer helpers, TCP, UDP and WebSocket networking. `net.set_timeout_ms` lets long-running communication loops use bounded socket waits. `drone.link_monitor` measures MAVLink sequence gaps, duplicates, ordering and latency without changing flight mode automatically.
 
 ## Independence boundary
 
-Saga is an independent programming language: it has its own grammar, parser/type system, module format, native ABI/compiler/runtime, package tooling and an independent Go implementation. Optional host libraries such as OpenCV are standard-library backends, not implementations of Saga syntax or semantics.
+Saga is an independent programming language: it has its own grammar, parser/type system, module format, native ABI/compiler/runtime, package tooling and an independent Go implementation. Optional host libraries such as OpenCV are standard-library backends, not implementations of Saga syntax or semantics. This is analogous to a systems language using an OS, graphics driver or codec library.
 
-The SH-3 bootstrap compiler can rebuild itself to an exact Stage2/Stage3 fixed point. That demonstrates compiler self-reproduction for the covered compiler source; it does not mean every newly added hosted vision API has already been reimplemented inside SH-3.
+The SH-3 bootstrap compiler can rebuild itself to an exact stage-2/stage-3 fixed point. That demonstrates compiler self-reproduction for the covered compiler source; it does not mean every newly added hosted vision API has already been reimplemented inside SH-3.
 
-## Review hardening
+## Review notes
 
-The 0.41 review fixed three especially important practical gaps: allocation now reports achieved demand/residual/saturation; ONNX inference exports a bounded total number of tensor values rather than shapes only; and peer-aware UDP receive preserves the endpoint needed for multiple vehicles or peers. UDP receive is capped at 16 MiB per call in both hosted Python and independent Go implementations.
+The 0.41 review found and fixed three practical API gaps. First, clamped control allocation previously returned motor commands without reporting how much of the requested four-axis demand was actually achieved; `drone.allocation_report_json` now reports achieved demand, residual and saturated/disabled actuators. Second, learned-model inference previously exposed only output tensor shapes; `vision.onnx_forward_json` now exposes a bounded total number of tensor values so classification/detection post-processing can be implemented in Saga without allowing unbounded JSON output. Third, `net.udp_receive_from_json` preserves source endpoint metadata needed for multiple vehicles or peers.

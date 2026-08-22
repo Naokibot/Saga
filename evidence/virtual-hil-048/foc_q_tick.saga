@@ -1,0 +1,15 @@
+
+@control_tick
+fn foc_q_tick(iq_ref: decimal, iq: decimal, integral_q: decimal, kp: decimal, ki: decimal, resistance: decimal, omega: decimal, ld: decimal, id: decimal, flux: decimal, dt: decimal, limit: decimal) -> decimal {
+    let error: decimal = iq_ref - iq
+    let candidate: decimal = integral_q + ki * error * dt
+    let feedforward: decimal = resistance * iq_ref + omega * (ld * id + flux)
+    var voltage: decimal = kp * error + candidate + feedforward
+    if voltage > limit {
+        voltage = limit
+    }
+    if voltage < -limit {
+        voltage = -limit
+    }
+    return voltage
+}

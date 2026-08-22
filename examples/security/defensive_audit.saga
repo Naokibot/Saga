@@ -1,0 +1,25 @@
+use security
+use crypto
+
+let message = "important-build-artifact"
+let digest = security.sha512(message)
+let mac = security.hmac_sha256("demo-key", message)
+let stored = security.password_hash("correct horse battery staple")
+let password_ok = security.password_verify("correct horse battery staple", stored)
+let inside = security.cidr_contains("10.10.0.0/16", "10.10.42.7")
+let encrypted = crypto.aes_gcm_encrypt(
+    "1111111111111111111111111111111111111111111111111111111111111111",
+    "audit payload",
+    "saga-demo"
+)
+let decrypted = crypto.aes_gcm_decrypt(
+    "1111111111111111111111111111111111111111111111111111111111111111",
+    unwrap_ok(encrypted),
+    "saga-demo"
+)
+
+print(len(digest))
+print(len(mac))
+print(password_ok)
+print(unwrap_ok(inside))
+print(unwrap_ok(decrypted))

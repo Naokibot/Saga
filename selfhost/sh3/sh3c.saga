@@ -1,0 +1,579 @@
+# Saga SH-3 restricted bootstrap compiler.
+# Canonical source is Saga. It compiles the deliberately small implementation
+# subset used by the SH-3 compiler/runtime kernel into the language-neutral
+# SH3BC1 stack machine. It does not delegate Saga parsing or typing to host code.
+use io
+use sys
+
+var tokens: list[text] = slice([""], 0, 0)
+var position: int = 0
+var assembly: text = ""
+var function_code: text = ""
+var locals: list[text] = slice([""], 0, 0)
+var globals: list[text] = slice([""], 0, 0)
+var label_id: int = 0
+var current_function: text = ""
+
+fn fail(message: text) -> unit {
+    print("sh3c: " + message)
+    let crash = [0]
+    print(crash[1])
+}
+
+fn is_digit(c: text) -> bool {
+    return find_text("0123456789", c) >= 0
+}
+
+fn is_alpha(c: text) -> bool {
+    return find_text("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_", c) >= 0
+}
+
+fn is_alnum(c: text) -> bool {
+    return is_alpha(c) or is_digit(c)
+}
+
+fn hex_text(value: text) -> text {
+    if len(value) == 0 { return "-" }
+    let alphabet = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\n\r\t"
+    let digits = "0123456789abcdef"
+    var result = ""
+    var i = 0
+    while i < len(value) {
+        let c = value[i]
+        let p = find_text(alphabet, c)
+        if p < 0 {
+            fail("SH-3 bootstrap compiler source must use ASCII literals")
+        }
+        var code = 0
+        if p < 95 {
+            code = p + 32
+        } else {
+            if p == 95 { code = 10 }
+            if p == 96 { code = 13 }
+            if p == 97 { code = 9 }
+        }
+        var hi = 0
+        var lo = code
+        while lo >= 16 {
+            lo = lo - 16
+            hi = hi + 1
+        }
+        result = result + digits[hi] + digits[lo]
+        i = i + 1
+    }
+    return result
+}
+
+fn add_token(kind: text, value: text) -> unit {
+    tokens = append(tokens, kind + "\t" + value)
+}
+
+fn token_kind(index: int) -> text {
+    let t = tokens[index]
+    let p = find_text(t, "\t")
+    return substring(t, 0, p)
+}
+
+fn token_text(index: int) -> text {
+    let t = tokens[index]
+    let p = find_text(t, "\t")
+    return substring(t, p + 1, len(t))
+}
+
+fn lex(source: text) -> unit {
+    tokens = slice([""], 0, 0)
+    var i = 0
+    while i < len(source) {
+        let c = source[i]
+        if c == " " or c == "\t" or c == "\r" or c == "\n" {
+            i = i + 1
+        } else {
+            if c == "#" {
+                while i < len(source) and source[i] != "\n" { i = i + 1 }
+            } else {
+                if is_alpha(c) {
+                    let start = i
+                    i = i + 1
+                    while i < len(source) and is_alnum(source[i]) { i = i + 1 }
+                    add_token("id", substring(source, start, i))
+                } else {
+                    if is_digit(c) {
+                        let start = i
+                        i = i + 1
+                        while i < len(source) and is_digit(source[i]) { i = i + 1 }
+                        add_token("num", substring(source, start, i))
+                    } else {
+                        if c == "\"" {
+                            i = i + 1
+                            var value = ""
+                            while i < len(source) and source[i] != "\"" {
+                                if source[i] == "\\" {
+                                    i = i + 1
+                                    if i >= len(source) { fail("unterminated escape") }
+                                    let e = source[i]
+                                    if e == "n" { value = value + "\n" } else {
+                                        if e == "r" { value = value + "\r" } else {
+                                            if e == "t" { value = value + "\t" } else {
+                                                value = value + e
+                                            }
+                                        }
+                                    }
+                                    i = i + 1
+                                } else {
+                                    value = value + source[i]
+                                    i = i + 1
+                                }
+                            }
+                            if i >= len(source) { fail("unterminated string") }
+                            i = i + 1
+                            add_token("str", value)
+                        } else {
+                            var two = ""
+                            if i + 1 < len(source) { two = substring(source, i, i + 2) }
+                            if two == "==" or two == "!=" or two == "<=" or two == ">=" or two == "&&" or two == "||" or two == "->" {
+                                add_token("sym", two)
+                                i = i + 2
+                            } else {
+                                add_token("sym", c)
+                                i = i + 1
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    add_token("eof", "<eof>")
+    position = 0
+}
+
+fn peek(value: text) -> bool {
+    let k = token_kind(position)
+    if k == "str" or k == "num" { return false }
+    return token_text(position) == value
+}
+
+fn take(value: text) -> bool {
+    if peek(value) {
+        position = position + 1
+        return true
+    }
+    return false
+}
+
+fn expect(value: text) -> unit {
+    if !take(value) { fail("expected '" + value + "' but got '" + token_text(position) + "'") }
+}
+
+fn expect_id() -> text {
+    if token_kind(position) != "id" { fail("expected identifier, got " + token_text(position) + " at token " + text(position) + " prev=" + token_text(position-1) + "/" + token_text(position-2) + "/" + token_text(position-3)) }
+    let v = token_text(position)
+    position = position + 1
+    return v
+}
+
+fn list_index(xs: list[text], value: text) -> int {
+    var i = 0
+    while i < len(xs) {
+        if xs[i] == value { return i }
+        i = i + 1
+    }
+    return -1
+}
+
+fn global_index(name: text) -> int {
+    return list_index(globals, name)
+}
+
+fn local_index(name: text) -> int {
+    return list_index(locals, name)
+}
+
+fn ensure_local(name: text) -> int {
+    let found = local_index(name)
+    if found >= 0 { return found }
+    locals = append(locals, name)
+    return len(locals) - 1
+}
+
+fn emit(line: text) -> unit {
+    function_code = function_code + line + "\n"
+}
+
+fn fresh_label() -> text {
+    label_id = label_id + 1
+    return "L" + text(label_id)
+}
+
+fn skip_type_until(stop1: text, stop2: text, stop3: text) -> unit {
+    var square = 0
+    var paren = 0
+    while token_text(position) != "<eof>" {
+        let t = token_text(position)
+        if square == 0 and paren == 0 and (t == stop1 or t == stop2 or t == stop3) { return }
+        if t == "[" { square = square + 1 }
+        if t == "]" { square = square - 1 }
+        if t == "(" { paren = paren + 1 }
+        if t == ")" { if paren > 0 { paren = paren - 1 } else { return } }
+        position = position + 1
+    }
+}
+
+fn emit_load(name: text) -> unit {
+    let li = local_index(name)
+    if li >= 0 { emit("LOAD " + text(li)); return }
+    let gi = global_index(name)
+    if gi >= 0 { emit("GLOAD " + text(gi)); return }
+    fail("unknown variable " + name)
+}
+
+fn emit_store(name: text) -> unit {
+    let li = local_index(name)
+    if li >= 0 { emit("STORE " + text(li)); return }
+    let gi = global_index(name)
+    if gi >= 0 { emit("GSTORE " + text(gi)); return }
+    let n = ensure_local(name)
+    emit("STORE " + text(n))
+}
+
+fn parse_expression() -> unit { parse_or() }
+
+fn parse_or() -> unit {
+    parse_and()
+    while take("or") {
+        let rhs = fresh_label()
+        let done = fresh_label()
+        emit("DUP")
+        emit("JZ " + rhs)
+        emit("JMP " + done)
+        emit("LABEL " + rhs)
+        emit("POP")
+        parse_and()
+        emit("LABEL " + done)
+    }
+}
+
+fn parse_and() -> unit {
+    parse_equality()
+    while take("and") {
+        let done = fresh_label()
+        emit("DUP")
+        emit("JZ " + done)
+        emit("POP")
+        parse_equality()
+        emit("LABEL " + done)
+    }
+}
+
+fn parse_equality() -> unit {
+    parse_compare()
+    while peek("==") or peek("!=") {
+        let op = token_text(position)
+        position = position + 1
+        parse_compare()
+        if op == "==" { emit("EQ") } else { emit("NE") }
+    }
+}
+
+fn parse_compare() -> unit {
+    parse_term()
+    while peek("<") or peek("<=") or peek(">") or peek(">=") {
+        let op = token_text(position)
+        position = position + 1
+        parse_term()
+        if op == "<" { emit("LT") }
+        if op == "<=" { emit("LE") }
+        if op == ">" { emit("GT") }
+        if op == ">=" { emit("GE") }
+    }
+}
+
+fn parse_term() -> unit {
+    parse_factor()
+    while peek("+") or peek("-") {
+        let op = token_text(position)
+        position = position + 1
+        parse_factor()
+        if op == "+" { emit("ADD") } else { emit("SUB") }
+    }
+}
+
+fn parse_factor() -> unit {
+    parse_unary()
+    while peek("*") or peek("/") or peek("%") {
+        let op = token_text(position)
+        position = position + 1
+        parse_unary()
+        if op == "*" { emit("MUL") }
+        if op == "/" { emit("DIV") }
+        if op == "%" { emit("MOD") }
+    }
+}
+
+fn parse_unary() -> unit {
+    if take("!") {
+        parse_unary()
+        emit("NOT")
+        return
+    }
+    if take("-") {
+        parse_unary()
+        emit("NEG")
+        return
+    }
+    parse_postfix()
+}
+
+fn builtin_name(name: text) -> text {
+    if name == "io.read_text" { return "read_text" }
+    if name == "io.write_text" { return "write_text" }
+    if name == "sys.args" { return "args" }
+    if name == "sys.exit" { return "exit" }
+    if name == "host_available" { return "host_available" }
+    if name == "host_call" { return "host_call" }
+    if name == "len" or name == "append" or name == "set_at" or name == "substring" or name == "find_text" or name == "replace" or name == "starts_with" or name == "ends_with" or name == "text" or name == "int" or name == "slice" or name == "byteord" or name == "bytechr" { return name }
+    return ""
+}
+
+fn parse_call(name: text) -> unit {
+    expect("(")
+    var count = 0
+    if !peek(")") {
+        parse_expression()
+        count = count + 1
+        while take(",") {
+            parse_expression()
+            count = count + 1
+        }
+    }
+    expect(")")
+    let b = builtin_name(name)
+    if b != "" {
+        emit("CALLB " + hex_text(b) + " " + text(count))
+    } else {
+        if name == "print" {
+            if count != 1 { fail("SH-3 bootstrap print takes one value") }
+            emit("PRINT")
+        } else {
+            emit("CALL " + hex_text(name) + " " + text(count))
+        }
+    }
+}
+
+fn parse_postfix() -> unit {
+    if token_kind(position) == "num" {
+        emit("PUSHI " + token_text(position))
+        position = position + 1
+    } else {
+        if token_kind(position) == "str" {
+            emit("PUSHS " + hex_text(token_text(position)))
+            position = position + 1
+        } else {
+            if take("true") { emit("PUSHB 1") } else {
+                if take("false") { emit("PUSHB 0") } else {
+                    if take("[") {
+                        var count = 0
+                        if !peek("]") {
+                            parse_expression()
+                            count = count + 1
+                            while take(",") { parse_expression(); count = count + 1 }
+                        }
+                        expect("]")
+                        emit("MKLIST " + text(count))
+                    } else {
+                        if take("(") {
+                            parse_expression()
+                            expect(")")
+                        } else {
+                            var name = expect_id()
+                            if take(".") { name = name + "." + expect_id() }
+                            if peek("(") { parse_call(name) } else { emit_load(name) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    while take("[") {
+        parse_expression()
+        expect("]")
+        emit("GETIDX")
+    }
+}
+
+fn skip_annotation() -> unit {
+    if take(":") { skip_type_until("=", ",", ")") }
+}
+
+fn parse_var_decl(global_mode: bool) -> unit {
+    position = position + 1 # let/var
+    let name = expect_id()
+    if take(":") { skip_type_until("=", ";", "<eof>") }
+    expect("=")
+    parse_expression()
+    if global_mode {
+        let gi = global_index(name)
+        if gi < 0 { fail("global pre-scan mismatch") }
+        emit("GSTORE " + text(gi))
+    } else {
+        let li = ensure_local(name)
+        emit("STORE " + text(li))
+    }
+    take(";")
+}
+
+fn parse_block() -> unit {
+    expect("{")
+    while !peek("}") and !peek("<eof>") { parse_statement(false) }
+    expect("}")
+}
+
+fn parse_if() -> unit {
+    expect("if")
+    let no = fresh_label()
+    let done = fresh_label()
+    parse_expression()
+    emit("JZ " + no)
+    parse_block()
+    emit("JMP " + done)
+    emit("LABEL " + no)
+    if take("else") {
+        if peek("if") { parse_if() } else { parse_block() }
+    }
+    emit("LABEL " + done)
+}
+
+fn parse_while() -> unit {
+    expect("while")
+    let top = fresh_label()
+    let done = fresh_label()
+    emit("LABEL " + top)
+    parse_expression()
+    emit("JZ " + done)
+    parse_block()
+    emit("JMP " + top)
+    emit("LABEL " + done)
+}
+
+fn parse_statement(global_mode: bool) -> unit {
+    if take(";") { return }
+    if peek("let") or peek("var") { parse_var_decl(global_mode); return }
+    if peek("if") { parse_if(); return }
+    if peek("while") { parse_while(); return }
+    if take("return") {
+        if peek(";") or peek("}") { emit("PUSHU") } else { parse_expression() }
+        emit("RET")
+        take(";")
+        return
+    }
+    if token_kind(position) == "id" and token_text(position + 1) == "=" {
+        let name = token_text(position)
+        position = position + 2
+        parse_expression()
+        emit_store(name)
+        take(";")
+        return
+    }
+    parse_expression()
+    emit("POP")
+    take(";")
+}
+
+fn parse_function() -> text {
+    expect("fn")
+    let name = expect_id()
+    let outer_function = current_function
+    let outer_locals = locals
+    let outer_code = function_code
+    current_function = name
+    locals = slice([""], 0, 0)
+    function_code = ""
+    expect("(")
+    var argc = 0
+    if !peek(")") {
+        let p = expect_id()
+        locals = append(locals, p)
+        argc = argc + 1
+        if take(":") { skip_type_until(",", ")", "<eof>") }
+        while take(",") {
+            let q = expect_id()
+            locals = append(locals, q)
+            argc = argc + 1
+            if take(":") { skip_type_until(",", ")", "<eof>") }
+        }
+    }
+    expect(")")
+    if take("->") { skip_type_until("{", "=", "<eof>") }
+    if take("=") {
+        parse_expression()
+        emit("RET")
+        take(";")
+    } else {
+        parse_block()
+        emit("PUSHU")
+        emit("RET")
+    }
+    let compiled = "FUNC " + hex_text(name) + " " + text(argc) + " " + text(len(locals)) + "\n" + function_code + "END\n"
+    current_function = outer_function
+    locals = outer_locals
+    function_code = outer_code
+    return compiled
+}
+
+fn pre_scan_globals() -> unit {
+    globals = slice([""], 0, 0)
+    var i = 0
+    var depth = 0
+    while i < len(tokens) - 1 {
+        let t = token_text(i)
+        let k = token_kind(i)
+        if k == "sym" and t == "{" { depth = depth + 1 }
+        if k == "sym" and t == "}" { depth = depth - 1 }
+        if depth == 0 and k == "id" and (t == "let" or t == "var") and token_kind(i + 1) == "id" {
+            if list_index(globals, token_text(i + 1)) < 0 { globals = append(globals, token_text(i + 1)) }
+        }
+        i = i + 1
+    }
+}
+
+fn compile_source(source: text) -> text {
+    lex(source)
+    pre_scan_globals()
+    position = 0
+    if take("edition") {
+        if token_kind(position) != "num" { fail("edition requires a numeric edition") }
+        let ed = token_text(position)
+        if ed != "2027" and ed != "1" { fail("unsupported edition " + ed) }
+        position = position + 1
+        take(";")
+    }
+    assembly = "SH3BC1\nGLOBALS " + text(len(globals)) + "\nENTRY " + hex_text("__main") + "\n"
+    var functions = ""
+    function_code = ""
+    locals = slice([""], 0, 0)
+    while !peek("<eof>") {
+        if take("use") {
+            expect_id()
+            take(";")
+        } else {
+            if peek("fn") {
+                functions = functions + parse_function()
+            } else {
+                parse_statement(true)
+            }
+        }
+    }
+    let main_code = function_code + "PUSHI 0\nRET\n"
+    assembly = assembly + functions + "FUNC " + hex_text("__main") + " 0 " + text(len(locals)) + "\n" + main_code + "END\n"
+    return assembly
+}
+
+let cli = sys.args()
+if len(cli) < 2 {
+    print("usage: sh3c INPUT.saga OUTPUT.sbc")
+    let crash = [0]
+    print(crash[1])
+}
+let input = io.read_text(cli[0])
+let result = compile_source(input)
+io.write_text(cli[1], result)

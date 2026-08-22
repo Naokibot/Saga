@@ -1,0 +1,199 @@
+{
+  "case_count": 12,
+  "cases": [
+    {
+      "detail": {
+        "max_acceleration": "2.00",
+        "max_velocity": "3"
+      },
+      "name": "3D jerk-limited trajectory reaches target",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "trajectory respects configured limits",
+      "pass": true
+    },
+    {
+      "detail": [
+        "0.1435566243270259355107875894",
+        "0.1340032063144111398656961016",
+        "0",
+        "0.1268899576603592688441209228",
+        "0.1364433756729740644892124106",
+        "0.00910683602522959129018297557"
+      ],
+      "name": "general control allocation handles explicit actuator disable",
+      "pass": true
+    },
+    {
+      "detail": {
+        "achieved": [
+          "0.5500000000000000000000000000",
+          "0.01999999999999999999999999988",
+          "-0.01000000000000000000000000003",
+          "0.01000000000000000000000000003"
+        ],
+        "commands": [
+          "0.1435566243270259355107875894",
+          "0.1340032063144111398656961016",
+          "0",
+          "0.1268899576603592688441209228",
+          "0.1364433756729740644892124106",
+          "0.00910683602522959129018297557"
+        ],
+        "disabled": [
+          2
+        ],
+        "requested": [
+          "0.55",
+          "0.02",
+          "-0.01",
+          "0.01"
+        ],
+        "residual": [
+          "0E-28",
+          "1.2E-28",
+          "3E-29",
+          "-3E-29"
+        ],
+        "saturated": []
+      },
+      "name": "control allocation reports achieved demand and residual",
+      "pass": true
+    },
+    {
+      "detail": {
+        "duplicates": 1,
+        "latency_ms_ewma": "31.3750",
+        "loss_fraction": "0.2857142857142857142857142857",
+        "lost": 2,
+        "out_of_order": 1,
+        "received": 5
+      },
+      "name": "MAVLink sequence/loss/latency monitoring",
+      "pass": true
+    },
+    {
+      "detail": {
+        "bytes": 51,
+        "message_id": 82
+      },
+      "name": "real UDP transport carries SET_ATTITUDE_TARGET",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "vision NMS/tracking/camera geometry",
+      "pass": true
+    },
+    {
+      "detail": [
+        {
+          "center_x": 129.5,
+          "center_y": 129.5,
+          "corners": [
+            [
+              40.0,
+              40.0
+            ],
+            [
+              219.0,
+              40.0
+            ],
+            [
+              219.0,
+              219.0
+            ],
+            [
+              40.0,
+              219.0
+            ]
+          ],
+          "id": 7
+        }
+      ],
+      "name": "real OpenCV ArUco recognition",
+      "pass": true
+    },
+    {
+      "detail": [
+        48,
+        64,
+        3
+      ],
+      "name": "real OpenCV video frame decode",
+      "pass": true
+    },
+    {
+      "detail": [
+        {
+          "shape": [
+            1,
+            2,
+            3
+          ],
+          "total_values": 6,
+          "truncated": false,
+          "values": [
+            0.0,
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0
+          ]
+        },
+        {
+          "shape": [
+            1,
+            2,
+            3
+          ],
+          "total_values": 6,
+          "truncated": true,
+          "values": [
+            6.0,
+            7.0
+          ]
+        }
+      ],
+      "name": "bounded ONNX tensor output adapter",
+      "pass": true
+    },
+    {
+      "detail": {
+        "data_hex": "70656572",
+        "host": "127.0.0.1",
+        "port": 46945
+      },
+      "name": "UDP peer-aware receive metadata",
+      "pass": true
+    },
+    {
+      "detail": "4.13.0",
+      "name": "OpenCV DNN ONNX backend API available",
+      "pass": true
+    }
+  ],
+  "pass": true,
+  "release": "0.42.0",
+  "schema": 1,
+  "unexecuted": [
+    {
+      "name": "physical camera capture",
+      "reason": "no physical camera is attached to this qualification environment",
+      "status": "UNEXECUTED"
+    },
+    {
+      "name": "arbitrary ONNX model inference",
+      "reason": "no reviewed ONNX model artifact is bundled; backend API is checked but model-specific operator coverage is not claimed",
+      "status": "UNEXECUTED"
+    },
+    {
+      "name": "physical aircraft flight",
+      "reason": "no aircraft/autopilot/ESC/propeller hardware is attached",
+      "status": "UNEXECUTED"
+    }
+  ]
+}

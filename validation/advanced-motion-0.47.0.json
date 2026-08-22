@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "release": "0.47.0",
+  "source_manifest_sha256": "7f6acbac56f680d69e89ef1f101bc2c5577e659c7afc65c78e8e227acb337d23",
+  "source_tree_sha256": "87a5d5065d969ff173ec53919bea7de6ff07581e7473e036783dfd4e53db4a3a",
+  "cases": [
+    {
+      "id": "foc-encoder-parity",
+      "python_output": [
+        "0.5",
+        "360.17578125",
+        "11.71875"
+      ],
+      "go_output": [
+        "0.5",
+        "360.17578125",
+        "11.71875"
+      ],
+      "pass": true,
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null
+    },
+    {
+      "id": "online-identification-axis-sync-parity",
+      "python_output": [
+        "1.999688626644488937906067616",
+        "-0.4990030190784234434504150344",
+        "0"
+      ],
+      "go_output": [
+        "1.99968862664449",
+        "-0.499003019078424",
+        "0"
+      ],
+      "pass": true,
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null
+    },
+    {
+      "id": "mpc-dob-friction-parity",
+      "python_output": [
+        "2",
+        "0",
+        "0.7806947889497219819288296636"
+      ],
+      "go_output": [
+        "2",
+        "0",
+        "0.780694788949722"
+      ],
+      "pass": true,
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null
+    },
+    {
+      "id": "ethercat-codec-profile-parity",
+      "python_output": [
+        "{\"address\":22136,\"command\":\"LRW\",\"data_hex\":\"11223344\",\"index\":7,\"irq\":0,\"length\":4,\"more\":false,\"offset\":4660,\"working_counter\":0}",
+        "{\"profile\":\"mcu-control-0.47\",\"saga_visible_heap_allocation_in_tick\":\"forbidden\",\"preallocate_state_before_tick\":true,\"bounded_loops_required\":true,\"blocking_io_in_tick\":\"forbidden\",\"async_in_tick\":\"forbidden\",\"host_reference_runtime_hard_realtime\":false,\"target_backend_must_prove_no_allocator_calls\":true}"
+      ],
+      "go_output": [
+        "{\"address\":22136,\"command\":\"LRW\",\"data_hex\":\"11223344\",\"index\":7,\"irq\":0,\"length\":4,\"more\":false,\"offset\":4660,\"working_counter\":0}",
+        "{\"profile\":\"mcu-control-0.47\",\"saga_visible_heap_allocation_in_tick\":\"forbidden\",\"preallocate_state_before_tick\":true,\"bounded_loops_required\":true,\"blocking_io_in_tick\":\"forbidden\",\"async_in_tick\":\"forbidden\",\"host_reference_runtime_hard_realtime\":false,\"target_backend_must_prove_no_allocator_calls\":true}"
+      ],
+      "pass": true,
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null
+    },
+    {
+      "id": "control-tick-bounded-accepted",
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "pass": true
+    },
+    {
+      "id": "control-tick-allocation-rejected",
+      "expected_diagnostic_id": "SAGA-C471",
+      "python_diagnostic_id": "SAGA-C471",
+      "go_diagnostic_id": "SAGA-C471",
+      "pass": true
+    },
+    {
+      "id": "control-tick-blocking-io-rejected",
+      "expected_diagnostic_id": "SAGA-C479",
+      "python_diagnostic_id": "SAGA-C479",
+      "go_diagnostic_id": "SAGA-C479",
+      "pass": true
+    }
+  ],
+  "passed": 7,
+  "total": 7,
+  "pass": true
+}

@@ -1,0 +1,17 @@
+interface Named {
+    fn name() -> text
+}
+
+class Student(let student_name: text) implements Named {
+    override fn name() -> text {
+        return self.student_name
+    }
+}
+
+fn label(value: option[text]) -> text {
+    return unwrap_or(value, "unknown")
+}
+
+let student: Named = Student("Aki")
+let score: decimal = 0.1 + 0.2
+print(student.name(), score, label(some("ready")))

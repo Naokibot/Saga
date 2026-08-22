@@ -1,0 +1,126 @@
+{
+  "language": "Saga",
+  "version": "0.17.0",
+  "tests": [
+    {
+      "id": "C001",
+      "clause": "10",
+      "mode": "run",
+      "file": "cases/C001_decimal.saga",
+      "stdout": "0.3 true",
+      "exit_code": 0
+    },
+    {
+      "id": "C002",
+      "clause": "10",
+      "mode": "run",
+      "file": "cases/C002_rational.saga",
+      "stdout": "1/2",
+      "exit_code": 0
+    },
+    {
+      "id": "C003",
+      "clause": "8",
+      "mode": "check-fail",
+      "file": "cases/C003_let_error.saga",
+      "exit_code": 4,
+      "diagnostic_code": "SAGA-T001",
+      "diagnostic_id": "SAGA-T101"
+    },
+    {
+      "id": "C004",
+      "clause": "13",
+      "mode": "check-fail",
+      "file": "cases/C004_condition_error.saga",
+      "exit_code": 4,
+      "diagnostic_code": "SAGA-T001",
+      "diagnostic_id": "SAGA-T104"
+    },
+    {
+      "id": "C005",
+      "clause": "14",
+      "mode": "run",
+      "file": "cases/C005_range.saga",
+      "stdout": "15",
+      "exit_code": 0
+    },
+    {
+      "id": "C006",
+      "clause": "15",
+      "mode": "run",
+      "file": "cases/C006_function.saga",
+      "stdout": "42",
+      "exit_code": 0
+    },
+    {
+      "id": "C007",
+      "clause": "16",
+      "mode": "run",
+      "file": "cases/C007_oop.saga",
+      "stdout": "Saga",
+      "exit_code": 0
+    },
+    {
+      "id": "C008",
+      "clause": "16",
+      "mode": "check-fail",
+      "file": "cases/C008_private_error.saga",
+      "exit_code": 4,
+      "diagnostic_code": "SAGA-T001",
+      "diagnostic_id": "SAGA-T107"
+    },
+    {
+      "id": "C009",
+      "clause": "17",
+      "mode": "run",
+      "file": "cases/C009_exception.saga",
+      "stdout": "Thrown boom",
+      "exit_code": 0
+    },
+    {
+      "id": "C010",
+      "clause": "12",
+      "mode": "run-fail",
+      "file": "cases/C010_bounds.saga",
+      "exit_code": 5,
+      "diagnostic_code": "SAGA-R001",
+      "diagnostic_id": "SAGA-R101"
+    },
+    {
+      "id": "C011",
+      "clause": "5.2",
+      "mode": "run",
+      "file": "cases/C011_unicode_identifier.saga",
+      "stdout": "42",
+      "exit_code": 0
+    },
+    {
+      "id": "C012",
+      "clause": "5.2",
+      "mode": "check-fail",
+      "file": "cases/C012_non_nfc_error.saga",
+      "exit_code": 2,
+      "diagnostic_code": "SAGA-L001",
+      "diagnostic_id": "SAGA-L105"
+    },
+    {
+      "id": "C013",
+      "clause": "5.2",
+      "mode": "check-fail",
+      "file": "cases/C013_bidi_error.saga",
+      "exit_code": 2,
+      "diagnostic_code": "SAGA-L001",
+      "diagnostic_id": "SAGA-L106"
+    },
+    {
+      "id": "C014",
+      "clause": "5.3",
+      "mode": "check-fail",
+      "file": "cases/C014_ascii_numeric_digits.saga",
+      "exit_code": 2,
+      "diagnostic_code": "SAGA-L001",
+      "diagnostic_id": "SAGA-L103"
+    }
+  ],
+  "profile": "Standard Core seed suite"
+}

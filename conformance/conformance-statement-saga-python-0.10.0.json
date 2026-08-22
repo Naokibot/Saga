@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "implementation": "saga-python",
+  "implementation_version": "0.10.0",
+  "language": "Saga",
+  "language_version": "0.9",
+  "profiles": [
+    "Standard Core",
+    "Hosted Standard (declared modules)",
+    "Secure Hosted Extension (Linux strict plugin mode)"
+  ],
+  "unicode_identifier_profile": "15.1.0-vendored",
+  "host_runtime": "Python >=3.13",
+  "diagnostic_schema": 2,
+  "diagnostic_formats": [
+    "text",
+    "json",
+    "sarif"
+  ],
+  "diagnostic_locales": [
+    "en",
+    "ja"
+  ],
+  "diagnostic_fallback": "en",
+  "lock_schema": 1,
+  "hosted_modules": [
+    "cloud",
+    "console",
+    "crypto",
+    "data",
+    "db",
+    "docdb",
+    "game",
+    "gpio",
+    "http",
+    "image",
+    "io",
+    "json",
+    "ml",
+    "net",
+    "orm",
+    "plugin",
+    "process",
+    "reflect",
+    "regex",
+    "science",
+    "spark",
+    "system",
+    "task",
+    "time",
+    "ui",
+    "video",
+    "websocket"
+  ],
+  "plugin_isolation": "separate process; Linux strict mode uses user/mount/PID/IPC/UTS/network namespaces and fails closed when unavailable",
+  "qualification": "Project-generated conformance evidence; not an independent laboratory certificate",
+  "report": "validation/standard-core-conformance-0.10.0.json"
+}

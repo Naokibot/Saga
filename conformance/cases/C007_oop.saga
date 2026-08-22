@@ -1,0 +1,3 @@
+interface Named { fn name() -> text }
+class Person(let value: text) implements Named { override fn name() -> text = self.value }
+print(Person("Saga").name())

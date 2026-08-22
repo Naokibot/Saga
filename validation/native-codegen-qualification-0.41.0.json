@@ -1,0 +1,193 @@
+{
+  "checks": [
+    {
+      "detail": "clang version 17.0.0 (https://github.com/swiftlang/llvm-project.git 10999b6d034fe318f3d56c83bddb6572593a8bb0)",
+      "name": "C compiler available",
+      "pass": true
+    },
+    {
+      "detail": {
+        "rc": 0,
+        "stderr": "",
+        "stdout": "41\n120\n"
+      },
+      "name": "direct-native executable runs",
+      "pass": true
+    },
+    {
+      "detail": [
+        "project/main.saga",
+        "project/models.saga"
+      ],
+      "name": "first build compiles two module objects",
+      "pass": true
+    },
+    {
+      "detail": {
+        "compiled_objects": [
+          "project/main.saga",
+          "project/models.saga"
+        ],
+        "go_runtime_linked": false,
+        "language_version": "0.35",
+        "linked": true,
+        "output": "/tmp/tmp8uwj_9v3/app",
+        "output_sha256": "74fe11a61cec05d655eb268c70d0d93c1ecf656abf1138763a6ed58c9fb88362",
+        "profile": "Native Codegen ABI 0.35",
+        "reused_objects": [],
+        "schema": 1,
+        "startup_rebuilt": true,
+        "support_rebuilt": true,
+        "target": "linux-x86_64"
+      },
+      "name": "Go runtime is not linked",
+      "pass": true
+    },
+    {
+      "detail": "/tmp/tmp8uwj_9v3/build/objects/models.saga-9b4906f88157f3ce.o: ELF 64-bit LSB relocatable, x86-64, version 1 (SYSV), not stripped",
+      "name": "module is real relocatable object",
+      "pass": true
+    },
+    {
+      "detail": "saga_abi035_m6d6f64656c73_f7477696365",
+      "name": "callee object defines direct native symbol",
+      "pass": true
+    },
+    {
+      "detail": "saga_abi035_m6d6f64656c73_f7477696365",
+      "name": "caller object has native relocation to callee",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "name": "final executable contains no Go runtime symbols",
+      "pass": true
+    },
+    {
+      "detail": "\n/tmp/tmp8uwj_9v3/build/objects/models.saga-9b4906f88157f3ce.o:     file format elf64-x86-64\n\n\nDisassembly of section .text.saga_abi035_m6d6f64656c73_f7477696365:\n\n0000000000000000 <saga_abi035_m6d6f64656c73_f7477696365>:\n   0:\t41 56                \tpush   %r14\n   2:\t53                   \tpush   %rbx\n   3:\t50                   \tpush   %rax\n   4:\t48 89 fb             \tmov    %rdi,%rbx\n   7:\te8 00 00 00 00       \tcall   c <saga_abi035_m6d6f64656c73_f7477696365+0xc>\n   c:\t49 89 c6             \tmov    %rax,%r14\n   f:\tbe 02 00 00 00       \tmov    $0x2,%esi\n  14:\t48 89 df             \tmov    %rbx,%rdi\n  17:\te8 00 00 00 00       \tcall   1c <saga_abi035_m6d6f64656c73_f7477696365+0x1c>\n  1c:\t48 89 c3             \tmov    %rax,%rbx\n  1f:\t4c 89 f7             \tmov    %r14,%rdi\n  22:\te8 00 00 00 00       \tcall   27 <saga_abi035_m6d6f64656c73_f7477696365+0x27>\n  27:\t48 89 d8             \tmov    %rbx,%rax\n  2a:\t48 83 c4 08          \tadd    $0x8,%rsp\n  2e:\t5b                   \tpop    %rbx\n  2f:\t41 5e",
+      "name": "Saga function has machine-code body",
+      "pass": true
+    },
+    {
+      "detail": {
+        "abi_sha256": "c1ba7e38694d91dfcc0d9c84d058e21e925d5c5c4df0b3b4f478f6200c00a4aa",
+        "abi_version": "0.35",
+        "dispatch_model": "open-world-registry-stable-slot-type-id-v1",
+        "exception_model": "setjmp-longjmp-managed-root-unwind",
+        "exports": [
+          {
+            "kind": "fn",
+            "name": "fact",
+            "params": [
+              "int"
+            ],
+            "return": "int",
+            "symbol": "saga_abi035_m6d6f64656c73_f66616374"
+          },
+          {
+            "kind": "fn",
+            "name": "twice",
+            "params": [
+              "int"
+            ],
+            "return": "int",
+            "symbol": "saga_abi035_m6d6f64656c73_f7477696365"
+          }
+        ],
+        "gc_features": [
+          "generational",
+          "incremental-major-mark",
+          "incremental-major-sweep",
+          "optional-concurrent-sweep",
+          "low-pause-major-budget"
+        ],
+        "identity": "models",
+        "language_version": "0.35",
+        "managed_option_result": true,
+        "memory_model": "managed-ref-generational-incremental-concurrent-sweep-0.35",
+        "module": "models",
+        "owned_text": true,
+        "runtime_feature_level": "0.38",
+        "schema": "saga.native-codegen-abi.v1"
+      },
+      "name": "native ABI manifest exposes stable symbol",
+      "pass": true
+    },
+    {
+      "detail": {
+        "compile": "",
+        "stderr": "",
+        "stdout": "42\n"
+      },
+      "name": "external C ABI client links Saga module directly",
+      "pass": true
+    },
+    {
+      "detail": {
+        "compiled_objects": [],
+        "go_runtime_linked": false,
+        "language_version": "0.35",
+        "linked": false,
+        "output": "/tmp/tmp8uwj_9v3/app",
+        "output_sha256": "74fe11a61cec05d655eb268c70d0d93c1ecf656abf1138763a6ed58c9fb88362",
+        "profile": "Native Codegen ABI 0.35",
+        "reused_objects": [
+          "project/main.saga",
+          "project/models.saga"
+        ],
+        "schema": 1,
+        "startup_rebuilt": false,
+        "support_rebuilt": false,
+        "target": "linux-x86_64"
+      },
+      "name": "unchanged build is complete cache hit",
+      "pass": true
+    },
+    {
+      "detail": [
+        "project/models.saga"
+      ],
+      "name": "implementation-only change rebuilds callee object only",
+      "pass": true
+    },
+    {
+      "detail": [
+        "project/main.saga",
+        "project/models.saga"
+      ],
+      "name": "public ABI change invalidates importer object",
+      "pass": true
+    },
+    {
+      "detail": {
+        "first": {
+          "main.saga-4b481daffc28e75b.o": "db482843e2a43b90071b5fe1948ee145ee5d7b98e8ed589b58e6ddf5d845306e",
+          "models.saga-9b4906f88157f3ce.o": "eba6d9b1f987298dc2222ccd96d8a028cbdb95b6b673beaa23811da7ab75928e"
+        },
+        "second": {
+          "main.saga-4b481daffc28e75b.o": "db482843e2a43b90071b5fe1948ee145ee5d7b98e8ed589b58e6ddf5d845306e",
+          "models.saga-9b4906f88157f3ce.o": "eba6d9b1f987298dc2222ccd96d8a028cbdb95b6b673beaa23811da7ab75928e"
+        }
+      },
+      "name": "clean module objects are byte reproducible",
+      "pass": true
+    },
+    {
+      "detail": {
+        "first": "2c125c7589c5c420321cdab4daa92e925517b1645e5aee7e8fb411dddb4cda11",
+        "second": "2c125c7589c5c420321cdab4daa92e925517b1645e5aee7e8fb411dddb4cda11"
+      },
+      "name": "clean executables are byte reproducible",
+      "pass": true
+    },
+    {
+      "detail": null,
+      "name": "generic inheritance remains fail closed",
+      "pass": true
+    }
+  ],
+  "pass": true,
+  "profile": "Native Codegen ABI 0.35",
+  "release": "0.41.0",
+  "schema": 1
+}

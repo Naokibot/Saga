@@ -1,0 +1,15 @@
+{
+  "payload": {
+    "schema": 1,
+    "target_release": "0.26.2",
+    "reviewer": {"name": "Reviewer name", "organization": "Independent organization", "contact": "reviewer@example.org"},
+    "completed_at_utc": "2026-08-10T00:00:00Z",
+    "candidate_sha256": "REPLACE_FROM_SPEC_LINT_OUTPUT",
+    "proposed_final_sha256": "REPLACE_FROM_REVIEW_GUIDE",
+    "grammar_sha256": "REPLACE_FROM_SPEC_LINT_OUTPUT",
+    "decision": "APPROVE",
+    "independent": true,
+    "unresolved_normative_issues": 0
+  },
+  "signature_ed25519_base64": "SIGN_CANONICAL_PAYLOAD_JSON"
+}

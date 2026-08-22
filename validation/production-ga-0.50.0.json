@@ -1,0 +1,116 @@
+{
+  "schema": 2,
+  "release": "0.50.0",
+  "source_manifest_sha256": "eea029282f6cd5464a99d9dce89ec318eff0a970374386f5ec4dac06b31107aa",
+  "source_tree_sha256": "a6fe38290f130b3f28535db025ad77593a3bab63e127664bc0c60d7370fbad3a",
+  "profile": "Saga 0.50 Production GA — Control Language & Toolchain",
+  "checks": [
+    {
+      "name": "Python compileall",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Python core/language/control regression",
+      "pass": true,
+      "detail": "..........................................................................................................................................................................\n----------------------------------------------------------------------\nRan 170 tests in 7.400s\n\nOK\n"
+    },
+    {
+      "name": "Python ecosystem/runtime/security regression",
+      "pass": true,
+      "detail": "......................................\n----------------------------------------------------------------------\nRan 38 tests in 12.927s\n\nOK\n15\n"
+    },
+    {
+      "name": "Python native runtime/codegen",
+      "pass": true,
+      "detail": "..................\n----------------------------------------------------------------------\nRan 18 tests in 8.163s\n\nOK\n"
+    },
+    {
+      "name": "Python native aggregate GC",
+      "pass": true,
+      "detail": "..............\n----------------------------------------------------------------------\nRan 14 tests in 7.691s\n\nOK\n"
+    },
+    {
+      "name": "Python autonomy/drone/diagnostics/lsp regression",
+      "pass": true,
+      "detail": "...................................................................................\n----------------------------------------------------------------------\nRan 83 tests in 10.774s\n\nOK\n"
+    },
+    {
+      "name": "Python platform/security/remaining regression",
+      "pass": true,
+      "detail": ".................................\n----------------------------------------------------------------------\nRan 33 tests in 23.083s\n\nOK\n"
+    },
+    {
+      "name": "Python platform profile regression",
+      "pass": true,
+      "detail": ".........\n----------------------------------------------------------------------\nRan 9 tests in 3.684s\n\nOK\n"
+    },
+    {
+      "name": "Python review regression A",
+      "pass": true,
+      "detail": "...............................................s......................\n----------------------------------------------------------------------\nRan 70 tests in 14.428s\n\nOK (skipped=1)\n"
+    },
+    {
+      "name": "Python review regression B",
+      "pass": true,
+      "detail": ".................................ファイルエラー: Sagaソースにシンボリックリンクは使用できません: /tmp/tmpuwafyem1/project/linked.saga\n..ファイルエラー: Sagaソースにシンボリックリンクは使用できません: /tmp/tmposo9rht2/project/linked.saga\n..........error[SAGA-P001]: エントリソースまたはプロジェクトルートにシンボリックリンクは使用できません\n  --> /tmp/tmp0k98irwa/linked/main.saga:1:1\n   |\n     1 | print(1)\n   | ^ Parse error\n..........................\n----------------------------------------------------------------------\nRan 71 tests in 7.150s\n\nOK\n"
+    },
+    {
+      "name": "Python resource-leak regression",
+      "pass": true,
+      "detail": "..................\n----------------------------------------------------------------------\nRan 18 tests in 9.660s\n\nOK\n"
+    },
+    {
+      "name": "Internal security audit",
+      "pass": true,
+      "detail": "{\"status\": \"pass\", \"issues\": 0, \"reviewed_notes\": 2, \"report\": \"/mnt/data/saga_work/saga050/validation/internal-security-audit-0.50.0.json\"}\n"
+    },
+    {
+      "name": "Specification final-candidate lint",
+      "pass": true,
+      "detail": "{\n  \"schema\": 1,\n  \"release\": \"0.50.0\",\n  \"spec\": \"SAGA_LANGUAGE_SPECIFICATION_1.0_FINAL_CANDIDATE.md\",\n  \"spec_sha256\": \"163c5f4e47019acb6f1483dcc506d3166c59eeb37582e868160797f876bb7894\",\n  \"grammar_sha256\": \"0069b12b8ec14c0d26630a0a0e97bbfd858314356d61a853860fd6fd012e5efc\",\n  \"checks\": [\n    {\n      \"name\": \"numbered clauses are unique and contiguous\",\n      \"pass\": true,\n      \"detail\": \"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37]\"\n    },\n    {\n      \"name\": \"no unresolved editorial markers\",\n      \"pass\": true,\n      \"detail\": \"\"\n    },\n    {\n      \"name\": \"candidate has 1.0 normative version\",\n      \"pass\": true,\n      \"detail\": \"\"\n    },\n    {\n      \"name\": \"candidate is not mislabeled ISO/IEC publication\",\n      \"pass\": true,\n      \"detail\": \"\"\n    },\n    {\n      \"name\": \"no normative dependency on draft/RC companion file\",\n      \"pass\": true,\n      \"detail\": \"\"\n    },\n    {\n      \"name\": \"all referenced project documents exist\",\n      \"pass\": true,\n      \"detail\": \"\"\n    },\n    {\n      \"name\": \"normative grammar exists\",\n      \"pass\": true,\n      \"detail\": \"0069b12b8ec14c0d26630a0a0e97bbfd858314356d61a853860fd6fd012e5efc\"\n    },\n    {\n      \"name\": \"annex identifiers unique\",\n      \"pass\": true,\n      \"detail\": \"['A', 'B', 'C', 'D', 'E', 'N']\"\n    },\n    {\n      \"name\": \"finalization clause present\",\n      \"pass\": true,\n      \"detail\": \"\"\n    },\n    {\n      \"name\": \"no stale implementation release references\",\n      \"pass\": true,\n      \"detail\": \"\"\n    }\n  ],\n  \"pass\": true\n}\n"
+    },
+    {
+      "name": "Go full regression",
+      "pass": true,
+      "detail": "ok  \tsaga-go/cmd/saga-go\t(cached)\n"
+    },
+    {
+      "name": "Go vet",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Go Race Detector control paths",
+      "pass": true,
+      "detail": "ok  \tsaga-go/cmd/saga-go\t1.043s\n"
+    },
+    {
+      "name": "20k deterministic control invariant cases",
+      "pass": true,
+      "detail": "PID 10,000 + FOC 10,000 bounded-output/integrator cases"
+    },
+    {
+      "name": "0.50 direct-native reproducibility and execution",
+      "pass": true,
+      "detail": "be73ad6080a40629bb2c709efdd5cb60c562d4281fb31607990d6bf0ba364797"
+    },
+    {
+      "name": "Machine production gate pass + source-mismatch rejection",
+      "pass": true,
+      "detail": "valid source-bound case passes; altered binding fails"
+    }
+  ],
+  "pass": true,
+  "scope": "language-toolchain-production-ga",
+  "machine_certification_claimed": false,
+  "external_machine_gates": [
+    "target-specific hard-real-time/WCET qualification",
+    "physical HIL and fieldbus/motor/drive qualification",
+    "system hazard analysis and independent E-stop/STO/interlock",
+    "applicable SIL/PL or other regulatory certification when required"
+  ],
+  "missing_checks": [],
+  "failed_checks": [],
+  "qualification_mode": "resumable-source-bound"
+}

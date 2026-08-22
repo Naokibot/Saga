@@ -1,0 +1,17 @@
+edition 2027
+
+use app
+
+print(app.host())
+print(app.capability("system"))
+print(app.operation_supported("system.snapshot"))
+
+let snapshot = app.invoke("system.snapshot", "{}")
+if is_ok(snapshot) {
+    print(unwrap_ok(snapshot))
+}
+
+let uuid = app.invoke("crypto.random_uuid", "{}")
+if is_ok(uuid) {
+    print(unwrap_ok(uuid))
+}

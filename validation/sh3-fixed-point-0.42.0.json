@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "release": "0.42.0",
+  "source_manifest_sha256": "00b8f431da2a73075c78a09fdd9fccc2be87cf6e3654bde3fe1c81e92bccf03c",
+  "source_tree_sha256": "f925e9417b83ad3cac6f69add270417fbbe7e0417c278cca16fb3dda91a023ec",
+  "strict_c11_bootstrap_build": true,
+  "stage2_sha256": "8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4",
+  "stage3_sha256": "8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4",
+  "fixed_point": true,
+  "pass": true
+}

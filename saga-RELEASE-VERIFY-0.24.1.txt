@@ -1,0 +1,81 @@
+Saga 0.24.1 final release verification
+======================================
+Release theme: Correctness, Cybersecurity & Cross-process Safety Patch
+
+SOURCE REVIEW / FIXES
+- High: DB persistence through a symlink could replace the symlink and diverge from the canonical target: FIXED + regression PASS.
+- High: Python security APIs violated declared result[T,E] contracts: FIXED.
+- High: Python native ResultValue validation / Send / Process-Send / isolated-task snapshot handling was incomplete: FIXED + regressions PASS.
+- Medium/high: registry package identity/archive exhaustion/traversal/duplicate/symlink handling: HARDENED + regressions PASS.
+- Medium/high: Universal App duplicate-key JSON ambiguity: FIXED.
+- Medium: HTTP UTF-8/header boundary validation: FIXED.
+- Medium: HTTP/process resource controls: implemented as OPTIONAL administrator policies; no fixed Saga semantic ceiling reintroduced.
+- Medium: Hosted validator security return-contract drift: FIXED.
+- Project-internal review: 0 unresolved findings in changed areas. This is not independent certification.
+
+PRE-DELIVERY ARCHIVE RE-EXTRACTION
+- ZIP CRC/integrity: PASS.
+- Re-extracted into /mnt/data/saga-final-verify-0.24.1.
+- Source tree byte comparison with fully tested source: PASS.
+- Saga version from re-extracted tree: 0.24.1.
+- Go full tests from re-extracted tree: PASS.
+- Go vet from re-extracted tree: PASS.
+- Go Race Detector from re-extracted tree: PASS (independent rerun after the first combined command exceeded its execution window; that timeout was not counted as PASS).
+- Python collection from re-extracted tree: 161 tests.
+- Python execution from re-extracted tree: 161/161 PASS, 15 test modules executed independently.
+
+API / APPLICATION FROM RE-EXTRACTED ARCHIVE
+- Defensive security validator: 11 security functions + 8 crypto extensions PASS.
+- Hosted API coverage: 160/160 across 28 modules PASS.
+- Native game API: 101/101 PASS.
+- Browser Host API: 101/101 PASS.
+- Universal App Action API: 10 source APIs / 53 browser operations PASS.
+- Machine smoke: exact numbers, file/SQLite, TCP, UDP, AES-GCM, process, WebSocket, image, video, Othello PASS.
+- Internal automated security audit: PASS, 0 unresolved findings.
+- Real Chromium: Chrome/144.0.7559.96 Blink/V8 PASS; managed URLBlocklist was not bypassed.
+- Parser fuzz: 100000 cases, 0 unexpected host exceptions PASS.
+- Expression fuzz: 25000 cases, 0 unexpected host exceptions PASS.
+
+SH-3 SPLIT QUALIFICATION
+- The monolithic validator exceeded an execution window and is NOT counted as PASS.
+- Strict C11 bootstrap VM/launcher: PASS.
+- Compiler Stage2 == Stage3: PASS.
+  SHA-256 8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4
+- Canonical kernel Stage2 == Stage3: PASS.
+  SHA-256 d918e7155180f953be88cca102eced301f6007249a1461c0fe37ad51c74801c7
+- Standard Core success: 23/23 PASS.
+- Standard Core diagnostics: 11/11 PASS.
+- Edition 2027 Preview: 15/15 PASS.
+- Source loader / deterministic SH3IMG1 / run-image: PASS.
+- Token-image SHA-256 aaa2661cdec4a115f61df6c8bc37cafc090eb388725fbb8e331755c7e286c060
+- Empty-PATH saga run/info/sagac: PASS; info reports version=0.24.1.
+- Source-boundary audit: PASS, 0 problems.
+- The pre-delivery archive byte comparison confirmed the SH-3 source/bootstrap/test inputs were identical to the split-qualified tree.
+
+LOW-LEVEL / OPTIONAL PROFILES
+- sagaffi tagged suite: PASS.
+- sagajit tagged suite: PASS.
+- sagaffi+sagajit combined: PASS.
+- sagadesktop tagged suite: PASS.
+- sagadesktop+sagavulkan tagged suite: PASS.
+- Cortex-M0 + STM32F030K6 bare-metal tests: PASS.
+- FFI Profile 2 struct/callback/ownership tests: PASS.
+- Native scalar JIT machine-code execution: PASS.
+- SDL2 second renderer and virtual gamepad tests: PASS.
+- Xvfb native-window/OpenGL/shader/audio integration: PASS with SDL dummy audio.
+- Vulkan capability probe executed fail-closed; create_instance=-9 on this host. Real Vulkan rendering/present is NOT claimed.
+
+PORTABLE BUILDS
+- Linux x86-64: built, executed, version 0.24.1, statically linked.
+- Linux ARM64: cross-built AArch64 ELF; target execution not claimed.
+- Windows x86-64: cross-built PE32+; target execution not claimed.
+- Windows ARM64: cross-built PE32+ ARM64; target execution not claimed.
+- macOS x86-64: cross-built Mach-O; target execution not claimed.
+- macOS ARM64: cross-built Mach-O; target execution not claimed.
+
+EXTERNAL EVIDENCE GATES
+- AWS, GPIO, Spark and pygame use documented adapter/test-double evidence where the real target is absent.
+- Android/iOS device/store qualification, physical GPU/gamepad qualification, Windows/macOS target-host execution, vendor accounts/services, independent penetration testing and third-party conformance certification remain external gates.
+
+PACKAGING NOTE
+The final delivery ZIP is rebuilt after this report/manifest documentation update. No compiler/runtime/library/test implementation source was changed after the successful pre-delivery archive re-extraction tests. Final ZIP CRC, source-tree comparison and version/smoke checks are performed externally after embedding this report; the external checksum file identifies the exact delivered bytes.

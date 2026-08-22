@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "release": "0.26.2",
+  "profile": "Edition 2027 Preview",
+  "cases": [
+    {
+      "name": "E27-001-float",
+      "source": "print(1.5f32 + float32(0.5))\nprint(2.25f64 + float64(0.75))",
+      "stdout": "2\n3\n"
+    },
+    {
+      "name": "E27-002-fixed",
+      "source": "let x:int32=int32(2147483647)\nprint(x+int32(1))",
+      "stdout": "2147483648\n"
+    },
+    {
+      "name": "E27-003-exact-float-boundary",
+      "source": "let x=1+1.0f64",
+      "diagnostic": "SAGA-T170"
+    },
+    {
+      "name": "E27-004-constraints",
+      "source": "fn bigger[T](a:T,b:T)->T where T:Comparable { if a>b{return a}; return b }\nprint(bigger(4,9))",
+      "stdout": "9\n"
+    },
+    {
+      "name": "E27-005-associated",
+      "source": "interface S{type Item; fn get()->Item}\nclass I(let v:int) implements S{type Item=int; override fn get()->int=self.v}\nfn first[T](x:T)->T.Item where T:S=x.get()\nprint(first(I(7)))",
+      "stdout": "7\n"
+    },
+    {
+      "name": "E27-006-propagate",
+      "source": "fn b(okay:bool)->result[int,text]{if okay{return ok(4)};return err(\"x\")}\nfn p(okay:bool)->result[int,text]{let x=b(okay)?;return ok(x+1)}\nprint(unwrap_ok(p(true)))\nprint(is_err(p(false)))",
+      "stdout": "5\ntrue\n"
+    },
+    {
+      "name": "E27-007-resource",
+      "source": "resource class H(let x:int){fn close()->unit{print(\"closed\")}}\nlet h=H(3)\nusing owned=move h{print(owned.x)}",
+      "stdout": "3\nclosed\n"
+    },
+    {
+      "name": "E27-008-move-static",
+      "source": "resource class H(let x:int){}\nlet h=H(1)\nlet y=move h\nprint(h.x)",
+      "diagnostic": "SAGA-T180"
+    },
+    {
+      "name": "E27-009-async",
+      "source": "async fn add(a:int,b:int)->int=a+b\nprint(await add(20,22))",
+      "stdout": "42\n"
+    },
+    {
+      "name": "E27-010-derive",
+      "source": "@derive(\"Equal\",\"Hash\") class K(let x:int){}\nlet a=K(1)\nlet b=K(1)\nprint(a==b)\nprint(map_get(map_of(a,\"ok\"),b,\"bad\"))",
+      "stdout": "true\nok\n"
+    },
+    {
+      "name": "E27-011-comptime",
+      "source": "comptime fn sq(x:int)->int=x*x\nprint(sq(9))",
+      "stdout": "81\n"
+    },
+    {
+      "name": "E27-012-unsafe-ffi",
+      "source": "use ffi\nprint(ffi.call_i64(\"x\",\"y\",[]))",
+      "diagnostic": "SAGA-T178"
+    },
+    {
+      "name": "E27-013-actor-state",
+      "source": "use task\nfn make()->fn[int,int]{var n=0; fn h(x:int)->int{n=n+x;return n};return h}\nlet a=task.actor(make())\nprint(await task.ask(a,2))\nprint(await task.ask(a,3))\ntask.stop(a)",
+      "stdout": "2\n5\n"
+    },
+    {
+      "name": "E27-014-compute-ir",
+      "source": "use game\nlet ir=\"SIR1\\nstage compute\\nscale 2\\nadd -1\\n\"\nprint(unwrap_ok(game.shader_ir_compute_reference(ir,[float64(2),float64(3)])))",
+      "stdout": "[3, 5]\n"
+    },
+    {
+      "name": "E27-015-edition-directive",
+      "source": "edition 2027\nprint(42)",
+      "stdout": "42\n"
+    }
+  ]
+}

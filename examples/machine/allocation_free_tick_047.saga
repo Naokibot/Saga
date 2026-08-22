@@ -1,0 +1,10 @@
+@control_tick
+fn control_tick(error: decimal) -> decimal {
+    var correction = error
+    for i in 0..3 {
+        correction = correction * 0.5
+    }
+    return correction
+}
+
+print(control_tick(8.0))

@@ -1,0 +1,67 @@
+use game
+
+if not game.desktop_available() {
+    print("Desktop Game Profile is not enabled in this Saga Native build.")
+} else {
+    let window = unwrap_ok(game.window_open("Saga Native Desktop Showcase", 640, 360))
+    let renderer = unwrap_ok(game.renderer(window))
+    print(game.renderer_info(renderer))
+
+    let assets = game.asset_manager()
+    let runner = unwrap_ok(game.asset_texture(assets, "examples/game/assets/runner.png"))
+    let beep = unwrap_ok(game.asset_audio(assets, "examples/game/assets/beep.wav"))
+    let anim = game.animation(runner, 16, 16, 4, 10)
+    let fb = game.framebuffer(320, 180)
+    let cam = game.camera(0, 0, 1)
+    let particles = game.particles()
+    let physics = game.physics_world(0, 140)
+    let player = game.physics_body(physics, 30, 20, 16, 16, 1, true)
+    let ground = game.physics_body(physics, 0, 150, 320, 30, 1, false)
+    game.body_restitution(player, 0.15)
+
+    let fragment = "#version 120\nuniform sampler2D u_tex;\nvarying vec2 v_uv;\nvoid main(){ vec4 c=texture2D(u_tex,v_uv); gl_FragColor=vec4(c.rgb*vec3(1.0,0.96,0.90),c.a); }"
+    let shader = unwrap_ok(game.shader(renderer, fragment))
+    let started = game.clock_ms()
+    var running = true
+    var sound_played = false
+
+    while running {
+        if game.window_poll(window) { running = false }
+        if game.key_down(window, "Escape") { running = false }
+
+        var vx = 0
+        if game.key_down(window, "Left") { vx = -80 }
+        if game.key_down(window, "Right") { vx = 80 }
+        game.body_velocity(player, vx, game.body_vy(player))
+
+        game.physics_step(physics, 0.016)
+        if game.body_y(player) > 132 {
+            game.body_velocity(player, vx, -90)
+        }
+
+        game.fb_clear(fb, 16, 22, 30, 255)
+        game.fb_rect(fb, 0, 150, 320, 30, 55, 75, 64, 255)
+        game.fb_line(fb, 0, 149, 319, 149, 120, 170, 140, 255)
+        game.fb_circle(fb, int(game.mouse_x(window) / 2), int(game.mouse_y(window) / 2), 5, 80, 170, 255, 255)
+
+        let elapsed = game.clock_ms() - started
+        game.draw_animation(fb, anim, elapsed, floor(game.body_x(player)), floor(game.body_y(player)), 1)
+
+        if game.key_down(window, "Space") and not sound_played {
+            game.audio_play(beep)
+            game.particle_emit(particles, game.body_x(player) + 8, game.body_y(player) + 8, -24, -30, 0.8, 255, 220, 80, 255, 2)
+            game.particle_emit(particles, game.body_x(player) + 8, game.body_y(player) + 8, 24, -28, 0.8, 255, 140, 70, 255, 2)
+            sound_played = true
+        }
+        if not game.key_down(window, "Space") { sound_played = false }
+
+        game.particles_update(particles, 0.016, 80)
+        game.particles_draw(fb, particles, cam)
+        unwrap_ok(game.present_shader(renderer, fb, shader))
+        game.frame(16)
+    }
+
+    game.shader_close(shader)
+    game.renderer_close(renderer)
+    game.window_close(window)
+}

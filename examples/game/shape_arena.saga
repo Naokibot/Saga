@@ -1,0 +1,13 @@
+use game
+
+let c = game.canvas(36, 14)
+game.clear(c, " ")
+game.box(c, 0, 0, 36, 14, "#")
+game.text(c, 2, 1, "Saga Native shape arena")
+game.fill_rect(c, 3, 4, 7, 3, "+")
+game.line(c, 2, 11, 33, 11, "-")
+game.circle(c, 18, 6, 3, "o")
+game.sprite(c, 27, 4, " /\\\n<@ >\n \\/")
+let hit = game.point_in_rect(5, 5, 3, 4, 7, 3)
+game.text(c, 2, 12, $"collision=${hit}")
+game.present(c)

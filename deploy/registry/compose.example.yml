@@ -1,0 +1,23 @@
+services:
+  saga-registry:
+    build:
+      context: ../..
+      dockerfile: deploy/registry/Dockerfile
+    restart: unless-stopped
+    environment:
+      SAGA_REGISTRY_TOKEN: ${SAGA_REGISTRY_TOKEN:?set a strong publisher token}
+    volumes:
+      - saga_registry_data:/var/lib/saga-registry
+    networks: [registry]
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [registry]
+    depends_on: [saga-registry]
+networks: {registry: {}}
+volumes: {saga_registry_data: {}, caddy_data: {}, caddy_config: {}}

@@ -1,0 +1,7 @@
+use machine
+
+let encoder = machine.encoder(2048, 1.0)
+machine.encoder_update(encoder, 0, 1_000_000_000)
+machine.encoder_update(encoder, 1024, 1_500_000_000)
+print(machine.encoder_position_degrees(encoder))
+print(machine.encoder_velocity_rpm(encoder))

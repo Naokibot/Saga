@@ -1,0 +1,14 @@
+use machine
+
+let pid = machine.pid(1.0, 0.1, 0.01, -1.0, 1.0)
+let profile = machine.profile(0.0, 0.0, 10.0, 4.0, 8.0)
+let cycle = machine.cycle(10_000)
+
+var i = 0
+while i < 10 {
+    let target = machine.profile_step(profile, 0.01)
+    let output = machine.pid_step(pid, target, 0.0, 0.01)
+    print(target, output)
+    machine.cycle_wait(cycle)
+    i = i + 1
+}

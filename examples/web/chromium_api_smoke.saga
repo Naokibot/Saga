@@ -1,0 +1,56 @@
+edition 2027
+use web
+use sys
+
+let ev = sys.args()
+if len(ev) >= 2 and ev[0] == "click" and ev[1] == "increment" {
+    let old = web.storage_get("chromium-count")
+    var count = 0
+    if is_ok(old) {
+        let maybe = unwrap_ok(old)
+        if is_some(maybe) { count = int(unwrap(maybe)) }
+    }
+    count = count + 1
+    web.storage_set("chromium-count", text(count))
+}
+if len(ev) >= 2 and ev[0] == "input" and ev[1] == "name-change" {
+    web.storage_set("chromium-name", ev[4])
+}
+if len(ev) >= 2 and ev[0] == "fetch" and ev[1] == "probe-fetch" {
+    if len(ev) >= 6 { web.set_text("fetch-result", ev[5]) }
+}
+if len(ev) >= 2 and ev[0] == "timeout" and ev[1] == "timer-fired" {
+    web.storage_set("timer-state", "timer-ok")
+}
+
+web.set_html("saga-root", "<section id=\"panel\"><input id=\"name\" value=\"\"><button id=\"increment\">Increment</button><span id=\"count\"></span><span id=\"fetch-result\"></span><span id=\"timer-result\"></span><canvas id=\"cv\"></canvas></section>")
+web.set_title("Saga Chromium PASS")
+web.add_class("panel", "ready")
+web.set_attr("panel", "data-api", "expanded")
+web.set_style("panel", "display", "block")
+web.set_value("name", "Saga")
+web.on_click("increment", "increment")
+web.on_event("name", "input", "name-change")
+let saved = web.storage_get("chromium-count")
+var count = 0
+if is_ok(saved) {
+    let maybe = unwrap_ok(saved)
+    if is_some(maybe) { count = int(unwrap(maybe)) }
+}
+web.set_text("count", text(count))
+let fetch_saved = web.storage_get("fetch-body")
+if is_ok(fetch_saved) {
+    let maybe_fetch = unwrap_ok(fetch_saved)
+    if is_some(maybe_fetch) { web.set_text("fetch-result", unwrap(maybe_fetch)) }
+}
+let timer_saved = web.storage_get("timer-state")
+if is_ok(timer_saved) {
+    let maybe_timer = unwrap_ok(timer_saved)
+    if is_some(maybe_timer) { web.set_text("timer-result", unwrap(maybe_timer)) }
+}
+web.canvas_set_size("cv", 64, 32)
+web.canvas_clear("cv", "#ffffff")
+web.canvas_fill_rect("cv", 2, 2, 20, 10, "#000000")
+web.history_replace("./?saga=0.22#ready")
+web.set_timeout(50, "timer-fired")
+if len(ev) == 0 { web.fetch("GET", "./probe.txt", "", "text/plain", "probe-fetch") }

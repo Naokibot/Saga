@@ -1,0 +1,23 @@
+{
+  "payload": {
+    "schema": 2,
+    "target_release": "0.26.2",
+    "source_manifest_sha256": "REPLACE_WITH_SHA256_OF_release/source-manifest-0.26.2.json",
+    "auditor": {
+      "organization": "Independent organization",
+      "reviewer": "Reviewer name",
+      "contact": "reviewer@example.org"
+    },
+    "completed_at_utc": "2026-08-10T00:00:00Z",
+    "scope": ["compiler", "runtime", "package-manager", "registry", "capability-sandbox", "crypto-tls", "native-host-boundaries"],
+    "methods": ["source-review", "dynamic-testing"],
+    "report_sha256": "REPLACE_WITH_64_HEX",
+    "critical_open": 0,
+    "high_open": 0,
+    "medium_open": 0,
+    "low_open": 0,
+    "independent": true,
+    "decision": "PASS"
+  },
+  "signature_ed25519_base64": "SIGN_CANONICAL_PAYLOAD_JSON"
+}

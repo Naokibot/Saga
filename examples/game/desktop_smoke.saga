@@ -1,0 +1,46 @@
+use game
+
+if not game.desktop_available() {
+    print("DESKTOP_BACKEND_UNAVAILABLE")
+} else {
+    let window = unwrap_ok(game.window_open("Saga Desktop Smoke", 320, 200))
+    let renderer = unwrap_ok(game.renderer(window))
+    let assets = game.asset_manager()
+    let texture = unwrap_ok(game.asset_texture(assets, "examples/game/assets/runner.png"))
+    let sound = unwrap_ok(game.asset_audio(assets, "examples/game/assets/beep.wav"))
+    let animation = game.animation(texture, 16, 16, 4, 12)
+    let framebuffer = game.framebuffer(160, 100)
+    let camera = game.camera(0, 0, 1)
+    let particles = game.particles()
+    let world = game.physics_world(0, 30)
+    let body = game.physics_body(world, 20, 20, 16, 16, 1, true)
+    let ground = game.physics_body(world, 0, 80, 160, 20, 1, false)
+    let shader_source = "#version 120\nuniform sampler2D u_tex;\nvarying vec2 v_uv;\nvoid main(){ vec4 c=texture2D(u_tex,v_uv); gl_FragColor=vec4(c.bgr,c.a); }"
+    let shader = unwrap_ok(game.shader(renderer, shader_source))
+    let start = game.clock_ms()
+
+    game.particle_emit(particles, 40, 40, 12, -8, 1, 255, 180, 60, 255, 2)
+    unwrap_ok(game.audio_play(sound))
+
+    var frame = 0
+    while frame < 4 {
+        game.window_poll(window)
+        game.physics_step(world, 0.016)
+        game.particles_update(particles, 0.016, 20)
+        game.fb_clear(framebuffer, 12, 18, 28, 255)
+        game.fb_rect(framebuffer, 0, 80, 160, 20, 40, 70, 55, 255)
+        game.fb_line(framebuffer, 0, 79, 159, 79, 120, 180, 140, 255)
+        game.draw_animation(framebuffer, animation, game.clock_ms() - start, floor(game.body_x(body)), floor(game.body_y(body)), 1)
+        game.particles_draw(framebuffer, particles, camera)
+        unwrap_ok(game.present_shader(renderer, framebuffer, shader))
+        game.frame(8)
+        frame = frame + 1
+    }
+
+    print(game.renderer_info(renderer))
+    print($"GAMEPAD_COUNT=${game.gamepad_count()}")
+    print("SAGA_DESKTOP_GAME_SMOKE_OK")
+    game.shader_close(shader)
+    game.renderer_close(renderer)
+    game.window_close(window)
+}

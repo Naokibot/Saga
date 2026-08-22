@@ -1,0 +1,519 @@
+{
+  "schema": 1,
+  "language": "Saga",
+  "language_version": "1.0-rc1",
+  "diagnostic_schema": 2,
+  "fallback_locale": "en",
+  "diagnostics": [
+    {
+      "id": "SAGA-C480",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Invalid control-tick contract arguments",
+          "explanation": "A @control_tick timing contract takes exactly two integer literals: rate_hz and budget_us.",
+          "help": "Example: @control_tick(20000, 35)."
+        },
+        "ja": {
+          "title": "制御周期契約の引数が正しくありません",
+          "explanation": "@control_tick の周期契約は rate_hz と budget_us の2つの整数リテラルで指定します。",
+          "help": "例: @control_tick(20000, 35)"
+        }
+      }
+    },
+    {
+      "id": "SAGA-C481",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Control-tick rate is out of range",
+          "explanation": "rate_hz must be a compile-time integer literal in 1..1,000,000.",
+          "help": "Use a rate that will be qualified on the target hardware."
+        },
+        "ja": {
+          "title": "制御周期レートが範囲外です",
+          "explanation": "rate_hz はコンパイル時に確定する1..1000000の整数でなければなりません。",
+          "help": "対象ハードウェアで実際に資格化する周期を指定してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-C482",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Invalid control-tick execution budget",
+          "explanation": "budget_us must be a positive integer literal.",
+          "help": "Specify the allowed execution time within one cycle in microseconds."
+        },
+        "ja": {
+          "title": "制御実行予算が正しくありません",
+          "explanation": "budget_us は正の整数リテラルで指定します。",
+          "help": "1周期内で許容する実行時間をマイクロ秒で指定してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-C483",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Control-tick budget exceeds its period",
+          "explanation": "budget_us * rate_hz exceeds 1,000,000, so the execution budget is longer than one declared cycle.",
+          "help": "Reduce budget_us or lower rate_hz."
+        },
+        "ja": {
+          "title": "制御実行予算が周期を超えています",
+          "explanation": "budget_us * rate_hz が1000000を超えており、実行予算が1周期より長くなっています。",
+          "help": "budget_usを短くするかrate_hzを下げてください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-L101",
+      "category": "SAGA-L001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Unsupported character",
+          "explanation": "The source contains a character that Saga cannot tokenize. Check the input method or copied text.",
+          "help": "Check for full-width punctuation or visually similar Unicode characters."
+        },
+        "ja": {
+          "title": "使用できない文字があります",
+          "explanation": "Sagaのソースとして解釈できない文字が含まれています。入力方式やコピー元を確認してください。",
+          "help": "全角記号や見た目が似た記号になっていないか確認してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-L102",
+      "category": "SAGA-L001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Unterminated string",
+          "explanation": "A string literal was opened but no matching closing quote was found.",
+          "help": "Add the matching quote at the end of the string."
+        },
+        "ja": {
+          "title": "文字列が閉じられていません",
+          "explanation": "文字列を開始した引用符に対応する終了引用符がありません。",
+          "help": "文字列の最後に同じ種類の引用符を追加してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-L103",
+      "category": "SAGA-L001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Invalid numeric literal",
+          "explanation": "The numeric separators or decimal point do not follow Saga numeric syntax.",
+          "help": "Examples: 1_000 and 3.141_592 are valid."
+        },
+        "ja": {
+          "title": "数値リテラルの書き方が正しくありません",
+          "explanation": "数値区切りや小数点の位置がSagaの数値構文に合っていません。",
+          "help": "例: 1_000, 3.141_592 のように書けます。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-L104",
+      "category": "SAGA-L001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Invalid UTF-8 source",
+          "explanation": "Saga source files must be encoded as UTF-8. Malformed byte sequences are rejected before tokenization.",
+          "help": "Save the file again using UTF-8 encoding."
+        },
+        "ja": {
+          "title": "ソースが正しいUTF-8ではありません",
+          "explanation": "SagaソースはUTF-8で保存する必要があります。不正なバイト列は字句解析前に拒否されます。",
+          "help": "エディターの文字コードをUTF-8にして保存し直してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-L105",
+      "category": "SAGA-L001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Identifier is not NFC-normalized",
+          "explanation": "Saga identifiers use Unicode NFC so visually identical names do not silently use different code-point sequences.",
+          "help": "Normalize the identifier to Unicode NFC and save the file again."
+        },
+        "ja": {
+          "title": "識別子がNFC正規形ではありません",
+          "explanation": "同じ見た目の識別子が異なるUnicode列として扱われることを防ぐため、Sagaの識別子はNFC正規形で記述します。",
+          "help": "エディターでUnicode NFC正規化してから保存してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-L106",
+      "category": "SAGA-L001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Bidirectional control character is not allowed in code",
+          "explanation": "Bidirectional formatting controls are rejected outside string literals to reduce discrepancies between visual order and compiler interpretation.",
+          "help": "Remove the invisible bidi control. If it is intentional data, place it inside a string literal."
+        },
+        "ja": {
+          "title": "双方向制御文字をコード中では使用できません",
+          "explanation": "文字の見た目とコンパイラが読む順序の不一致を避けるため、双方向テキスト制御文字は文字列リテラル以外では拒否されます。",
+          "help": "不可視の双方向制御文字を削除してください。必要な文字列データなら文字列リテラル内に置いてください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-P101",
+      "category": "SAGA-P001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Missing closing delimiter",
+          "explanation": "An opening parenthesis, bracket, or block is missing its closing delimiter.",
+          "help": "Check the nearest ( [ { and add the matching ) ] }."
+        },
+        "ja": {
+          "title": "閉じ記号が不足しています",
+          "explanation": "開いた括弧・角括弧・ブロックに対応する閉じ記号が見つかりません。",
+          "help": "直前の ( [ { と対応する ) ] } を確認してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-P102",
+      "category": "SAGA-P001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Expected an expression",
+          "explanation": "This position requires an expression that produces a value.",
+          "help": "Provide a variable, literal, function call, or another expression."
+        },
+        "ja": {
+          "title": "ここには式が必要です",
+          "explanation": "演算子や代入の後など、値を表す式が必要な位置です。",
+          "help": "変数、リテラル、関数呼び出しなどを置いてください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-P103",
+      "category": "SAGA-P001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Unterminated interpolation",
+          "explanation": "An interpolated string contains an expression opening without its matching closing delimiter.",
+          "help": "Close the ${...} expression before the string ends."
+        },
+        "ja": {
+          "title": "文字列補間が閉じられていません",
+          "explanation": "補間文字列内の式を開始した記号に対応する終了記号がありません。",
+          "help": "文字列の終了前に ${...} の式を閉じてください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-R101",
+      "category": "SAGA-R001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Index out of bounds",
+          "explanation": "The program attempted to access a list or text position outside its valid range.",
+          "help": "Check the length with len(...) or use a safe get operation."
+        },
+        "ja": {
+          "title": "範囲外の位置へアクセスしています",
+          "explanation": "リストまたは文字列の長さを超えた位置を読み取ろうとしました。",
+          "help": "len(...)で長さを確認するか、安全なget系関数を使用してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-R102",
+      "category": "SAGA-R001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Division by zero",
+          "explanation": "The divisor is zero. Division by zero is undefined for int, decimal, and rational values.",
+          "help": "Check divisor != 0 before dividing."
+        },
+        "ja": {
+          "title": "0では割れません",
+          "explanation": "除数が0になっています。整数・Decimal・Rationalのいずれでも0除算は定義されません。",
+          "help": "除算前に divisor != 0 を確認してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-R103",
+      "category": "SAGA-R001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Capability denied",
+          "explanation": "External effects such as file, network, database, or process access require an explicit capability.",
+          "help": "Grant only the minimum required --allow-* capability."
+        },
+        "ja": {
+          "title": "必要な権限がありません",
+          "explanation": "ファイル、ネットワーク、DB、プロセス等の外部操作には明示的な権限が必要です。",
+          "help": "必要最小限の --allow-* オプションだけを指定してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-R104",
+      "category": "SAGA-R001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Option has no value",
+          "explanation": "The program tried to unwrap none() as if it contained a value.",
+          "help": "Check with is_some(...) or use unwrap_or(...)."
+        },
+        "ja": {
+          "title": "optionに値がありません",
+          "explanation": "none()を値が存在するものとして取り出そうとしました。",
+          "help": "is_some(...)で確認するか、unwrap_or(...)を使用してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-R105",
+      "category": "SAGA-R001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Assertion failed",
+          "explanation": "The condition passed to assert evaluated to false.",
+          "help": "Inspect the asserted condition and the input values."
+        },
+        "ja": {
+          "title": "アサーションに失敗しました",
+          "explanation": "assertで指定した条件がfalseになりました。",
+          "help": "表示された条件と入力値を確認してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T101",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Cannot assign to an immutable binding",
+          "explanation": "Bindings declared with let are immutable. Mutable state must be declared explicitly with var.",
+          "help": "If mutation is intended, change the declaration from let to var."
+        },
+        "ja": {
+          "title": "変更できない値へ代入しています",
+          "explanation": "letで宣言した変数は変更できません。変更可能な状態は明示的にvarで宣言します。",
+          "help": "変更が必要なら宣言を let から var に変更してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T102",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Unknown name",
+          "explanation": "This name is not declared in the current scope. Check spelling and declaration order.",
+          "help": "If a candidate is shown, consider replacing the name with it."
+        },
+        "ja": {
+          "title": "名前が宣言されていません",
+          "explanation": "この名前は現在のスコープで宣言されていません。スペルミスか、宣言順を確認してください。",
+          "help": "候補が表示されている場合は、その名前への修正を検討してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T103",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Type mismatch",
+          "explanation": "The supplied value has a different type from the type required here. Saga avoids unsafe implicit conversions.",
+          "help": "Convert explicitly to the required type or revise the declared type."
+        },
+        "ja": {
+          "title": "型が一致していません",
+          "explanation": "渡した値の型と、その位置で必要な型が一致していません。Sagaは危険な暗黙変換を行いません。",
+          "help": "必要な型へ明示的に変換するか、宣言した型を見直してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T104",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Condition must be bool",
+          "explanation": "Saga does not implicitly convert numbers or text to true/false.",
+          "help": "Write an explicit comparison, for example: if count > 0 { ... }."
+        },
+        "ja": {
+          "title": "条件式はboolである必要があります",
+          "explanation": "Sagaでは数値や文字列を暗黙にtrue/falseへ変換しません。",
+          "help": "例: if count > 0 { ... } のように比較式を書いてください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T105",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Function arguments do not match",
+          "explanation": "The call does not match the function's required argument count or types.",
+          "help": "Check the function declaration's parameter list."
+        },
+        "ja": {
+          "title": "関数の引数が一致していません",
+          "explanation": "関数が要求する引数の個数または型と、呼び出し側が渡した値が一致しません。",
+          "help": "関数定義の引数一覧を確認してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T106",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Unknown member",
+          "explanation": "The type, class, or module does not define the requested field, method, or function.",
+          "help": "If a candidate is shown, correct the spelling."
+        },
+        "ja": {
+          "title": "メンバーが見つかりません",
+          "explanation": "この型・クラス・モジュールには指定されたフィールド、メソッド、関数がありません。",
+          "help": "候補が表示されている場合はスペルを修正してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T107",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Private member access",
+          "explanation": "A private member cannot be accessed directly from outside its declaring class.",
+          "help": "Use a public method to perform the required operation."
+        },
+        "ja": {
+          "title": "privateメンバーへ外部からアクセスしています",
+          "explanation": "privateメンバーは宣言したクラスの外側から直接アクセスできません。",
+          "help": "公開メソッドを経由して必要な操作を行ってください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T108",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Duplicate declaration",
+          "explanation": "The same name is declared more than once in the same scope.",
+          "help": "Rename one declaration or remove the duplicate."
+        },
+        "ja": {
+          "title": "同じ名前が重複しています",
+          "explanation": "同じスコープ内で同じ名前を複数回宣言しています。",
+          "help": "どちらかの名前を変更するか、不要な宣言を削除してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T109",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Missing return path",
+          "explanation": "A value-returning function has a control-flow path that may finish without returning a value.",
+          "help": "Return a value on every possible control-flow path."
+        },
+        "ja": {
+          "title": "戻り値の経路が不足しています",
+          "explanation": "値を返す関数で、処理経路によってreturnに到達しない可能性があります。",
+          "help": "すべての分岐で値をreturnするようにしてください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T110",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Invalid override declaration",
+          "explanation": "A method replacing an inherited or interface contract requires override, and override cannot be used without a matching contract.",
+          "help": "Check the matching parent/interface method and the override marker."
+        },
+        "ja": {
+          "title": "override指定が正しくありません",
+          "explanation": "継承またはinterfaceの契約を置き換えるメソッドにはoverrideが必要で、対応する契約がない場所には指定できません。",
+          "help": "親クラスまたはinterfaceの同名メソッドとoverride指定を確認してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T111",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Abstract type cannot be constructed",
+          "explanation": "An abstract class or interface cannot be instantiated directly. Construct a concrete implementation instead.",
+          "help": "Construct a concrete class that implements the required abstract methods."
+        },
+        "ja": {
+          "title": "抽象型は直接作成できません",
+          "explanation": "abstract classまたはinterfaceは直接インスタンス化できません。具体クラスを作成してください。",
+          "help": "抽象メソッドを実装した具体クラスを作成してください。"
+        }
+      }
+    },
+    {
+      "id": "SAGA-T112",
+      "category": "SAGA-T001",
+      "severity": "error",
+      "locales": {
+        "en": {
+          "title": "Non-exhaustive enum match",
+          "explanation": "A match over a closed enum does not cover every variant and has no default case.",
+          "help": "Add the missing variants or an explicit default case."
+        },
+        "ja": {
+          "title": "enumのmatchが網羅されていません",
+          "explanation": "閉じたenumに対するmatchで、すべてのvariantを扱っておらずdefaultもありません。",
+          "help": "不足しているvariantまたは明示的なdefaultを追加してください。"
+        }
+      }
+    }
+  ]
+}

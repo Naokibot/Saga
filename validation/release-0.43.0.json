@@ -1,0 +1,189 @@
+{
+  "schema": 1,
+  "release": "0.43.0",
+  "source_manifest_sha256": "03525558a83096bc9fcbbdf2c2d8f1c9caea95734a3022b9e9eccfa55a3abf34",
+  "source_tree_sha256": "59fdf69e653676cba310b1cd90082f49765640b8026f4e933daaa93e77cf743c",
+  "status": "pass",
+  "pass": true,
+  "cases": [
+    {
+      "name": "Official PX4 SITL executable present",
+      "pass": false,
+      "status": "UNEXECUTED",
+      "evidence": {
+        "path": null
+      }
+    },
+    {
+      "name": "Official ArduPilot SITL executable present",
+      "pass": false,
+      "status": "UNEXECUTED",
+      "evidence": {
+        "path": null
+      }
+    },
+    {
+      "name": "Pretrained YOLOX asset present",
+      "pass": false,
+      "status": "UNEXECUTED",
+      "evidence": {
+        "path": null
+      }
+    },
+    {
+      "name": "Real GStreamer VP8/RTP pipeline executes",
+      "pass": true,
+      "status": "PASS",
+      "evidence": {
+        "probe": {
+          "status": "EXECUTED",
+          "pipeline": "videotestsrc->VP8->RTP->fakesink",
+          "state": {
+            "set_state_result": 2,
+            "wait_result": 1,
+            "state": 4,
+            "pending": 0
+          },
+          "webrtcbin_loaded": true,
+          "ice_transport_available": false
+        },
+        "backend": {
+          "available": true,
+          "cli": false,
+          "c_api": true,
+          "webrtcbin": true,
+          "nicesrc": false,
+          "vp8enc": true,
+          "rtpvp8pay": true
+        }
+      }
+    },
+    {
+      "name": "Real webrtcbin plugin loads",
+      "pass": true,
+      "status": "PLUGIN_EXECUTED",
+      "evidence": {
+        "ice_transport_available": false
+      }
+    },
+    {
+      "name": "Full GStreamer WebRTC ICE transport available",
+      "pass": false,
+      "status": "UNEXECUTED",
+      "evidence": {
+        "available": true,
+        "cli": false,
+        "c_api": true,
+        "webrtcbin": true,
+        "nicesrc": false,
+        "vp8enc": true,
+        "rtpvp8pay": true
+      }
+    },
+    {
+      "name": "Real GStreamer RTP packet reaches OS UDP socket",
+      "pass": true,
+      "status": "PASS",
+      "evidence": {
+        "bytes": 736,
+        "peer": [
+          "127.0.0.1",
+          45833
+        ],
+        "rtp_header_hex": "80e01d77d0ff0a50cfe001d6"
+      }
+    },
+    {
+      "name": "Physical camera attached",
+      "pass": false,
+      "status": "UNEXECUTED",
+      "evidence": {
+        "camera": [],
+        "serial": [],
+        "can": []
+      }
+    },
+    {
+      "name": "Physical servo/PLC/fieldbus adapter attached",
+      "pass": false,
+      "status": "UNEXECUTED",
+      "evidence": {
+        "camera": [],
+        "serial": [],
+        "can": []
+      }
+    },
+    {
+      "name": "Modbus TCP PLC HIL over real loopback socket",
+      "pass": true,
+      "status": "HIL_LOOPBACK",
+      "evidence": {
+        "registers": [
+          100,
+          200,
+          300,
+          400
+        ],
+        "port": 42313
+      }
+    },
+    {
+      "name": "CANopen/CiA-402 fieldbus frame crosses OS socketpair",
+      "pass": true,
+      "status": "HIL_LOOPBACK",
+      "evidence": {
+        "frame_hex": "2b4060000f000000"
+      }
+    },
+    {
+      "name": "Six-axis servo + PLC cyclic HIL completes 20k cycles",
+      "pass": true,
+      "status": "HIL_LOOPBACK",
+      "evidence": {
+        "cycles": 20000,
+        "final_error": "2.4E-27",
+        "peak_error": "0.79960",
+        "process_image_prefix": "3f1f79ecb70b31f86f17a9e4000000000000000000000000"
+      }
+    },
+    {
+      "name": "Cached control allocation hot path is lighter",
+      "pass": true,
+      "status": "PASS",
+      "evidence": {
+        "cached_us": 4.374506199928874,
+        "legacy_us": 28.091357999983302,
+        "speedup": 6.421606626238191
+      }
+    },
+    {
+      "name": "Fast 8-state control path matches exact command and reduces hot-loop cost",
+      "pass": true,
+      "status": "PASS",
+      "evidence": {
+        "fast": [
+          "0.484",
+          "0.484",
+          "0.484",
+          "0.484"
+        ],
+        "exact": [
+          "0.484",
+          "0.484",
+          "0.484",
+          "0.484"
+        ],
+        "fast_us": 8.983104749972881,
+        "exact_us": 11.75292433345021,
+        "speedup": 1.308336556298722
+      }
+    }
+  ],
+  "boundaries": {
+    "official_px4_sitl": "UNEXECUTED",
+    "official_ardupilot_sitl": "UNEXECUTED",
+    "pretrained_yolox": "UNEXECUTED",
+    "physical_camera": "UNEXECUTED",
+    "physical_machine_hardware": "UNEXECUTED"
+  }
+}

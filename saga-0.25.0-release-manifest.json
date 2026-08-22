@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "language": "Saga",
+  "release": "0.25.0",
+  "generated_at_utc": "2026-08-10T11:09:33.452991+00:00",
+  "theme": "Platform Qualification & GA Readiness",
+  "language_runtime_baseline": "1.0 RC1",
+  "specification_candidate": "1.0 RC2",
+  "ga_ready": false,
+  "internal_release_validation": "PASS",
+  "python_tests": 174,
+  "python_subtests": 4,
+  "hosted_api_functions": 168,
+  "native_game_functions": 101,
+  "browser_host_operations": 101,
+  "app_source_apis": 10,
+  "app_browser_operations": 53,
+  "sh3_compiler_stage2_stage3_sha256": "8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4",
+  "sh3_kernel_sha256": "cbba9e5b42c8c41a2ecd2ecfde619368fc632299719cd7161d1b829ad32404e3",
+  "vulkan_current_host": "PASS_SOFTWARE_DEVICE",
+  "ga_blockers": [
+    "Language Specification 1.0 Final",
+    "native Windows and macOS execution evidence",
+    "live external signed HTTPS registry roundtrip",
+    "independent signed security audit with zero open critical/high findings"
+  ],
+  "external_profiles_not_claimed_pass": [
+    "physical Vulkan GPU",
+    "physical gamepad",
+    "authorized live AWS",
+    "physical GPIO",
+    "real Spark on current host",
+    "real pygame on current host",
+    "Android device",
+    "iOS device"
+  ],
+  "key_evidence": [
+    "validation/release-validation-0.25.0.json",
+    "validation/ga-readiness-0.25.0.json",
+    "validation/platform-qualification-0.25.0.json",
+    "validation/python-suite-0.25.0.json",
+    "validation/cross-implementation-0.25.0.json",
+    "validation/sh3-validation-0.25.0.json",
+    "validation/internal-security-audit-0.25.0.json",
+    "SAGA_LANGUAGE_SPECIFICATION_1.0_RC2.md"
+  ]
+}

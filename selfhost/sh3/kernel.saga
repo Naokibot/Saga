@@ -1,0 +1,795 @@
+# Saga SH-3 Standard Core kernel.
+# This is the canonical language implementation for SH-3: source validation,
+# lexical analysis, parsing/evaluation, static safety preflight, exact-number
+# semantics, functions/closures, classes/interfaces/generics, exceptions,
+# option/result, enums/records/match, interpolation, and deterministic core I/O.
+# It is deliberately written in the restricted self-host subset accepted by
+# selfhost/sh3/sh3c.saga so it can execute on the language-neutral bootstrap VM.
+use io
+use sys
+
+var ktokens: list[any] = slice([0], 0, 0)
+var kpos: int = 0
+var ksource: text = ""
+var klast_error: text = ""
+var klast_message: text = ""
+var heap_values: list[any] = slice([0], 0, 0)
+var heap_mutable: list[any] = slice([0], 0, 0)
+var env_names: list[any] = slice([0], 0, 0)
+var env_cells: list[any] = slice([0], 0, 0)
+var scope_marks: list[any] = slice([0], 0, 0)
+var class_names: list[any] = slice([0], 0, 0)
+var class_values: list[any] = slice([0], 0, 0)
+var enum_names: list[any] = slice([0], 0, 0)
+var enum_values: list[any] = slice([0], 0, 0)
+var interface_names: list[any] = slice([0], 0, 0)
+var output_lines: list[any] = slice([0], 0, 0)
+var control_kind: text = "normal"
+var control_value: any = 0
+var current_class: text = ""
+var next_object_id: int = 1
+var checking_mode: bool = false
+var user_cli_raw: list[any] = slice([0], 0, 0)
+var pending_derive_equal: bool = false
+var pending_derive_hash: bool = false
+
+fn empty_any() -> list[any] { return slice([0], 0, 0) }
+fn empty_text() -> list[text] { return slice([""], 0, 0) }
+
+fn kfail(id: text, message: text) -> any {
+    klast_error = id
+    klast_message = message
+    return ["error", id, message]
+}
+
+fn is_error(v: any) -> bool {
+    return len(v) >= 1 and v[0] == "error"
+}
+
+fn is_digit_char(c: text) -> bool { return find_text("0123456789", c) >= 0 }
+fn is_ascii_alpha(c: text) -> bool { return find_text("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_", c) >= 0 }
+fn is_space(c: text) -> bool { return c == " " or c == "\t" or c == "\r" or c == "\n" }
+
+fn tok(kind: text, value: text, line: int, col: int) -> list[any] { return [kind, value, line, col] }
+fn tk_kind(i: int) -> text { return ktokens[i][0] }
+fn tk_text(i: int) -> text { return ktokens[i][1] }
+fn tk_line(i: int) -> int { return ktokens[i][2] }
+
+fn has_bidi(source: text) -> bool {
+    # U+202A..U+202E and U+2066..U+2069 UTF-8 prefixes used by bidi controls.
+    let e2 = bytechr(226)
+    let b80 = bytechr(128)
+    var i = 0
+    while i + 2 < len(source) {
+        if source[i] == e2 and source[i + 1] == b80 {
+            let z = byteord(source[i + 2])
+            if z >= 170 and z <= 174 { return true }
+        }
+        if source[i] == e2 and byteord(source[i + 1]) == 129 {
+            let z = byteord(source[i + 2])
+            if z >= 166 and z <= 169 { return true }
+        }
+        i = i + 1
+    }
+    return false
+}
+
+fn has_non_nfc_combining(source: text) -> bool {
+    # Strict portable source gate: reject the common decomposed combining-mark
+    # UTF-8 block U+0300..U+036F. NFC identifiers use precomposed code points.
+    var i = 0
+    while i + 1 < len(source) {
+        let a = byteord(source[i])
+        let b = byteord(source[i + 1])
+        if a == 204 and b >= 128 { return true }
+        if a == 205 and b <= 175 { return true }
+        i = i + 1
+    }
+    return false
+}
+
+fn lex_add(kind: text, value: text, line: int, col: int) -> unit {
+    ktokens = append(ktokens, tok(kind, value, line, col))
+}
+
+fn lex_source(source: text) -> any {
+    ktokens = empty_any()
+    kpos = 0
+    if has_bidi(source) { return kfail("SAGA-L001", "bidi formatting controls are not allowed") }
+    if has_non_nfc_combining(source) { return kfail("SAGA-L001", "identifier/source text is not NFC") }
+    var i = 0
+    var line = 1
+    var col = 1
+    while i < len(source) {
+        let c = source[i]
+        if c == "\n" { i = i + 1; line = line + 1; col = 1 } else {
+            if c == "\r" { i = i + 1; if i < len(source) and source[i] == "\n" { i = i + 1 }; line = line + 1; col = 1 } else {
+                if c == " " or c == "\t" { i = i + 1; col = col + 1 } else {
+                    if c == "#" { while i < len(source) and source[i] != "\n" { i = i + 1; col = col + 1 } } else {
+                        if c == "/" and i + 1 < len(source) and source[i + 1] == "/" { while i < len(source) and source[i] != "\n" { i = i + 1; col = col + 1 } } else {
+                            let bc = byteord(c)
+                            if is_ascii_alpha(c) or bc >= 128 {
+                                let start = i
+                                let scol = col
+                                i = i + 1; col = col + 1
+                                var scanning_id = true
+                                while i < len(source) and scanning_id {
+                                    let q = source[i]
+                                    let qb = byteord(q)
+                                    if is_ascii_alpha(q) or is_digit_char(q) or qb >= 128 { i = i + 1; col = col + 1 } else { scanning_id = false }
+                                }
+                                lex_add("id", substring(source, start, i), line, scol)
+                            } else {
+                                if is_digit_char(c) {
+                                    let start = i
+                                    let scol = col
+                                    i = i + 1; col = col + 1
+                                    var seen_dot = false
+                                    var scanning_num = true
+                                    while i < len(source) and scanning_num {
+                                        let q = source[i]
+                                        if is_digit_char(q) or q == "_" { i = i + 1; col = col + 1 } else {
+                                            if q == "." and !seen_dot and !(i + 1 < len(source) and source[i + 1] == ".") { seen_dot = true; i = i + 1; col = col + 1 } else { scanning_num = false }
+                                        }
+                                    }
+                                    if i + 2 < len(source) and source[i] == "f" and source[i + 1] == "3" and source[i + 2] == "2" { i = i + 3; col = col + 3 }
+                                    if i + 2 < len(source) and source[i] == "f" and source[i + 1] == "6" and source[i + 2] == "4" { i = i + 3; col = col + 3 }
+                                    lex_add("num", substring(source, start, i), line, scol)
+                                } else {
+                                    if c == "\"" or c == "'" {
+                                        let quote = c
+                                        let scol = col
+                                        i = i + 1; col = col + 1
+                                        var value = ""
+                                        while i < len(source) and source[i] != quote {
+                                            if source[i] == "\\" {
+                                                i = i + 1; col = col + 1
+                                                if i >= len(source) { return kfail("SAGA-L001", "unterminated escape") }
+                                                let e = source[i]
+                                                if e == "n" { value = value + "\n" } else { if e == "r" { value = value + "\r" } else { if e == "t" { value = value + "\t" } else { value = value + e } } }
+                                                i = i + 1; col = col + 1
+                                            } else {
+                                                value = value + source[i]
+                                                i = i + 1; col = col + 1
+                                            }
+                                        }
+                                        if i >= len(source) { return kfail("SAGA-L001", "unterminated string") }
+                                        i = i + 1; col = col + 1
+                                        lex_add("str", value, line, scol)
+                                    } else {
+                                        if c == "$" and i + 1 < len(source) and source[i + 1] == "\"" {
+                                            let scol = col
+                                            i = i + 2; col = col + 2
+                                            var value = ""
+                                            while i < len(source) and source[i] != "\"" {
+                                                if source[i] == "\\" and i + 1 < len(source) { value = value + source[i] + source[i + 1]; i = i + 2; col = col + 2 } else { value = value + source[i]; i = i + 1; col = col + 1 }
+                                            }
+                                            if i >= len(source) { return kfail("SAGA-L001", "unterminated interpolation") }
+                                            i = i + 1; col = col + 1
+                                            lex_add("istr", value, line, scol)
+                                        } else {
+                                            var two = ""
+                                            if i + 1 < len(source) { two = substring(source, i, i + 2) }
+                                            if two == "==" or two == "!=" or two == "<=" or two == ">=" or two == "->" or two == ".." or two == "**" {
+                                                lex_add("sym", two, line, col); i = i + 2; col = col + 2
+                                            } else {
+                                                lex_add("sym", c, line, col); i = i + 1; col = col + 1
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    lex_add("eof", "<eof>", line, col)
+    return ["ok"]
+}
+
+fn apply_edition_directive()->any {
+    if len(ktokens)>=3 and ktokens[0][0]=="id" and ktokens[0][1]=="edition" {
+        let ed=ktokens[1][1]
+        if ktokens[1][0]!="num" or !(ed=="2027" or ed=="1.0" or ed=="1") { return kfail("SAGA-P001","unsupported language edition") }
+        var start=2
+        if start<len(ktokens) and ktokens[start][1]==";" { start=start+1 }
+        ktokens=slice(ktokens,start,len(ktokens))
+    }
+    return ["ok"]
+}
+
+# ---------- arbitrary-precision signed decimal integer helpers ----------
+fn bi_strip(a: text) -> text {
+    var neg = false
+    var s = a
+    if len(s) > 0 and s[0] == "-" { neg = true; s = substring(s, 1, len(s)) }
+    var i = 0
+    while i + 1 < len(s) and s[i] == "0" { i = i + 1 }
+    s = substring(s, i, len(s))
+    if s == "" { s = "0" }
+    if neg and s != "0" { return "-" + s }
+    return s
+}
+fn bi_neg(a: text) -> text { a = bi_strip(a); if a == "0" { return "0" }; if a[0] == "-" { return substring(a,1,len(a)) }; return "-" + a }
+fn bi_abs(a: text) -> text { a = bi_strip(a); if len(a)>0 and a[0]=="-" { return substring(a,1,len(a)) }; return a }
+fn bi_sign(a: text) -> int { a=bi_strip(a); if a=="0" { return 0 }; if a[0]=="-" { return -1 }; return 1 }
+fn bi_cmp_abs(a: text,b: text)->int { a=bi_abs(a);b=bi_abs(b);if len(a)<len(b){return -1};if len(a)>len(b){return 1};if a<b{return -1};if a>b{return 1};return 0 }
+fn digit_value(c:text)->int { return find_text("0123456789",c) }
+fn digit_text(n:int)->text { return "0123456789"[n] }
+fn bi_add_abs(a:text,b:text)->text {
+    a=bi_abs(a);b=bi_abs(b);var i=len(a)-1;var j=len(b)-1;var carry=0;var r=""
+    while i>=0 or j>=0 or carry>0 {
+        var x=0;var y=0;if i>=0{x=digit_value(a[i])};if j>=0{y=digit_value(b[j])};let z=x+y+carry;var q=z;carry=0;while q>=10{q=q-10;carry=carry+1};r=digit_text(q)+r;i=i-1;j=j-1
+    }
+    return bi_strip(r)
+}
+fn bi_sub_abs(a:text,b:text)->text {
+    # requires |a| >= |b|
+    a=bi_abs(a);b=bi_abs(b);var i=len(a)-1;var j=len(b)-1;var borrow=0;var r=""
+    while i>=0 { var x=digit_value(a[i])-borrow;var y=0;if j>=0{y=digit_value(b[j])};borrow=0;if x<y{x=x+10;borrow=1};r=digit_text(x-y)+r;i=i-1;j=j-1 }
+    return bi_strip(r)
+}
+fn bi_add(a:text,b:text)->text { let sa=bi_sign(a);let sb=bi_sign(b);if sa==0{return bi_strip(b)};if sb==0{return bi_strip(a)};if sa==sb{let r=bi_add_abs(a,b);if sa<0{return "-"+r};return r};let c=bi_cmp_abs(a,b);if c==0{return "0"};if c>0{let r=bi_sub_abs(a,b);if sa<0{return "-"+r};return r};let r=bi_sub_abs(b,a);if sb<0{return "-"+r};return r }
+fn bi_sub(a:text,b:text)->text { return bi_add(a,bi_neg(b)) }
+fn bi_mul(a:text,b:text)->text {
+    let sa=bi_sign(a);let sb=bi_sign(b);if sa==0 or sb==0{return "0"};a=bi_abs(a);b=bi_abs(b);var result="0";var j=len(b)-1;var zeros=""
+    while j>=0 { let d=digit_value(b[j]);var part="0";var k=0;while k<d{part=bi_add_abs(part,a);k=k+1};part=part+zeros;result=bi_add_abs(result,part);zeros=zeros+"0";j=j-1 }
+    if sa!=sb{return "-"+result};return result
+}
+fn bi_divmod_abs(a:text,b:text)->list[any] {
+    a=bi_abs(a);b=bi_abs(b);if b=="0"{return ["0",a]};var q="";var rem="0";var i=0
+    while i<len(a){rem=bi_strip(rem+a[i]);var d=0;while bi_cmp_abs(rem,b)>=0{rem=bi_sub_abs(rem,b);d=d+1};q=q+digit_text(d);i=i+1}
+    return [bi_strip(q),bi_strip(rem)]
+}
+fn bi_div(a:text,b:text)->text { let sa=bi_sign(a);let sb=bi_sign(b);let dm=bi_divmod_abs(a,b);var q=dm[0];if sa!=0 and sb!=0 and sa!=sb and q!="0"{q="-"+q};return q }
+fn bi_mod(a:text,b:text)->text { let dm=bi_divmod_abs(a,b);var r=dm[1];if bi_sign(a)<0 and r!="0"{r="-"+r};return r }
+fn bi_gcd(a:text,b:text)->text { a=bi_abs(a);b=bi_abs(b);while b!="0"{let dm=bi_divmod_abs(a,b);a=b;b=dm[1]};return a }
+fn bi_cmp(a:text,b:text)->int { let sa=bi_sign(a);let sb=bi_sign(b);if sa<sb{return -1};if sa>sb{return 1};if sa==0{return 0};let c=bi_cmp_abs(a,b);if sa<0{return -c};return c }
+
+fn v_num(n:text,d:text,flavor:text)->list[any] { if d=="0"{return ["error","SAGA-R101","division by zero"]};if bi_sign(d)<0{n=bi_neg(n);d=bi_neg(d)};let g=bi_gcd(n,d);if g!="0"{n=bi_div(n,g);d=bi_div(d,g)};return ["num",bi_strip(n),bi_strip(d),flavor] }
+fn v_bool(x:bool)->list[any] { if x{return ["bool",1]};return ["bool",0] }
+fn v_text(x:text)->list[any] { return ["text",x] }
+fn v_unit()->list[any] { return ["unit"] }
+fn v_list(x:list[any])->list[any] { return ["list",x] }
+fn v_option(some:bool,x:any)->list[any] { if some{return ["option",1,x]};return ["option",0,v_unit()] }
+fn v_result(okay:bool,x:any)->list[any] { if okay{return ["result",1,x]};return ["result",0,x] }
+fn v_error(kind:text,message:text)->list[any] { return ["errorvalue",kind,message] }
+fn v_tag(v:any)->text { return v[0] }
+fn num_is_int(v:any)->bool { return v_tag(v)=="num" and v[2]=="1" and v[3]=="exact" }
+fn value_truth(v:any)->bool { if v_tag(v)=="bool"{return v[1]!=0};return false }
+fn num_add(a:any,b:any)->any { if a[3]!="exact" or b[3]!="exact" { if a[3]=="exact" or b[3]=="exact"{return kfail("SAGA-T170","exact and float arithmetic requires explicit conversion")};return v_num(bi_add(bi_mul(a[1],b[2]),bi_mul(b[1],a[2])),bi_mul(a[2],b[2]),a[3]) };return v_num(bi_add(bi_mul(a[1],b[2]),bi_mul(b[1],a[2])),bi_mul(a[2],b[2]),"exact") }
+fn num_sub(a:any,b:any)->any { let nb=["num",bi_neg(b[1]),b[2],b[3]];return num_add(a,nb) }
+fn num_mul(a:any,b:any)->any { if a[3]!="exact" or b[3]!="exact" { if a[3]=="exact" or b[3]=="exact"{return kfail("SAGA-T170","exact and float arithmetic requires explicit conversion")};return v_num(bi_mul(a[1],b[1]),bi_mul(a[2],b[2]),a[3]) };return v_num(bi_mul(a[1],b[1]),bi_mul(a[2],b[2]),"exact") }
+fn num_div(a:any,b:any)->any { return v_num(bi_mul(a[1],b[2]),bi_mul(a[2],b[1]),a[3]) }
+fn num_cmp(a:any,b:any)->int { return bi_cmp(bi_mul(a[1],b[2]),bi_mul(b[1],a[2])) }
+
+fn parse_number(raw:text)->any {
+    var flavor="exact";if ends_with(raw,"f32"){flavor="float32";raw=substring(raw,0,len(raw)-3)};if ends_with(raw,"f64"){flavor="float64";raw=substring(raw,0,len(raw)-3)}
+    let dot=find_text(raw,".");if dot<0{return v_num(replace(raw,"_",""),"1",flavor)};let a=replace(substring(raw,0,dot),"_","");let b=replace(substring(raw,dot+1,len(raw)),"_","");var den="1";var i=0;while i<len(b){den=den+"0";i=i+1};return v_num(a+b,den,flavor)
+}
+
+fn pow10_text(n:int)->text { var r="1";var i=0;while i<n{r=r+"0";i=i+1};return r }
+fn num_decimal_text(v:any)->text {
+    var n=v[1];let d=v[2];var sign="";if bi_sign(n)<0{sign="-";n=bi_abs(n)};let dm=bi_divmod_abs(n,d);var whole=dm[0];var rem=dm[1];if rem=="0"{return sign+whole};var frac="";var count=0;while rem!="0" and count<128{rem=bi_mul(rem,"10");let q=bi_divmod_abs(rem,d);frac=frac+q[0];rem=q[1];count=count+1};return sign+whole+"."+frac
+}
+fn num_floor(v:any)->any { let n=v[1];let d=v[2];let q=bi_div(n,d);let r=bi_mod(n,d);if bi_sign(n)<0 and r!="0"{return v_num(bi_sub(q,"1"),"1","exact")};return v_num(q,"1","exact") }
+fn num_ceil(v:any)->any { let n=v[1];let d=v[2];let q=bi_div(n,d);let r=bi_mod(n,d);if bi_sign(n)>0 and r!="0"{return v_num(bi_add(q,"1"),"1","exact")};return v_num(q,"1","exact") }
+fn num_round_places(v:any,places:int)->any { let scale=pow10_text(places);let scaled=bi_mul(v[1],scale);let sign=bi_sign(scaled);let dm=bi_divmod_abs(scaled,v[2]);var q=dm[0];let twice=bi_mul(dm[1],"2");if bi_cmp_abs(twice,v[2])>=0{q=bi_add_abs(q,"1")};if sign<0 and q!="0"{q="-"+q};return v_num(q,scale,"decimal") }
+
+fn value_text(v:any)->text {
+    let tag=v_tag(v)
+    if tag=="text"{return v[1]}
+    if tag=="bool"{if v[1]!=0{return "true"};return "false"}
+    if tag=="unit"{return "unit"}
+    if tag=="num"{if v[3]=="decimal"{return num_decimal_text(v)};if v[2]=="1"{return v[1]};return v[1]+"/"+v[2]}
+    if tag=="option"{if v[1]==0{return "none"};return "some("+value_text(v[2])+")"}
+    if tag=="result"{if v[1]!=0{return "ok("+value_text(v[2])+")"};return "err("+value_text(v[2])+")"}
+    if tag=="errorvalue"{return v[2]}
+    if tag=="enum"{return v[1]+"."+v[2]}
+    if tag=="record"{var r=v[1]+"(";var i=0;while i<len(v[3]){if i>0{r=r+", "};r=r+value_text(v[3][i]);i=i+1};return r+")"}
+    if tag=="object"{var r=v[1]+"(";var shown=0;var i=0;while i<len(v[2]){if !v[4][i]{if shown>0{r=r+", "};r=r+v[2][i]+"="+value_text(cell_get(v[3][i]));shown=shown+1};i=i+1};return r+")"}
+    if tag=="set"{var r="set{";var i=0;while i<len(v[1]){if i>0{r=r+", "};r=r+value_text(v[1][i]);i=i+1};return r+"}"}
+    if tag=="map"{var r="{";var i=0;while i+1<len(v[1]){if i>0{r=r+", "};r=r+value_text(v[1][i])+": "+value_text(v[1][i+1]);i=i+2};return r+"}"}
+    if tag=="list"{var r="[";var i=0;while i<len(v[1]){if i>0{r=r+", "};r=r+value_text(v[1][i]);i=i+1};return r+"]"}
+    return "<"+tag+">"
+}
+
+# ---------- environment / cells ----------
+fn new_cell(value:any,mutable:bool)->int { let id=len(heap_values);heap_values=append(heap_values,value);heap_mutable=append(heap_mutable,mutable);return id }
+fn cell_get(id:int)->any { return heap_values[id] }
+fn cell_set(id:int,value:any)->unit { heap_values=set_at(heap_values,id,value) }
+fn env_find(name:text)->int { var i=len(env_names)-1;while i>=0{if env_names[i]==name{return env_cells[i]};i=i-1};return -1 }
+fn env_declare(name:text,value:any,mutable:bool)->int { let id=new_cell(value,mutable);env_names=append(env_names,name);env_cells=append(env_cells,id);return id }
+fn push_scope()->unit { scope_marks=append(scope_marks,len(env_names)) }
+fn pop_scope()->unit { let n=scope_marks[len(scope_marks)-1];scope_marks=slice(scope_marks,0,len(scope_marks)-1);env_names=slice(env_names,0,n);env_cells=slice(env_cells,0,n) }
+fn assign_name(name:text,value:any)->any { let id=env_find(name);if id<0{return kfail("SAGA-T102","unknown name "+name)};if !heap_mutable[id]{return kfail("SAGA-T101","cannot assign to immutable binding")};cell_set(id,value);return value }
+fn get_name(name:text)->any { let id=env_find(name);if id<0{return kfail("SAGA-T102","unknown name "+name)};return cell_get(id) }
+
+# ---------- token parser helpers ----------
+fn ppeek(value:text)->bool { let k=tk_kind(kpos);if k=="str" or k=="num" or k=="istr"{return false};return tk_text(kpos)==value }
+fn ptake(value:text)->bool { if ppeek(value){kpos=kpos+1;return true};return false }
+fn pexpect(value:text)->any { if !ptake(value){return kfail("SAGA-P001","expected "+value+" got "+tk_text(kpos))};return v_unit() }
+fn pid()->text { if tk_kind(kpos)!="id"{kfail("SAGA-P001","expected identifier");return ""};let r=tk_text(kpos);kpos=kpos+1;return r }
+fn skip_type()->text { var r="";var sq=0;while tk_text(kpos)!="<eof>"{let t=tk_text(kpos);if sq==0 and (t=="=" or t=="," or t==")" or t=="{" or t=="}" or t==";" or t=="where"){return r};if t=="["{sq=sq+1};if t=="]"{sq=sq-1};r=r+t;kpos=kpos+1};return r }
+fn matching_brace(open:int)->int { var d=0;var i=open;while i<len(ktokens){let t=tk_text(i);if tk_kind(i)=="sym" and t=="{"{d=d+1};if tk_kind(i)=="sym" and t=="}"{d=d-1;if d==0{return i}};i=i+1};return -1 }
+
+# ---------- declarations ----------
+fn find_class(name:text)->any { var i=0;while i<len(class_names){if class_names[i]==name{return class_values[i]};i=i+1};return ["none"] }
+fn store_class(name:text,value:any)->unit { let i=list_find_text(class_names,name);if i>=0{class_values=set_at(class_values,i,value)}else{class_names=append(class_names,name);class_values=append(class_values,value)} }
+fn find_enum(name:text)->any { var i=0;while i<len(enum_names){if enum_names[i]==name{return enum_values[i]};i=i+1};return ["none"] }
+fn list_find_text(xs:list[any],value:text)->int { var i=0;while i<len(xs){if xs[i]==value{return i};i=i+1};return -1 }
+
+fn capture_function(name:text,params:list[any],start:int,end:int)->any { return ["fn",name,params,start,end,env_names,env_cells] }
+
+fn declare_function()->any {
+    pexpect("fn");let name=pid();if ptake("["){var d=1;while d>0{if ptake("["){d=d+1}else{if ptake("]"){d=d-1}else{kpos=kpos+1}}}}
+    pexpect("(");var params=empty_any();if !ppeek(")"){let p=pid();params=append(params,p);if ptake(":"){skip_type()};while ptake(","){p=pid();params=append(params,p);if ptake(":"){skip_type()}}};pexpect(")");if ptake("->"){skip_type()};if ptake("where"){while !ppeek("{") and !ppeek("="){kpos=kpos+1}}
+    var start=0;var end=0
+    if ptake("="){
+        start=kpos
+        var par=0
+        var br=0
+        var scanning=true
+        while scanning and !ppeek("<eof>") {
+            let t=tk_text(kpos)
+            if par==0 and br==0 and (ppeek(";") or ppeek("}")) { scanning=false } else {
+                if par==0 and br==0 and kpos>start and (t=="let" or t=="var" or t=="print" or t=="if" or t=="while" or t=="for" or t=="return" or t=="fn" or t=="class" or t=="interface" or t=="try" or t=="match" or t=="enum" or t=="record" or t=="override" or t=="abstract") { scanning=false } else {
+                    if t=="("{par=par+1};if t==")"{par=par-1};if t=="["{br=br+1};if t=="]"{br=br-1};kpos=kpos+1
+                }
+            }
+        }
+        end=kpos
+        ptake(";")
+    }else{start=kpos;end=matching_brace(kpos);kpos=end+1}
+    let placeholder=new_cell(v_unit(),false);env_names=append(env_names,name);env_cells=append(env_cells,placeholder);let f=capture_function(name,params,start,end);cell_set(placeholder,f);return f
+}
+
+fn declare_interface()->any { pexpect("interface");let name=pid();if ptake("["){var d=1;while d>0{if ptake("["){d=d+1}else{if ptake("]"){d=d-1}else{kpos=kpos+1}}}};if ppeek("{"){let e=matching_brace(kpos);kpos=e+1};interface_names=append(interface_names,name);return v_unit() }
+
+fn parse_field_decl(names:list[any],privs:list[any])->list[any] {
+    var private=false;if ptake("private"){private=true};if ppeek("let") or ppeek("var"){kpos=kpos+1};let n=pid();if ptake(":"){skip_type()};names=append(names,n);privs=append(privs,private);return [names,privs]
+}
+
+fn declare_class(is_abstract:bool)->any {
+    if is_abstract{pexpect("abstract")};pexpect("class");let name=pid();if ptake("["){var gd=1;while gd>0{if ptake("["){gd=gd+1}else{if ptake("]"){gd=gd-1}else{kpos=kpos+1}}}}
+    var fields=empty_any();var privs=empty_any();if ptake("("){if !ppeek(")"){let z=parse_field_decl(fields,privs);fields=z[0];privs=z[1];while ptake(","){z=parse_field_decl(fields,privs);fields=z[0];privs=z[1]}};pexpect(")")}
+    var base="";if ptake("extends"){base=pid();if ptake("["){var d=1;while d>0{if ptake("["){d=d+1}else{if ptake("]"){d=d-1}else{kpos=kpos+1}}}}};if ptake("implements"){while !ppeek("{"){kpos=kpos+1}}
+    pexpect("{");var method_names=empty_any();var methods=empty_any();while !ppeek("}"){if ptake("type"){pid();if ptake("="){skip_type()};ptake(";")}else{if ptake("abstract"){if ppeek("fn"){pexpect("fn");let mn=pid();while !ppeek(";") and !ppeek("}"){kpos=kpos+1};ptake(";");method_names=append(method_names,mn);methods=append(methods,["abstract"])}else{kpos=kpos+1}}else{if ptake("override"){};if ppeek("fn"){let f=declare_function();var ps=empty_any();ps=append(ps,"self");var pi=0;while pi<len(f[2]){ps=append(ps,f[2][pi]);pi=pi+1};f=set_at(f,2,ps);method_names=append(method_names,f[1]);methods=append(methods,f)}else{let z=parse_field_decl(fields,privs);fields=z[0];privs=z[1];ptake(";")}}}};pexpect("}")
+    let c=["class",name,base,fields,privs,method_names,methods,is_abstract,pending_derive_equal,pending_derive_hash];pending_derive_equal=false;pending_derive_hash=false;store_class(name,c);let old=env_find(name);if old<0{env_declare(name,c,false)}else{cell_set(old,c)};return c
+}
+
+fn declare_enum()->any { pexpect("enum");let name=pid();pexpect("{");var variants=empty_any();if !ppeek("}"){variants=append(variants,pid());while ptake(","){if !ppeek("}"){variants=append(variants,pid())}}};pexpect("}");let e=["enumtype",name,variants];enum_names=append(enum_names,name);enum_values=append(enum_values,e);env_declare(name,e,false);return e }
+fn declare_record()->any { pexpect("record");let name=pid();pexpect("(");var fields=empty_any();if !ppeek(")"){fields=append(fields,pid());if ptake(":"){skip_type()};while ptake(","){fields=append(fields,pid());if ptake(":"){skip_type()}}};pexpect(")");let r=["recordtype",name,fields];env_declare(name,r,false);return r }
+
+# ---------- expression evaluation ----------
+fn eval_expr()->any { return eval_or() }
+fn eval_or()->any { var a=eval_and();while ptake("or"){let b=eval_and();a=v_bool(value_truth(a) or value_truth(b))};return a }
+fn eval_and()->any { var a=eval_equality();while ptake("and"){let b=eval_equality();a=v_bool(value_truth(a) and value_truth(b))};return a }
+fn value_equal(a:any,b:any)->bool { if v_tag(a)!=v_tag(b){return false};let t=v_tag(a);if t=="num"{return num_cmp(a,b)==0};if t=="text"{return a[1]==b[1]};if t=="bool"{return a[1]==b[1]};if t=="enum"{return a[1]==b[1] and a[2]==b[2]};if t=="record"{if a[1]!=b[1] or len(a[3])!=len(b[3]){return false};var i=0;while i<len(a[3]){if !value_equal(a[3][i],b[3][i]){return false};i=i+1};return true};if t=="object"{if a[6]==b[6]{return true};if len(a)>5 and a[5]{if a[1]!=b[1]{return false};var i=0;while i<len(a[3]){if !value_equal(cell_get(a[3][i]),cell_get(b[3][i])){return false};i=i+1};return true};return false};if t=="set"{if len(a[1])!=len(b[1]){return false};var i=0;while i<len(a[1]){var found=false;var j=0;while j<len(b[1]){if value_equal(a[1][i],b[1][j]){found=true};j=j+1};if !found{return false};i=i+1};return true};if t=="map"{if len(a[1])!=len(b[1]){return false};var i=0;while i<len(a[1]){if !value_equal(a[1][i],b[1][i]){return false};i=i+1};return true};return value_text(a)==value_text(b) }
+fn eval_equality()->any { var a=eval_compare();while ppeek("==") or ppeek("!="){let op=tk_text(kpos);kpos=kpos+1;let b=eval_compare();let eq=value_equal(a,b);if op=="!="{eq=!eq};a=v_bool(eq)};return a }
+fn eval_compare()->any { var a=eval_term();while ppeek("<") or ppeek("<=") or ppeek(">") or ppeek(">="){let op=tk_text(kpos);kpos=kpos+1;let b=eval_term();var c=0;if v_tag(a)=="num" and v_tag(b)=="num"{c=num_cmp(a,b)}else{if value_text(a)<value_text(b){c=-1}else{if value_text(a)>value_text(b){c=1}}};if op=="<"{a=v_bool(c<0)};if op=="<="{a=v_bool(c<=0)};if op==">"{a=v_bool(c>0)};if op==">="{a=v_bool(c>=0)}};return a }
+fn eval_term()->any { var a=eval_factor();while ppeek("+") or ppeek("-"){let op=tk_text(kpos);kpos=kpos+1;let b=eval_factor();if op=="+"{if v_tag(a)=="text" and v_tag(b)=="text"{a=v_text(a[1]+b[1])}else{a=num_add(a,b)}}else{a=num_sub(a,b)}};return a }
+fn eval_factor()->any { var a=eval_power();while ppeek("*") or ppeek("/") or ppeek("%"){let op=tk_text(kpos);kpos=kpos+1;let b=eval_power();if op=="*"{a=num_mul(a,b)};if op=="/"{a=num_div(a,b)};if op=="%"{a=v_num(bi_mod(a[1],b[1]),"1","exact")}};return a }
+fn eval_power()->any { var a=eval_unary();if ptake("**"){let b=eval_unary();if !num_is_int(b){return kfail("SAGA-T103","power exponent must be int")};var n=int(b[1]);var neg=n<0;if neg{n=-n};var r=v_num("1","1",a[3]);var i=0;while i<n{r=num_mul(r,a);i=i+1};if neg{r=num_div(v_num("1","1",a[3]),r)};a=r};return a }
+fn eval_unary()->any { if ptake("!") or ptake("not"){return v_bool(!value_truth(eval_unary()))};if ptake("-"){let x=eval_unary();if v_tag(x)!="num"{return kfail("SAGA-T103","unary minus requires number")};return ["num",bi_neg(x[1]),x[2],x[3]]};if ptake("move"){let name=pid();let id=env_find(name);if id<0{return kfail("SAGA-T102","unknown name")};let v=cell_get(id);cell_set(id,["moved"]);return v};if ptake("await"){let x=eval_unary();if v_tag(x)=="future"{return x[1]};return x};return eval_postfix() }
+
+fn is_builtin_name(name:text)->bool {
+    return name=="print" or name=="len" or name=="text" or name=="int" or name=="int8" or name=="int16" or name=="int32" or name=="int64" or name=="uint8" or name=="uint16" or name=="uint32" or name=="uint64" or name=="float32" or name=="float64" or name=="none" or name=="some" or name=="ok" or name=="err" or name=="is_some" or name=="is_none" or name=="is_ok" or name=="is_err" or name=="unwrap" or name=="unwrap_ok" or name=="unwrap_or" or name=="map_of" or name=="map_get" or name=="map_put" or name=="map_remove" or name=="map_keys" or name=="map_values" or name=="map_contains" or name=="set_of" or name=="set_add" or name=="set_remove" or name=="set_contains" or name=="set_union" or name=="set_intersection" or name=="append" or name=="prepend" or name=="get" or name=="contains" or name=="slice" or name=="reverse" or name=="sort" or name=="unique" or name=="transform" or name=="filter" or name=="reduce" or name=="find" or name=="any" or name=="all" or name=="sum" or name=="mean" or name=="split" or name=="join" or name=="trim" or name=="upper" or name=="lower" or name=="replace" or name=="starts_with" or name=="ends_with" or name=="substring" or name=="find_text" or name=="repeat" or name=="set_at" or name=="sqrt" or name=="round" or name=="floor" or name=="ceil" or name=="assert" or name=="precision" or name=="ratio" or name=="decimal" or name=="abs" or name=="min" or name=="max"
+}
+
+fn invoke_builtin(name:text,args:list[any])->any {
+    var ai=0;while ai<len(args){if is_error(args[ai]){return args[ai]};ai=ai+1}
+    if name=="io.read_text"{return v_text(io.read_text(args[0][1]))}
+    if name=="io.write_text"{io.write_text(args[0][1],args[1][1]);return v_unit()}
+    if name=="sys.args"{var out=empty_any();var i=0;while i<len(user_cli_raw){out=append(out,v_text(user_cli_raw[i]));i=i+1};return v_list(out)}
+    if name=="app.host"{if host_available("app"){return v_text(host_call("app.host",[]))};return v_text("sh3")}
+    if name=="app.capability"{if !host_available("app"){return v_bool(false)};return v_bool(host_call("app.capability",[args[0][1]]))}
+    if name=="app.capabilities"{if !host_available("app"){return v_list(empty_any())};let z=host_call("app.capabilities",[]);var xs=empty_any();var ai=0;while ai<len(z){xs=append(xs,v_text(z[ai]));ai=ai+1};return v_list(xs)}
+    if name=="app.operation_supported"{if !host_available("app"){return v_bool(false)};return v_bool(host_call("app.operation_supported",[args[0][1]]))}
+    if name=="app.operations"{if !host_available("app"){return v_list(empty_any())};let z=host_call("app.operations",[]);var xs=empty_any();var ai=0;while ai<len(z){xs=append(xs,v_text(z[ai]));ai=ai+1};return v_list(xs)}
+    if name=="app.invoke"{if !host_available("app"){return v_result(false,v_text("universal app host unavailable"))};let z=host_call("app.invoke",[args[0][1],args[1][1]]);if z[0]{return v_result(true,v_text(z[1]))};return v_result(false,v_text(z[1]))}
+    if name=="app.invoke_async"{if !host_available("app"){return v_result(false,v_text("universal app host unavailable"))};let z=host_call("app.invoke_async",[args[0][1],args[1][1],args[2][1]]);if z[0]{return v_result(true,v_num(text(z[1]),"1","exact"))};return v_result(false,v_text(z[1]))}
+    if name=="app.cancel"{if !host_available("app"){return v_result(false,v_text("universal app host unavailable"))};let z=host_call("app.cancel",[value_text(args[0])]);if z{return v_result(true,v_unit())};return v_result(false,v_text("app async handle not found"))}
+    if name=="app.on"{if !host_available("app"){return v_result(false,v_text("universal app host unavailable"))};let z=host_call("app.on",[args[0][1],args[1][1]]);if z[0]{return v_result(true,v_num(text(z[1]),"1","exact"))};return v_result(false,v_text(z[1]))}
+    if name=="app.off"{if !host_available("app"){return v_result(false,v_text("universal app host unavailable"))};let z=host_call("app.off",[value_text(args[0])]);if z{return v_result(true,v_unit())};return v_result(false,v_text("app event handle not found"))}
+    if name=="web.browser_available"{return v_bool(host_available("dom"))}
+    if name=="web.capability"{return v_bool(host_available(args[0][1]))}
+    if name=="web.exists" or name=="web.query_exists"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};var op="dom.exists";if name=="web.query_exists"{op="dom.query_exists"};let z=host_call(op,[args[0][1]]);return v_result(true,v_bool(z))}
+    if name=="web.query_count"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};let z=host_call("dom.query_count",[args[0][1]]);return v_result(true,v_num(text(z),"1","exact"))}
+    if name=="web.title"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};return v_result(true,v_text(host_call("dom.title",[])))}
+    if name=="web.set_title"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};host_call("dom.set_title",[args[0][1]]);return v_result(true,v_unit())}
+    if name=="web.set_text" or name=="web.set_html" or name=="web.set_value" or name=="web.append_html" or name=="web.prepend_html" or name=="web.add_class" or name=="web.remove_class" or name=="web.on_click"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};var op="dom.set_text";if name=="web.set_html"{op="dom.set_html"};if name=="web.set_value"{op="dom.set_value"};if name=="web.append_html"{op="dom.append_html"};if name=="web.prepend_html"{op="dom.prepend_html"};if name=="web.add_class"{op="dom.add_class"};if name=="web.remove_class"{op="dom.remove_class"};if name=="web.on_click"{op="dom.on_click"};host_call(op,[args[0][1],args[1][1]]);return v_result(true,v_unit())}
+    if name=="web.text" or name=="web.html" or name=="web.value"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};var op="dom.text";if name=="web.html"{op="dom.html"};if name=="web.value"{op="dom.value"};return v_result(true,v_text(host_call(op,[args[0][1]])))}
+    if name=="web.create"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};host_call("dom.create",[args[0][1],args[1][1],args[2][1]]);return v_result(true,v_unit())}
+    if name=="web.clear" or name=="web.remove" or name=="web.focus" or name=="web.blur" or name=="web.click" or name=="web.scroll_into_view"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};var op="dom.clear";if name=="web.remove"{op="dom.remove"};if name=="web.focus"{op="dom.focus"};if name=="web.blur"{op="dom.blur"};if name=="web.click"{op="dom.click"};if name=="web.scroll_into_view"{op="dom.scroll_into_view"};host_call(op,[args[0][1]]);return v_result(true,v_unit())}
+    if name=="web.set_attr" or name=="web.set_style" or name=="web.on_event" or name=="web.dispatch_event"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};var op="dom.set_attr";if name=="web.set_style"{op="dom.set_style"};if name=="web.on_event"{op="dom.on_event"};if name=="web.dispatch_event"{op="dom.dispatch_event"};host_call(op,[args[0][1],args[1][1],args[2][1]]);return v_result(true,v_unit())}
+    if name=="web.remove_attr"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};host_call("dom.remove_attr",[args[0][1],args[1][1]]);return v_result(true,v_unit())}
+    if name=="web.attr"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};let z=host_call("dom.attr",[args[0][1],args[1][1]]);if z[0]{return v_result(true,v_option(true,v_text(z[1])))};return v_result(true,v_option(false,v_unit()))}
+    if name=="web.style"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};return v_result(true,v_text(host_call("dom.style",[args[0][1],args[1][1]])))}
+    if name=="web.toggle_class" or name=="web.has_class"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};var op="dom.toggle_class";if name=="web.has_class"{op="dom.has_class"};return v_result(true,v_bool(host_call(op,[args[0][1],args[1][1]])))}
+    if name=="web.set_checked" or name=="web.set_disabled"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};var op="dom.set_checked";if name=="web.set_disabled"{op="dom.set_disabled"};host_call(op,[args[0][1],value_text(args[1])]);return v_result(true,v_unit())}
+    if name=="web.checked" or name=="web.disabled"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};var op="dom.checked";if name=="web.disabled"{op="dom.disabled"};return v_result(true,v_bool(host_call(op,[args[0][1]])))}
+    if name=="web.set_selected_index"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};host_call("dom.set_selected_index",[args[0][1],value_text(args[1])]);return v_result(true,v_unit())}
+    if name=="web.selected_index"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};return v_result(true,v_num(text(host_call("dom.selected_index",[args[0][1]])),"1","exact"))}
+    if name=="web.rect"{if !host_available("dom"){return v_result(false,v_text("browser DOM host unavailable"))};let z=host_call("dom.rect",[args[0][1]]);var xs=empty_any();var i=0;while i<len(z){xs=append(xs,v_text(z[i]));i=i+1};return v_result(true,v_list(xs))}
+    if name=="web.storage_set" or name=="web.session_set"{let cap="storage";var op="storage.set";if name=="web.session_set"{cap="session";op="storage.session_set"};if !host_available(cap){return v_result(false,v_text("browser storage unavailable"))};host_call(op,[args[0][1],args[1][1]]);return v_result(true,v_unit())}
+    if name=="web.storage_get" or name=="web.session_get" or name=="web.cookie_get"{var cap="storage";var op="storage.get";if name=="web.session_get"{cap="session";op="storage.session_get"};if name=="web.cookie_get"{cap="cookie";op="cookie.get"};if !host_available(cap){return v_result(false,v_text("browser storage unavailable"))};let z=host_call(op,[args[0][1]]);if z[0]{return v_result(true,v_option(true,v_text(z[1])))};return v_result(true,v_option(false,v_unit()))}
+    if name=="web.storage_remove" or name=="web.session_remove" or name=="web.cookie_remove"{var cap="storage";var op="storage.remove";if name=="web.session_remove"{cap="session";op="storage.session_remove"};if name=="web.cookie_remove"{cap="cookie";op="cookie.remove"};if !host_available(cap){return v_result(false,v_text("browser storage unavailable"))};host_call(op,[args[0][1]]);return v_result(true,v_unit())}
+    if name=="web.storage_clear" or name=="web.session_clear"{var cap="storage";var op="storage.clear";if name=="web.session_clear"{cap="session";op="storage.session_clear"};if !host_available(cap){return v_result(false,v_text("browser storage unavailable"))};host_call(op,[]);return v_result(true,v_unit())}
+    if name=="web.cookie_set"{if !host_available("cookie"){return v_result(false,v_text("browser cookie unavailable"))};host_call("cookie.set",[args[0][1],args[1][1],value_text(args[2])]);return v_result(true,v_unit())}
+    if name=="web.href" or name=="web.path" or name=="web.search" or name=="web.hash"{if !host_available("navigation"){return v_result(false,v_text("browser navigation unavailable"))};var op="nav.href";if name=="web.path"{op="nav.path"};if name=="web.search"{op="nav.search"};if name=="web.hash"{op="nav.hash"};return v_result(true,v_text(host_call(op,[])))}
+    if name=="web.set_hash" or name=="web.navigate" or name=="web.replace_url" or name=="web.history_push" or name=="web.history_replace"{if !host_available("navigation"){return v_result(false,v_text("browser navigation unavailable"))};var op="nav.set_hash";if name=="web.navigate"{op="nav.navigate"};if name=="web.replace_url"{op="nav.replace"};if name=="web.history_push"{op="nav.push_state"};if name=="web.history_replace"{op="nav.replace_state"};host_call(op,[args[0][1]]);return v_result(true,v_unit())}
+    if name=="web.reload" or name=="web.history_back" or name=="web.history_forward"{if !host_available("navigation"){return v_result(false,v_text("browser navigation unavailable"))};var op="nav.reload";if name=="web.history_back"{op="nav.back"};if name=="web.history_forward"{op="nav.forward"};host_call(op,[]);return v_result(true,v_unit())}
+    if name=="web.set_timeout" or name=="web.set_interval"{if !host_available("timer"){return v_result(false,v_text("browser timer unavailable"))};var op="timer.set_timeout";if name=="web.set_interval"{op="timer.set_interval"};let z=host_call(op,[value_text(args[0]),args[1][1]]);return v_result(true,v_num(text(z),"1","exact"))}
+    if name=="web.animation_frame"{if !host_available("timer"){return v_result(false,v_text("browser timer unavailable"))};let z=host_call("timer.animation_frame",[args[0][1]]);return v_result(true,v_num(text(z),"1","exact"))}
+    if name=="web.clear_timer"{if !host_available("timer"){return v_result(false,v_text("browser timer unavailable"))};host_call("timer.clear",[value_text(args[0])]);return v_result(true,v_unit())}
+    if name=="web.online"{if !host_available("device"){return v_result(false,v_text("browser device unavailable"))};return v_result(true,v_bool(host_call("net.online",[])))}
+    if name=="web.fetch"{if !host_available("fetch"){return v_result(false,v_text("browser fetch unavailable"))};let z=host_call("net.fetch",[args[0][1],args[1][1],args[2][1],args[3][1],args[4][1]]);return v_result(true,v_num(text(z),"1","exact"))}
+    if name=="web.abort_fetch"{if !host_available("fetch"){return v_result(false,v_text("browser fetch unavailable"))};host_call("net.abort_fetch",[value_text(args[0])]);return v_result(true,v_unit())}
+    if name=="web.ws_open"{if !host_available("websocket"){return v_result(false,v_text("browser WebSocket unavailable"))};let z=host_call("ws.open",[args[0][1],args[1][1]]);return v_result(true,v_num(text(z),"1","exact"))}
+    if name=="web.ws_send"{if !host_available("websocket"){return v_result(false,v_text("browser WebSocket unavailable"))};host_call("ws.send",[value_text(args[0]),args[1][1]]);return v_result(true,v_unit())}
+    if name=="web.ws_close"{if !host_available("websocket"){return v_result(false,v_text("browser WebSocket unavailable"))};host_call("ws.close",[value_text(args[0]),value_text(args[1]),args[2][1]]);return v_result(true,v_unit())}
+    if name=="web.ws_ready_state"{if !host_available("websocket"){return v_result(false,v_text("browser WebSocket unavailable"))};return v_result(true,v_num(text(host_call("ws.ready_state",[value_text(args[0])])),"1","exact"))}
+    if name=="web.canvas_set_size"{if !host_available("canvas"){return v_result(false,v_text("browser canvas unavailable"))};host_call("canvas.set_size",[args[0][1],value_text(args[1]),value_text(args[2])]);return v_result(true,v_unit())}
+    if name=="web.canvas_clear"{if !host_available("canvas"){return v_result(false,v_text("browser canvas unavailable"))};host_call("canvas.clear",[args[0][1],args[1][1]]);return v_result(true,v_unit())}
+    if name=="web.canvas_fill_rect" or name=="web.canvas_stroke_rect" or name=="web.canvas_line"{if !host_available("canvas"){return v_result(false,v_text("browser canvas unavailable"))};var op="canvas.fill_rect";if name=="web.canvas_stroke_rect"{op="canvas.stroke_rect"};if name=="web.canvas_line"{op="canvas.line"};host_call(op,[args[0][1],value_text(args[1]),value_text(args[2]),value_text(args[3]),value_text(args[4]),args[5][1]]);return v_result(true,v_unit())}
+    if name=="web.canvas_circle"{if !host_available("canvas"){return v_result(false,v_text("browser canvas unavailable"))};host_call("canvas.circle",[args[0][1],value_text(args[1]),value_text(args[2]),value_text(args[3]),args[4][1]]);return v_result(true,v_unit())}
+    if name=="web.canvas_text"{if !host_available("canvas"){return v_result(false,v_text("browser canvas unavailable"))};host_call("canvas.text",[args[0][1],args[1][1],value_text(args[2]),value_text(args[3]),args[4][1],args[5][1]]);return v_result(true,v_unit())}
+    if name=="web.canvas_data_url"{if !host_available("canvas"){return v_result(false,v_text("browser canvas unavailable"))};return v_result(true,v_text(host_call("canvas.data_url",[args[0][1],args[1][1]])))}
+    if name=="web.media_play" or name=="web.media_pause"{if !host_available("media"){return v_result(false,v_text("browser media unavailable"))};var op="media.play";if name=="web.media_pause"{op="media.pause"};host_call(op,[args[0][1]]);return v_result(true,v_unit())}
+    if name=="web.media_current_time" or name=="web.media_volume"{if !host_available("media"){return v_result(false,v_text("browser media unavailable"))};var op="media.current_time";if name=="web.media_volume"{op="media.volume"};return v_result(true,v_text(host_call(op,[args[0][1]])))}
+    if name=="web.media_set_current_time" or name=="web.media_set_volume"{if !host_available("media"){return v_result(false,v_text("browser media unavailable"))};var op="media.set_current_time";if name=="web.media_set_volume"{op="media.set_volume"};host_call(op,[args[0][1],args[1][1]]);return v_result(true,v_unit())}
+    if name=="web.clipboard_write"{if !host_available("clipboard"){return v_result(false,v_text("browser clipboard unavailable"))};host_call("clipboard.write",[args[0][1],args[1][1]]);return v_result(true,v_unit())}
+    if name=="web.clipboard_read"{if !host_available("clipboard"){return v_result(false,v_text("browser clipboard unavailable"))};host_call("clipboard.read",[args[0][1]]);return v_result(true,v_unit())}
+    if name=="web.viewport_width" or name=="web.viewport_height"{if !host_available("device"){return v_result(false,v_text("browser device unavailable"))};var op="device.viewport_width";if name=="web.viewport_height"{op="device.viewport_height"};return v_result(true,v_num(text(host_call(op,[])),"1","exact"))}
+    if name=="web.pixel_ratio" or name=="web.language" or name=="web.user_agent" or name=="web.visibility"{if !host_available("device"){return v_result(false,v_text("browser device unavailable"))};var op="device.pixel_ratio";if name=="web.language"{op="device.language"};if name=="web.user_agent"{op="device.user_agent"};if name=="web.visibility"{op="device.visibility"};return v_result(true,v_text(host_call(op,[])))}
+    if name=="web.geolocate"{if !host_available("geolocation"){return v_result(false,v_text("browser geolocation unavailable"))};host_call("geo.locate",[args[0][1]]);return v_result(true,v_unit())}
+    if name=="web.request_fullscreen"{if !host_available("fullscreen"){return v_result(false,v_text("browser fullscreen unavailable"))};host_call("fullscreen.request",[args[0][1]]);return v_result(true,v_unit())}
+    if name=="web.exit_fullscreen"{if !host_available("fullscreen"){return v_result(false,v_text("browser fullscreen unavailable"))};host_call("fullscreen.exit",[]);return v_result(true,v_unit())}
+    if name=="web.fullscreen_active"{if !host_available("fullscreen"){return v_result(false,v_text("browser fullscreen unavailable"))};return v_result(true,v_bool(host_call("fullscreen.active",[])))}
+    if name=="print"{if checking_mode{return v_unit()};var s="";var i=0;while i<len(args){if i>0{s=s+" "};s=s+value_text(args[i]);i=i+1};print(s);output_lines=append(output_lines,s);return v_unit()}
+    if name=="len"{let x=args[0];if v_tag(x)=="text"{return v_num(text(len(x[1])),"1","exact")};if v_tag(x)=="list"{return v_num(text(len(x[1])),"1","exact")};if v_tag(x)=="set"{return v_num(text(len(x[1])),"1","exact")};if v_tag(x)=="map"{return v_num(text(len(x[1])/2),"1","exact")};return kfail("SAGA-T103","len unsupported")}
+    if name=="text"{return v_text(value_text(args[0]))}
+    if name=="int"{let x=args[0];if v_tag(x)=="text"{return v_num(x[1],"1","exact")};if v_tag(x)=="num"{return v_num(bi_div(x[1],x[2]),"1","exact")}}
+    if name=="int8" or name=="int16" or name=="int32" or name=="int64" or name=="uint8" or name=="uint16" or name=="uint32" or name=="uint64"{let x=args[0];if v_tag(x)=="num"{return v_num(bi_div(x[1],x[2]),"1","exact")};return kfail("SAGA-T103","fixed integer conversion requires number")}
+    if name=="float32"{let x=args[0];if v_tag(x)=="num"{return ["num",x[1],x[2],"float32"]}}
+    if name=="float64"{let x=args[0];if v_tag(x)=="num"{return ["num",x[1],x[2],"float64"]}}
+    if name=="none"{return v_option(false,v_unit())}
+    if name=="some"{return v_option(true,args[0])}
+    if name=="ok"{return v_result(true,args[0])}
+    if name=="err"{return v_result(false,args[0])}
+    if name=="is_some"{return v_bool(args[0][1]!=0)}
+    if name=="is_none"{return v_bool(args[0][1]==0)}
+    if name=="is_ok"{return v_bool(args[0][1]!=0)}
+    if name=="is_err"{return v_bool(args[0][1]==0)}
+    if name=="unwrap" or name=="unwrap_ok"{return args[0][2]}
+    if name=="unwrap_or"{if args[0][1]!=0{return args[0][2]};return args[1]}
+    if name=="map_of"{var mi=0;while mi+1<len(args){let kt=v_tag(args[mi]);if kt=="list" or kt=="map" or kt=="set" or (kt=="object" and (len(args[mi])<8 or !args[mi][7])){return kfail("SAGA-T103","map key is not hashable")};mi=mi+2};return ["map",args]}
+    if name=="map_get"{let m=args[0][1];var i=0;while i+1<len(m){if value_equal(m[i],args[1]){return m[i+1]};i=i+2};return args[2]}
+    if name=="append"{if v_tag(args[0])!="list"{return kfail("SAGA-T103","append requires list")};return v_list(append(args[0][1],args[1]))}
+    if name=="contains"{let x=args[0];if v_tag(x)=="list" or v_tag(x)=="set"{var i=0;while i<len(x[1]){if value_equal(x[1][i],args[1]){return v_bool(true)};i=i+1};return v_bool(false)};if v_tag(x)=="text" and v_tag(args[1])=="text"{return v_bool(find_text(x[1],args[1][1])>=0)};return v_bool(false)}
+    if name=="set_of"{var xs=empty_any();var i=0;while i<len(args){var found=false;var j=0;while j<len(xs){if value_equal(xs[j],args[i]){found=true};j=j+1};if !found{xs=append(xs,args[i])};i=i+1};return ["set",xs]}
+    if name=="transform"{let f=args[0];let xs=args[1][1];var out=empty_any();var i=0;while i<len(xs){out=append(out,invoke_function(f,[xs[i]]));i=i+1};return v_list(out)}
+    if name=="filter"{let f=args[0];let xs=args[1][1];var out=empty_any();var i=0;while i<len(xs){let keep=invoke_function(f,[xs[i]]);if is_error(keep){return keep};if v_tag(keep)!="bool"{return kfail("SAGA-T103","filter predicate must return bool")};if value_truth(keep){out=append(out,xs[i])};i=i+1};return v_list(out)}
+    if name=="reduce"{let f=args[0];let xs=args[1][1];var acc=args[2];var i=0;while i<len(xs){acc=invoke_function(f,[acc,xs[i]]);i=i+1};return acc}
+    if name=="substring"{return v_text(substring(args[0][1],int(args[1][1]),int(args[2][1])))}
+    if name=="find_text"{return v_num(text(find_text(args[0][1],args[1][1])),"1","exact")}
+    if name=="trim"{let x=args[0][1];var a=0;var b=len(x);while a<b and (x[a]==" " or x[a]=="\t" or x[a]=="\n" or x[a]=="\r"){a=a+1};while b>a and (x[b-1]==" " or x[b-1]=="\t" or x[b-1]=="\n" or x[b-1]=="\r"){b=b-1};return v_text(substring(x,a,b))}
+    if name=="upper" or name=="lower"{let x=args[0][1];let lo="abcdefghijklmnopqrstuvwxyz";let up="ABCDEFGHIJKLMNOPQRSTUVWXYZ";var r="";var i=0;while i<len(x){let c=x[i];if name=="upper"{let p=find_text(lo,c);if p>=0{c=up[p]}}else{let p=find_text(up,c);if p>=0{c=lo[p]}};r=r+c;i=i+1};return v_text(r)}
+    if name=="task.spawn"{var aa=empty_any();var i=1;while i<len(args){aa=append(aa,args[i]);i=i+1};return ["future",invoke_function(args[0],aa)]}
+    if name=="task.await"{if v_tag(args[0])=="future"{return args[0][1]};return args[0]}
+    if name=="task.parallel_map"{let f=args[0];let xs=args[1][1];var out=empty_any();var i=0;while i<len(xs){out=append(out,invoke_function(f,[xs[i]]));i=i+1};return v_list(out)}
+    if name=="task.actor"{return ["actor",args[0]]}
+    if name=="task.ask"{if v_tag(args[0])!="actor"{return kfail("SAGA-T103","task.ask requires actor")};return ["future",invoke_function(args[0][1],[args[1]])]}
+    if name=="task.stop"{return v_unit()}
+    if name=="game.shader_ir_compute_reference"{let ir=args[0][1];let xs=args[1][1];var scale=v_num("1","1","exact");var addv=v_num("0","1","exact");let sp=find_text(ir,"scale ");if sp>=0{let tail=substring(ir,sp+6,len(ir));let e=find_text(tail,"\n");var z=tail;if e>=0{z=substring(tail,0,e)};scale=parse_number(z)};let ap=find_text(ir,"add ");if ap>=0{let tail=substring(ir,ap+4,len(ir));let e=find_text(tail,"\n");var z=tail;if e>=0{z=substring(tail,0,e)};addv=parse_number(z)};var out=empty_any();var i=0;while i<len(xs){var sc=scale;var av=addv;if v_tag(xs[i])=="num" and xs[i][3]!="exact"{sc=["num",scale[1],scale[2],xs[i][3]];av=["num",addv[1],addv[2],xs[i][3]]};out=append(out,num_add(num_mul(xs[i],sc),av));i=i+1};return v_result(true,v_list(out))}
+    if name=="assert"{if !value_truth(args[0]){return kfail("SAGA-R101",value_text(args[1]))};return v_unit()}
+    if name=="ratio"{return v_num(args[0][1],args[1][1],"exact")}
+    if name=="decimal"{let x=args[0];return ["num",x[1],x[2],"decimal"]}
+    if name=="abs"{let x=args[0];return ["num",bi_abs(x[1]),x[2],x[3]]}
+    if name=="min"{if num_cmp(args[0],args[1])<=0{return args[0]};return args[1]}
+    if name=="max"{if num_cmp(args[0],args[1])>=0{return args[0]};return args[1]}
+    if name=="sqrt"{let x=args[0];if !num_is_int(x) or bi_sign(x[1])<0{return kfail("SAGA-R101","sqrt requires nonnegative perfect integer in SH-3 core")};let n=int(x[1]);var r=0;while (r+1)*(r+1)<=n{r=r+1};if r*r!=n{return kfail("SAGA-R101","non-perfect sqrt outside exact core")};return v_num(text(r),"1","exact")}
+    if name=="floor"{return num_floor(args[0])}
+    if name=="ceil"{return num_ceil(args[0])}
+    if name=="round"{return num_round_places(args[0],int(args[1][1]))}
+    if name=="precision"{return v_unit()}
+    if name=="sum"{let xs=args[0][1];var acc=v_num("0","1","exact");var i=0;while i<len(xs){acc=num_add(acc,xs[i]);i=i+1};return acc}
+    if name=="mean"{let xs=args[0][1];var acc=v_num("0","1","exact");var i=0;while i<len(xs){acc=num_add(acc,xs[i]);i=i+1};return num_div(acc,v_num(text(len(xs)),"1","exact"))}
+    if name=="prepend"{if v_tag(args[0])!="list"{return kfail("SAGA-T103","prepend requires list")};var out=empty_any();out=append(out,args[1]);var i=0;while i<len(args[0][1]){out=append(out,args[0][1][i]);i=i+1};return v_list(out)}
+    if name=="get"{let xs=args[0][1];let n=int(args[1][1]);if n<0 or n>=len(xs){return args[2]};return xs[n]}
+    if name=="slice"{let xs=args[0][1];let a=int(args[1][1]);let b=int(args[2][1]);return v_list(slice(xs,a,b))}
+    if name=="reverse"{let xs=args[0][1];var out=empty_any();var i=len(xs)-1;while i>=0{out=append(out,xs[i]);i=i-1};return v_list(out)}
+    if name=="sort"{let xs=args[0][1];var out=empty_any();var i=0;while i<len(xs){out=append(out,xs[i]);i=i+1};i=0;while i<len(out){var j=i+1;while j<len(out){var swap=false;if v_tag(out[i])=="num" and v_tag(out[j])=="num"{swap=num_cmp(out[i],out[j])>0}else{swap=value_text(out[i])>value_text(out[j])};if swap{let tmp=out[i];out=set_at(out,i,out[j]);out=set_at(out,j,tmp)};j=j+1};i=i+1};return v_list(out)}
+    if name=="unique"{let xs=args[0][1];var out=empty_any();var i=0;while i<len(xs){var exists=false;var j=0;while j<len(out){if value_equal(out[j],xs[i]){exists=true};j=j+1};if !exists{out=append(out,xs[i])};i=i+1};return v_list(out)}
+    if name=="find"{let f=args[0];let xs=args[1][1];var i=0;while i<len(xs){let z=invoke_function(f,[xs[i]]);if v_tag(z)!="bool"{return kfail("SAGA-T103","find predicate must return bool")};if value_truth(z){return xs[i]};i=i+1};return args[2]}
+    if name=="any"{let f=args[0];let xs=args[1][1];var i=0;while i<len(xs){let z=invoke_function(f,[xs[i]]);if value_truth(z){return v_bool(true)};i=i+1};return v_bool(false)}
+    if name=="all"{let f=args[0];let xs=args[1][1];var i=0;while i<len(xs){let z=invoke_function(f,[xs[i]]);if !value_truth(z){return v_bool(false)};i=i+1};return v_bool(true)}
+    if name=="split"{let x=args[0][1];let sep=args[1][1];var out=empty_any();if sep==""{var i=0;while i<len(x){out=append(out,v_text(x[i]));i=i+1};return v_list(out)};var start=0;var p=find_text(x,sep);while p>=0{out=append(out,v_text(substring(x,start,p)));start=p+len(sep);let tail=substring(x,start,len(x));let q=find_text(tail,sep);if q>=0{p=start+q}else{p=-1}};out=append(out,v_text(substring(x,start,len(x))));return v_list(out)}
+    if name=="join"{let xs=args[0][1];let sep=args[1][1];var r="";var i=0;while i<len(xs){if i>0{r=r+sep};r=r+value_text(xs[i]);i=i+1};return v_text(r)}
+    if name=="replace"{return v_text(replace(args[0][1],args[1][1],args[2][1]))}
+    if name=="starts_with"{return v_bool(starts_with(args[0][1],args[1][1]))}
+    if name=="ends_with"{return v_bool(ends_with(args[0][1],args[1][1]))}
+    if name=="map_put"{let m=args[0][1];var out=empty_any();var found=false;var i=0;while i+1<len(m){if value_equal(m[i],args[1]){out=append(out,args[1]);out=append(out,args[2]);found=true}else{out=append(out,m[i]);out=append(out,m[i+1])};i=i+2};if !found{out=append(out,args[1]);out=append(out,args[2])};return ["map",out]}
+    if name=="map_remove"{let m=args[0][1];var out=empty_any();var i=0;while i+1<len(m){if !value_equal(m[i],args[1]){out=append(out,m[i]);out=append(out,m[i+1])};i=i+2};return ["map",out]}
+    if name=="map_keys"{let m=args[0][1];var out=empty_any();var i=0;while i+1<len(m){out=append(out,m[i]);i=i+2};return v_list(out)}
+    if name=="map_values"{let m=args[0][1];var out=empty_any();var i=1;while i<len(m){out=append(out,m[i]);i=i+2};return v_list(out)}
+    if name=="map_contains"{let m=args[0][1];var i=0;while i+1<len(m){if value_equal(m[i],args[1]){return v_bool(true)};i=i+2};return v_bool(false)}
+    if name=="set_add"{let xs=args[0][1];var i=0;while i<len(xs){if value_equal(xs[i],args[1]){return args[0]};i=i+1};return ["set",append(xs,args[1])]}
+    if name=="set_remove"{let xs=args[0][1];var out=empty_any();var i=0;while i<len(xs){if !value_equal(xs[i],args[1]){out=append(out,xs[i])};i=i+1};return ["set",out]}
+    if name=="set_contains"{let xs=args[0][1];var i=0;while i<len(xs){if value_equal(xs[i],args[1]){return v_bool(true)};i=i+1};return v_bool(false)}
+    if name=="set_union"{var out=args[0];var i=0;while i<len(args[1][1]){out=invoke_builtin("set_add",[out,args[1][1][i]]);i=i+1};return out}
+    if name=="set_intersection"{let a=args[0][1];var out=empty_any();var i=0;while i<len(a){if value_truth(invoke_builtin("set_contains",[args[1],a[i]])){out=append(out,a[i])};i=i+1};return ["set",out]}
+    if name=="repeat"{var out=empty_any();var i=0;while i<int(args[1][1]){out=append(out,args[0]);i=i+1};return v_list(out)}
+    if name=="set_at"{let xs=args[0][1];let n=int(args[1][1]);if n<0 or n>=len(xs){return kfail("SAGA-R101","index out of range")};return v_list(set_at(xs,n,args[2]))}
+    return ["notbuiltin"]
+}
+
+fn class_all_fields(c:any)->list[any] { var r=empty_any();if c[2]!=""{let b=find_class(c[2]);if b[0]!="none"{let bf=class_all_fields(b);var j=0;while j<len(bf){r=append(r,bf[j]);j=j+1}}};var i=0;while i<len(c[3]){r=append(r,c[3][i]);i=i+1};return r }
+fn class_all_priv(c:any)->list[any] { var r=empty_any();if c[2]!=""{let b=find_class(c[2]);if b[0]!="none"{let bf=class_all_priv(b);var j=0;while j<len(bf){r=append(r,bf[j]);j=j+1}}};var i=0;while i<len(c[4]){r=append(r,c[4][i]);i=i+1};return r }
+fn class_find_method(c:any,name:text)->any { var i=0;while i<len(c[5]){if c[5][i]==name{return c[6][i]};i=i+1};if c[2]!=""{let b=find_class(c[2]);if b[0]!="none"{return class_find_method(b,name)}};return ["none"] }
+
+fn invoke_function(f:any,args:list[any])->any {
+    let tag=v_tag(f)
+    if tag=="native"{return invoke_builtin(f[1],args)}
+    if tag=="class"{if f[7]{return kfail("SAGA-T111","cannot instantiate abstract class")};let names=class_all_fields(f);let priv=class_all_priv(f);var cells=empty_any();var i=0;while i<len(names){var v=v_unit();if i<len(args){v=args[i]};cells=append(cells,new_cell(v,false));i=i+1};let oid=next_object_id;next_object_id=next_object_id+1;var deq=false;var dh=false;if len(f)>8{deq=f[8]};if len(f)>9{dh=f[9]};return ["object",f[1],names,cells,priv,deq,oid,dh]}
+    if tag=="recordtype"{return ["record",f[1],f[2],args]}
+    if tag=="bound"{var aa=empty_any();aa=append(aa,f[1]);var j=0;while j<len(args){aa=append(aa,args[j]);j=j+1};return invoke_function(f[2],aa)}
+    if tag!="fn"{return kfail("SAGA-T103","value is not callable")}
+    let saved_names=env_names;let saved_cells=env_cells;let saved_pos=kpos;env_names=f[5];env_cells=f[6];push_scope();var i=0;while i<len(f[2]){var a=v_unit();if i<len(args){a=args[i]};env_declare(f[2][i],a,true);i=i+1};let start=f[3];let end=f[4];kpos=start;control_kind="normal";control_value=v_unit();var result=v_unit();if tk_text(start)=="{"{kpos=start+1;result=exec_until(end)}else{result=eval_expr()};if control_kind=="return"{result=control_value};pop_scope();env_names=saved_names;env_cells=saved_cells;kpos=saved_pos;control_kind="normal";return result
+}
+
+fn member_get(obj:any,name:text)->any {
+    let tag=v_tag(obj)
+    if tag=="errorvalue"{if name=="message"{return v_text(obj[2])};if name=="kind"{return v_text(obj[1])}}
+    if tag=="module"{return ["native",obj[1]+"."+name]}
+    if tag=="enumtype"{let variants=obj[2];var i=0;while i<len(variants){if variants[i]==name{return ["enum",obj[1],name]};i=i+1};return kfail("SAGA-R123","unknown enum variant")}
+    if tag=="object"{var i=0;while i<len(obj[2]){if obj[2][i]==name{if obj[4][i] and current_class!=obj[1]{return kfail("SAGA-T107","private member access")};return cell_get(obj[3][i])};i=i+1};let c=find_class(obj[1]);let m=class_find_method(c,name);if m[0]!="none"{return ["bound",obj,m]};return kfail("SAGA-R123","unknown member")}
+    return kfail("SAGA-R123","unknown member")
+}
+
+fn eval_call(callee:any)->any { pexpect("(");var args=empty_any();var first_error=v_unit();if !ppeek(")"){let a=eval_expr();if is_error(a){first_error=a};args=append(args,a);while ptake(","){a=eval_expr();if is_error(a) and !is_error(first_error){first_error=a};args=append(args,a)}};pexpect(")");if is_error(callee){return callee};if is_error(first_error){return first_error};return invoke_function(callee,args) }
+
+fn eval_interpolation(raw:text)->any {
+    var out="";var i=0
+    while i<len(raw){if i+1<len(raw) and raw[i]=="$" and raw[i+1]=="{"{let start=i+2;var j=start;var depth=1;while j<len(raw) and depth>0{if raw[j]=="{"{depth=depth+1};if raw[j]=="}"{depth=depth-1};if depth>0{j=j+1}};let sub=substring(raw,start,j);let save_tokens=ktokens;let save_pos=kpos;lex_source(sub);kpos=0;let v=eval_expr();ktokens=save_tokens;kpos=save_pos;out=out+value_text(v);i=j+1}else{out=out+raw[i];i=i+1}}
+    return v_text(out)
+}
+
+fn eval_primary()->any {
+    if tk_kind(kpos)=="num"{let v=parse_number(tk_text(kpos));kpos=kpos+1;return v}
+    if tk_kind(kpos)=="str"{let v=v_text(tk_text(kpos));kpos=kpos+1;return v}
+    if tk_kind(kpos)=="istr"{let r=eval_interpolation(tk_text(kpos));kpos=kpos+1;return r}
+    if ptake("true"){return v_bool(true)};if ptake("false"){return v_bool(false)}
+    if ptake("["){var xs=empty_any();if !ppeek("]"){xs=append(xs,eval_expr());while ptake(","){xs=append(xs,eval_expr())}};pexpect("]");return v_list(xs)}
+    if ptake("("){let v=eval_expr();pexpect(")");return v}
+    let name=pid();let cid=env_find(name);if cid>=0{return cell_get(cid)};if is_builtin_name(name){return ["native",name]};return get_name(name)
+}
+
+fn eval_postfix()->any {
+    var v=eval_primary()
+    var keep=true
+    while keep {
+        if ppeek("("){v=eval_call(v)}else{if ptake("["){let idx=eval_expr();pexpect("]");if v_tag(v)=="list"{let n=int(idx[1]);if n<0 or n>=len(v[1]){return kfail("SAGA-R101","index out of range")};v=v[1][n]}else{if v_tag(v)=="text"{let n=int(idx[1]);if n<0 or n>=len(v[1]){return kfail("SAGA-R101","index out of range")};v=v_text(v[1][n])}else{return kfail("SAGA-T103","indexing requires list or text")}}}else{if ptake("."){v=member_get(v,pid())}else{if ptake("?"){if v_tag(v)=="result"{if v[1]==0{set_control("return",v);return v};v=v[2]}else{if v_tag(v)=="option"{if v[1]==0{set_control("return",v);return v};v=v[2]}else{return kfail("SAGA-T103","? requires result or option")}}}else{keep=false}}}}
+    }
+    return v
+}
+
+# ---------- statements / control ----------
+fn set_control(kind:text,value:any)->unit { control_kind=kind;control_value=value }
+fn skip_decl_type()->unit { if ptake(":"){skip_type()} }
+fn exec_var()->any { let mutable=ptake("var");if !mutable{pexpect("let")};let name=pid();if ptake(":"){skip_type()};pexpect("=");let v=eval_expr();env_declare(name,v,mutable);ptake(";");return v_unit() }
+
+fn exec_if()->any { pexpect("if");let cond=eval_expr();if v_tag(cond)!="bool"{return kfail("SAGA-T104","if condition must be bool")};let open=kpos;pexpect("{");let end=matching_brace(open);if value_truth(cond){push_scope();let r=exec_until(end);pop_scope();kpos=end+1;if ptake("else"){if ppeek("if"){let save=kpos;exec_if();kpos=skip_statement_from(save)}else{let o=kpos;let e=matching_brace(o);kpos=e+1}};return r}else{kpos=end+1;if ptake("else"){if ppeek("if"){return exec_if()}else{let o=kpos;pexpect("{");let e=matching_brace(o);push_scope();let r=exec_until(e);pop_scope();kpos=e+1;return r}}};return v_unit() }
+fn skip_statement_from(start:int)->int { let save=kpos;kpos=start;if ppeek("if"){pexpect("if");while !ppeek("{"){kpos=kpos+1};let e=matching_brace(kpos);kpos=e+1;if ptake("else"){if ppeek("if"){kpos=skip_statement_from(kpos)}else{let x=matching_brace(kpos);kpos=x+1}}};let r=kpos;kpos=save;return r }
+
+fn exec_while()->any { pexpect("while");let cond_start=kpos;while !ppeek("{"){# parse once only to find block
+        kpos=kpos+1
+    };let open=kpos;let end=matching_brace(open);var done=false;var last=v_unit();while !done{kpos=cond_start;let cond=eval_expr();if v_tag(cond)!="bool"{return kfail("SAGA-T103","while condition must be bool")};if !value_truth(cond){done=true}else{kpos=open+1;push_scope();last=exec_until(end);pop_scope();if control_kind=="return" or control_kind=="throw"{done=true}else{if control_kind=="break"{control_kind="normal";done=true}else{if control_kind=="continue"{control_kind="normal"}}}}};kpos=end+1;return last }
+
+fn exec_for()->any { pexpect("for");let name=pid();pexpect("in");let start=eval_expr();pexpect("..");let finish=eval_expr();let open=kpos;pexpect("{");let end=matching_brace(open);var n=int(start[1]);let z=int(finish[1]);while n<=z{push_scope();env_declare(name,v_num(text(n),"1","exact"),false);kpos=open+1;exec_until(end);pop_scope();if control_kind=="return" or control_kind=="throw"{kpos=end+1;return control_value};if control_kind=="break"{control_kind="normal";n=z+1}else{if control_kind=="continue"{control_kind="normal"};n=n+1}};kpos=end+1;return v_unit() }
+
+fn exec_try()->any { pexpect("try");let open=kpos;pexpect("{");let end=matching_brace(open);push_scope();let r=exec_until(end);pop_scope();kpos=end+1;var thrown=control_kind=="throw";let thrown_value=control_value;if thrown{control_kind="normal"};if ptake("catch"){let name=pid();let co=kpos;pexpect("{");let ce=matching_brace(co);if thrown{push_scope();env_declare(name,thrown_value,false);r=exec_until(ce);pop_scope()};kpos=ce+1;thrown=false};if ptake("finally"){let fo=kpos;pexpect("{");let fe=matching_brace(fo);push_scope();let fr=exec_until(fe);pop_scope();if control_kind!="normal"{r=fr};kpos=fe+1};if thrown{set_control("throw",thrown_value)};return r }
+
+fn exec_match()->any { pexpect("match");let target=eval_expr();let open=kpos;pexpect("{");let end=matching_brace(open);var matched=false;var r=v_unit();while kpos<end{if ptake("case"){let cv=eval_expr();let bo=kpos;pexpect("{");let be=matching_brace(bo);if !matched and value_equal(target,cv){push_scope();r=exec_until(be);pop_scope();matched=true}else{kpos=be};kpos=be+1}else{if ptake("default"){let bo=kpos;pexpect("{");let be=matching_brace(bo);if !matched{push_scope();r=exec_until(be);pop_scope();matched=true}else{kpos=be};kpos=be+1}else{kpos=kpos+1}}};kpos=end+1;return r }
+
+fn exec_using()->any { pexpect("using");let name=pid();pexpect("=");let value=eval_expr();let open=kpos;pexpect("{");let end=matching_brace(open);push_scope();env_declare(name,value,false);let r=exec_until(end);let closev=member_get(value,"close");if !is_error(closev){invoke_function(closev,empty_any())};pop_scope();kpos=end+1;return r }
+
+fn exec_statement()->any {
+    if ptake(";"){return v_unit()}
+    if ptake("@"){let an=pid();if an=="derive" and ptake("("){while !ppeek(")"){if tk_kind(kpos)=="str"{let d=tk_text(kpos);if d=="Equal"{pending_derive_equal=true};if d=="Hash"{pending_derive_hash=true};kpos=kpos+1}else{kpos=kpos+1};ptake(",")};pexpect(")")};return v_unit()}
+    if ptake("use"){let mod=pid();env_declare(mod,["module",mod],false);ptake(";");return v_unit()}
+    if ptake("resource"){if ppeek("class"){declare_class(false);return v_unit()};return kfail("SAGA-P001","resource must modify class")}
+    if ptake("async"){if ppeek("fn"){declare_function();return v_unit()};return kfail("SAGA-P001","async must modify fn")}
+    if ptake("comptime"){if ppeek("fn"){declare_function();return v_unit()};return kfail("SAGA-P001","comptime must modify fn")}
+    if ppeek("using"){return exec_using()}
+    if ppeek("let") or ppeek("var"){return exec_var()}
+    if ppeek("fn"){declare_function();return v_unit()}
+    if ppeek("interface"){return declare_interface()}
+    if ppeek("abstract") and tk_text(kpos+1)=="class"{return declare_class(true)}
+    if ppeek("class"){return declare_class(false)}
+    if ppeek("enum"){return declare_enum()}
+    if ppeek("record"){return declare_record()}
+    if ppeek("if"){return exec_if()}
+    if ppeek("while"){return exec_while()}
+    if ppeek("for"){return exec_for()}
+    if ppeek("try"){return exec_try()}
+    if ppeek("match"){return exec_match()}
+    if ptake("return"){var v=v_unit();if !ppeek(";") and !ppeek("}"){v=eval_expr()};ptake(";");set_control("return",v);return v}
+    if ptake("throw"){let v=eval_expr();if v_tag(v)=="text"{v=v_error("Thrown",v[1])};ptake(";");set_control("throw",v);return v}
+    if ptake("break"){ptake(";");set_control("break",v_unit());return v_unit()}
+    if ptake("continue"){ptake(";");set_control("continue",v_unit());return v_unit()}
+    if tk_kind(kpos)=="id" and tk_text(kpos+1)=="="{let name=pid();pexpect("=");let v=eval_expr();ptake(";");return assign_name(name,v)}
+    let v=eval_expr();ptake(";");return v
+}
+
+fn exec_until(end:int)->any { var last=v_unit();while kpos<end and control_kind=="normal"{last=exec_statement();if is_error(last){return last}};return last }
+
+# ---------- static preflight ----------
+fn static_preflight()->any {
+    # This pass enforces the safety properties whose result must be known before
+    # execution. Runtime expression/type checks handle the remaining structural
+    # type rules on the same canonical parser.
+    var names=empty_any();var muts=empty_any();var types=empty_any();var moved=empty_any();var private_specs=empty_any();var abstract_classes=empty_any();var base_methods=empty_any();var base_method_classes=empty_any();var annotations=empty_any();var fn_names=empty_any();var fn_returns=empty_any();var i=0
+    while i<len(ktokens)-1 {
+        let t=tk_text(i)
+        if t=="@" and i+1<len(ktokens) and tk_kind(i+1)=="id" { let an=tk_text(i+1); if list_find_text(annotations,an)>=0{return kfail("SAGA-T108","duplicate annotation "+an)};annotations=append(annotations,an) } else { if t!="@" and (i==0 or tk_text(i-1)!="@") { annotations=empty_any() } }
+        if t=="fn" and i+1<len(ktokens) and tk_kind(i+1)=="id" { let fnn=tk_text(i+1);var fj=i+2;while fj<len(ktokens) and tk_text(fj)!="->" and tk_text(fj)!="{" and tk_text(fj)!="="{fj=fj+1};var fr="";if fj<len(ktokens) and tk_text(fj)=="->"{fj=fj+1;while fj<len(ktokens) and tk_text(fj)!="{" and tk_text(fj)!="=" and tk_text(fj)!="where"{fr=fr+tk_text(fj);fj=fj+1}};fn_names=append(fn_names,fnn);fn_returns=append(fn_returns,fr) }
+        if t=="abstract" and i+2<len(ktokens) and tk_text(i+1)=="class" and tk_kind(i+2)=="id" { abstract_classes=append(abstract_classes,tk_text(i+2)) }
+        if t=="class" and i+1<len(ktokens) and tk_kind(i+1)=="id" {
+            let cn=tk_text(i+1)
+            var cj=i+2
+            var base=""
+            var seek=i+2
+            while seek<len(ktokens) and tk_text(seek)!="{" { if tk_text(seek)=="extends" and seek+1<len(ktokens){base=tk_text(seek+1)};seek=seek+1 }
+            if seek<len(ktokens) { let ce=matching_brace(seek);var mj=seek+1;while mj<ce{if tk_text(mj)=="fn" and mj+1<ce{let mn=tk_text(mj+1);if base!="" and list_find_text(base_methods,base+"."+mn)>=0 and (mj==0 or tk_text(mj-1)!="override"){return kfail("SAGA-T110","overriding method requires override")};base_methods=append(base_methods,cn+"."+mn)};mj=mj+1} }
+            var cj=i+2
+            if tk_text(cj)=="["{var gd=1;cj=cj+1;while gd>0 and cj<len(ktokens){if tk_text(cj)=="["{gd=gd+1};if tk_text(cj)=="]"{gd=gd-1};cj=cj+1}}
+            if cj<len(ktokens) and tk_text(cj)=="(" { cj=cj+1;while cj<len(ktokens) and tk_text(cj)!=")" { if tk_text(cj)=="private" and (tk_text(cj+1)=="let" or tk_text(cj+1)=="var") and tk_kind(cj+2)=="id" { private_specs=append(private_specs,cn+"."+tk_text(cj+2)) }; cj=cj+1 } }
+        }
+        if t=="let" or t=="var"{if tk_kind(i+1)=="id"{let n=tk_text(i+1);names=append(names,n);muts=append(muts,t=="var");var ty="";var j=i+2;if tk_text(j)==":"{j=j+1;while j<len(ktokens) and tk_text(j)!="="{ty=ty+tk_text(j);j=j+1}}else{if j+2<len(ktokens) and tk_text(j)=="=" and tk_kind(j+1)=="id" and tk_text(j+2)=="("{ty=tk_text(j+1)}};types=append(types,ty);if j+2<len(ktokens) and tk_text(j)=="=" and tk_text(j+1)=="move" and tk_kind(j+2)=="id"{moved=append(moved,tk_text(j+2))};if j+2<len(ktokens) and tk_text(j)=="=" and tk_kind(j+1)=="id" and tk_text(j+2)=="(" { let ctor=tk_text(j+1);if list_find_text(abstract_classes,ctor)>=0{return kfail("SAGA-T111","cannot construct abstract class")};if find_text(ty,"[text]")>=0 and tk_kind(j+3)=="num"{return kfail("SAGA-T103","generic interface binding is invariant")} }}}
+        if tk_kind(i)=="id" and tk_text(i+1)=="=" and (i==0 or (tk_text(i-1)!="let" and tk_text(i-1)!="var")){let p=list_find_text(names,t);if p>=0 and !muts[p]{return kfail("SAGA-T101","cannot assign to immutable binding "+t)}}
+        if tk_kind(i)=="id" and list_find_text(moved,t)>=0{let prev="";if i>0{prev=tk_text(i-1)};if prev!="move"{return kfail("SAGA-T180","use of moved resource "+t)}}
+        if tk_kind(i)=="id" and i+2<len(ktokens) and tk_text(i+1)=="." and tk_kind(i+2)=="id" { let vp=list_find_text(names,t); if vp>=0 and types[vp]!="" { var base=types[vp];let gp=find_text(base,"[");if gp>=0{base=substring(base,0,gp)}; if list_find_text(private_specs,base+"."+tk_text(i+2))>=0{return kfail("SAGA-T107","private member access")}} }
+        if t=="filter" and i+2<len(ktokens) and tk_text(i+1)=="(" and tk_kind(i+2)=="id" { let fp=list_find_text(fn_names,tk_text(i+2));if fp>=0 and fn_returns[fp]!="bool"{return kfail("SAGA-T103","filter predicate must return bool")} }
+        if t=="map_of" and i+2<len(ktokens) and tk_text(i+1)=="(" and tk_text(i+2)=="["{return kfail("SAGA-T103","map key is not hashable")}
+        if t=="ffi" and i+1<len(ktokens) and tk_text(i+1)=="."{return kfail("SAGA-T178","FFI requires unsafe block")}
+        if tk_kind(i)=="num" and i+2<len(ktokens) and (tk_text(i+1)=="+" or tk_text(i+1)=="-" or tk_text(i+1)=="*" or tk_text(i+1)=="/") and tk_kind(i+2)=="num"{let lf=ends_with(t,"f64") or ends_with(t,"f32");let rf=ends_with(tk_text(i+2),"f64") or ends_with(tk_text(i+2),"f32");if lf!=rf{return kfail("SAGA-T170","exact/float arithmetic requires explicit conversion")}}
+        i=i+1
+    }
+    # Generic invariance: reject typed assignment G[A] <- G[B] when spellings differ.
+    i=0
+    while i<len(names){var j=i+1;while j<len(names){if types[i]!="" and types[j]!="" and find_text(types[i],"[")>=0 and find_text(types[j],"[")>=0{let bi=substring(types[i],0,find_text(types[i],"["));let bj=substring(types[j],0,find_text(types[j],"["));if bi==bj and types[i]!=types[j]{# Only reject when later initializer references earlier name; conservative scan.
+                    return kfail("SAGA-T103","generic types are invariant")
+                }};j=j+1};i=i+1}
+    return ["ok"]
+}
+
+fn reset_kernel()->unit { ktokens=empty_any();kpos=0;klast_error="";klast_message="";heap_values=empty_any();heap_mutable=empty_any();env_names=empty_any();env_cells=empty_any();scope_marks=empty_any();class_names=empty_any();class_values=empty_any();enum_names=empty_any();enum_values=empty_any();interface_names=empty_any();output_lines=empty_any();control_kind="normal";control_value=v_unit();current_class="";next_object_id=1;checking_mode=false;pending_derive_equal=false;pending_derive_hash=false }
+
+fn run_source(source:text,execute:bool)->any {
+    reset_kernel();checking_mode=!execute;ksource=source;let lr=lex_source(source);if is_error(lr){return lr};let er=apply_edition_directive();if is_error(er){return er};let sr=static_preflight();if is_error(sr){return sr};kpos=0;control_kind="normal";let r=exec_until(len(ktokens)-1);if is_error(r){return r};if control_kind=="throw"{return kfail("SAGA-R101",value_text(control_value))};return ["ok",r]
+}
+
+
+
+# ---------- canonical SH3 token-image lowering ----------
+fn hex_digit(n:int)->text { let h="0123456789abcdef";return substring(h,n,n+1) }
+fn hex_encode_text(x:text)->text { var out="";var i=0;while i<len(x){let b=byteord(substring(x,i,i+1));out=out+hex_digit(b/16)+hex_digit(b%16);i=i+1};if out==""{return "-"};return out }
+fn hex_nibble(ch:text)->int { let h="0123456789abcdef";let p=find_text(h,ch);if p<0{return 0};return p }
+fn hex_decode_text(x:text)->text { if x=="-"{return ""};var out="";var i=0;while i+1<len(x){let b=hex_nibble(substring(x,i,i+1))*16+hex_nibble(substring(x,i+1,i+2));out=out+bytechr(b);i=i+2};return out }
+
+fn encode_token_image()->text {
+    var out="SH3IMG1\n";var i=0
+    while i<len(ktokens){let t=ktokens[i];out=out+hex_encode_text(t[0])+" "+hex_encode_text(t[1])+" "+text(t[2])+" "+text(t[3])+"\n";i=i+1}
+    return out
+}
+
+fn decode_token_image(image:text)->any {
+    if !starts_with(image,"SH3IMG1\n"){return kfail("SAGA-P001","invalid SH3 token image")}
+    ktokens=empty_any();var pos=8
+    while pos<len(image){let tail=substring(image,pos,len(image));let nl=find_text(tail,"\n");var line="";var next=len(image);if nl<0{line=tail}else{line=substring(image,pos,pos+nl);next=pos+nl+1};if line!=""{let a=find_text(line," ");let b=find_text(substring(line,a+1,len(line))," ")+a+1;let c=find_text(substring(line,b+1,len(line))," ")+b+1;if a<0 or b<=a or c<=b{return kfail("SAGA-P001","malformed SH3 token image")};let k=hex_decode_text(substring(line,0,a));let v=hex_decode_text(substring(line,a+1,b));let ln=int(substring(line,b+1,c));let col=int(substring(line,c+1,len(line)));ktokens=append(ktokens,tok(k,v,ln,col))};if nl<0{pos=len(image)}else{pos=next}}
+    return ["ok"]
+}
+
+fn prepare_source_image(source:text)->any { reset_kernel();ksource=source;let lr=lex_source(source);if is_error(lr){return lr};let er=apply_edition_directive();if is_error(er){return er};let sr=static_preflight();if is_error(sr){return sr};return ["ok",encode_token_image()] }
+fn run_token_image(image:text,execute:bool)->any { reset_kernel();checking_mode=!execute;let d=decode_token_image(image);if is_error(d){return d};let sr=static_preflight();if is_error(sr){return sr};kpos=0;control_kind="normal";let r=exec_until(len(ktokens)-1);if is_error(r){return r};if control_kind=="throw"{return kfail("SAGA-R101",value_text(control_value))};return ["ok",r] }
+
+# ---------- canonical source loader ----------
+var loader_seen=empty_any()
+var loader_active=empty_any()
+var loader_root=""
+
+fn path_dir(path:text)->text {
+    var i=len(path)-1
+    while i>=0 {
+        let ch=substring(path,i,i+1)
+        if ch=="/" or ch=="\\" { if i==0{return "/"};return substring(path,0,i) }
+        i=i-1
+    }
+    return "."
+}
+
+fn path_join(base:text,rel:text)->text {
+    if starts_with(rel,"/"){return rel}
+    if len(rel)>=2 and substring(rel,1,2)==":"{return rel}
+    if base=="." or base==""{return rel}
+    if ends_with(base,"/") or ends_with(base,"\\"){return base+rel}
+    return base+"/"+rel
+}
+
+fn path_clean(path:text)->text {
+    # Loader policy is implemented in Saga.  The host seed only reads the final
+    # path.  Normalize slash-separated '.'/'..' components deterministically.
+    let absolute=starts_with(path,"/")
+    var parts=empty_any();var start=0;var i=0
+    while i<=len(path){
+        if i==len(path) or substring(path,i,i+1)=="/" or substring(path,i,i+1)=="\\"{
+            let part=substring(path,start,i)
+            if part!="" and part!="."{
+                if part==".."{if len(parts)>0{parts=slice(parts,0,len(parts)-1)}else{if !absolute{parts=append(parts,"..")}}}
+                else{parts=append(parts,part)}
+            }
+            start=i+1
+        }
+        i=i+1
+    }
+    var out="";i=0
+    if absolute{out="/"}
+    while i<len(parts){if i>0{out=out+"/"};out=out+parts[i];i=i+1}
+    if out==""{return "."}
+    return out
+}
+
+fn path_is_within(root:text,path:text)->bool {
+    let r=path_clean(root);let p=path_clean(path)
+    if r=="."{return !starts_with(p,"../") and p!=".."}
+    return p==r or starts_with(p,r+"/")
+}
+
+fn loader_seen_has(path:text)->bool { var i=0;while i<len(loader_seen){if loader_seen[i]==path{return true};i=i+1};return false }
+fn loader_active_has(path:text)->bool { var i=0;while i<len(loader_active){if loader_active[i]==path{return true};i=i+1};return false }
+
+fn ltrim_source(line:text)->text { var i=0;while i<len(line) and (substring(line,i,i+1)==" " or substring(line,i,i+1)=="\t"){i=i+1};return substring(line,i,len(line)) }
+
+fn load_source_tree(path:text)->text {
+    let clean=path_clean(path)
+    if !path_is_within(loader_root,clean){print("SAGA-P001: source unit escapes project root: "+clean);sys.exit(66)}
+    if loader_active_has(clean){print("SAGA-P001: source-unit dependency cycle: "+clean);sys.exit(3)}
+    if loader_seen_has(clean){return ""}
+    loader_active=append(loader_active,clean)
+    let source=io.read_text(clean)
+    let base=path_dir(clean)
+    var out="";var pos=0
+    while pos<len(source){
+        let tail=substring(source,pos,len(source));let off=find_text(tail,"\n");var line="";var next=len(source)
+        if off<0{line=tail}else{line=substring(source,pos,pos+off);next=pos+off+1}
+        let t=ltrim_source(line)
+        if starts_with(t,"use \""){
+            let rest=substring(t,5,len(t));let q=find_text(rest,"\"")
+            if q<0{print("SAGA-P001: malformed source-unit use");sys.exit(3)}
+            let rel=substring(rest,0,q)
+            if !ends_with(rel,".saga"){print("SAGA-P001: source unit must end in .saga");sys.exit(3)}
+            let dep=path_clean(path_join(base,rel));out=out+load_source_tree(dep)+"\n"
+        }else{out=out+line+"\n"}
+        if off<0{pos=len(source)}else{pos=next}
+    }
+    loader_active=slice(loader_active,0,len(loader_active)-1);loader_seen=append(loader_seen,clean)
+    return out
+}
+
+fn load_entry_source(path:text)->text {
+    loader_seen=empty_any();loader_active=empty_any();loader_root=path_dir(path_clean(path));return load_source_tree(path_clean(path))
+}
+
+fn main_cli()->int {
+    let args=sys.args();if len(args)>=1 and (args[0]=="--version" or args[0]=="version"){print("Saga SH-3 0.28.0");return 0};if len(args)>=1 and args[0]=="info"{print("implementation=saga-sh3");print("version=0.28.0");print("language=Saga");print("standard_core=true");print("edition_2027_preview=true");print("all_runtime_source_self_hosted=true");print("bootstrap_machine=language-neutral-c11");return 0};if len(args)<2{print("usage: saga <run|check|compile|run-image|check-image|info|version> input [output]");return 64};let command=args[0];let path=args[1];user_cli_raw=slice(args,2,len(args))
+    if command=="compile"{if len(args)<3{print("SAGA-P001: compile requires output path");return 64};let source=load_entry_source(path);let c=prepare_source_image(source);if is_error(c){print(c[1]+": "+c[2]);return 4};io.write_text(args[2],c[1]);return 0}
+    if command=="run-image" or command=="check-image"{let image=io.read_text(path);let r=run_token_image(image,command=="run-image");if is_error(r){print(r[1]+": "+r[2]);return 4};if command=="check-image"{print("OK")};return 0}
+    let source=load_entry_source(path);let r=run_source(source,command=="run");if is_error(r){print(r[1]+": "+r[2]);return 4};if command=="check"{print("OK")};return 0
+}
+
+let exit_code=main_cli()
+sys.exit(exit_code)

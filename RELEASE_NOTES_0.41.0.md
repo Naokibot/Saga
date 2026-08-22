@@ -19,5 +19,3 @@ Saga remains qualified primarily as a companion/offboard controller, not as a so
 - UDP receive can retain peer host/port and payload through `net.udp_receive_from_json` for multi-vehicle links.
 - UDP receive buffers are capped at 16 MiB per call in the hosted Python and independent Go implementations.
 - The Go implementation now exposes custom allocation matrices in addition to Quad-X and has peer-aware UDP receive parity.
-
-Final source tree SHA-256: `9b8aeab4740ff83db42e089cbc93d7ba13f5c086b470a75621e9687d5db9defc`.

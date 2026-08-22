@@ -1,0 +1,9 @@
+module models
+
+public class User(let name: text) {
+    fn greet() -> text = "Hello " + self.name
+}
+
+public fn twice(value: int) -> int = value * 2
+
+internal fn implementationDetail() -> int = 99

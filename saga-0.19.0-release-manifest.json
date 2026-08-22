@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "release": "0.19.0",
+  "language_editions": ["1.0-rc1", "2027-preview"],
+  "c_abi_profile_2": {
+    "specification": "spec/SAGA_C_ABI_PROFILE_2.md",
+    "reference_backend": "linux-amd64+sagaffi+libffi.so.8",
+    "status": "pass-on-qualified-reference-host",
+    "features": ["by-value-struct", "nested-struct-storage", "callback", "owned-pointer", "borrowed-pointer", "adopt", "bounds-when-known", "lifetime-invalidation", "unsafe-defense-in-depth"]
+  },
+  "bare_metal_profile_1": {
+    "specification": "spec/SAGA_BARE_METAL_PROFILE_1.md",
+    "targets": ["cortex-m0", "stm32f030k6"],
+    "status": "build-and-binary-layout-pass",
+    "physical_hardware_execution": false,
+    "codegen_toolchain": ["clang/lld", "llvm-objcopy"]
+  },
+  "self_hosting": {
+    "SH-1": "pass",
+    "SH-2": "pass",
+    "SH-3": "not-qualified",
+    "strict_audit": "validation/sh3-audit-0.19.0.json",
+    "reason": "official non-test Native kernel sources remain non-Saga"
+  },
+  "no_false_claims": true
+}

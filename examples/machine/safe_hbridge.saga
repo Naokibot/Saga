@@ -1,0 +1,15 @@
+use machine
+
+# Example only. The PWM chip/channel mapping must be checked against the actual machine.
+let safety = machine.safety_latch()
+let forward = machine.pwm_open(0, 0, 20_000_000)
+let reverse_pwm = machine.pwm_open(0, 1, 20_000_000)
+let motor = machine.motor(forward, reverse_pwm, 0.05, safety)
+
+machine.pwm_enable(forward)
+machine.pwm_enable(reverse_pwm)
+machine.motor_write(motor, 0.20)
+
+# A trip stops the registered motor immediately and blocks later writes.
+machine.safety_trip(safety, "operator stop")
+print(machine.motor_command(motor))

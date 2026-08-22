@@ -1,0 +1,12 @@
+interface Named {
+    fn name() -> text
+}
+
+abstract class Entity() {}
+
+class User(let id: int, let value: text) extends Entity implements Named {
+    override fn name() -> text = self.value
+}
+
+let user: Named = User(1, "Mina")
+print(user.name())

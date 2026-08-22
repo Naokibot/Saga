@@ -1,0 +1,16 @@
+edition 2027
+use db
+
+let opened = db.open("saga-demo.db")
+if is_ok(opened) {
+    let database = unwrap_ok(opened)
+    let started = db.begin(database)
+    if is_ok(started) {
+        let tx = unwrap_ok(started)
+        db.tx_put(tx, "name", "Saga")
+        db.tx_put(tx, "version", 21)
+        let committed = db.commit(tx)
+        print(is_ok(committed))
+    }
+    db.close(database)
+}

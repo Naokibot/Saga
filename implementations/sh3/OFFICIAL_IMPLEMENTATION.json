@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "release": "0.28.0",
+  "profile": "SH-3 All-Source Self-Hosting",
+  "canonical_language_sources": {
+    "bootstrap_compiler_and_lowering": "selfhost/sh3/sh3c.saga",
+    "lexer_parser_checker_runtime_loader_and_user_lowering": "selfhost/sh3/kernel.saga"
+  },
+  "language_neutral_bootstrap_sources": [
+    "bootstrap/sh3/sh3vm.c",
+    "bootstrap/sh3/launcher.c"
+  ],
+  "bootstrap_compiler_seed": "bootstrap/sh3/stage1.sbc",
+  "reference_implementations": [
+    "implementations/go",
+    "saga"
+  ],
+  "reference_implementations_are_official_kernel": false,
+  "qualification_rule": "All Saga language semantics in the official SH-3 path are defined by canonical .saga sources. C bootstrap sources may implement only a language-neutral bytecode machine, generic host primitives, and launcher mechanics."
+}

@@ -1,0 +1,22 @@
+{
+  "files": [
+    {
+      "path": "main.saga",
+      "sha256": "5d23c6c352bcbab2eda7cd93c71473172e5f601149fae46f7dca13548d9a1f97",
+      "size": 147
+    },
+    {
+      "path": "saga.toml",
+      "sha256": "4b43d95f63955492433a0311db15a74ab793f6895153ddb13d3c8d1526914e38",
+      "size": 108
+    }
+  ],
+  "language": "Saga",
+  "language_version": "1.0",
+  "project": {
+    "entry": "main.saga",
+    "name": "saga_game_math",
+    "version": "0.1.0"
+  },
+  "schema": 1
+}

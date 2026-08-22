@@ -1,0 +1,32 @@
+use machine
+
+// Saga 0.46: compose the loop from visible pieces instead of hiding policy in one object.
+let observer = machine.alpha_beta(0.5, 0.1, 0.0, 0.0)
+let velocity_loop = machine.pid2(0.8, 0.25, 0.01, 1.0, 0.005, 6.0, -1.0, 1.0)
+let resonance = machine.notch(1000.0, 120.0, 5.0)
+let profile = machine.s_curve(0.0, 0.0, 0.0, 5.0, 2.0, 4.0, 20.0)
+let budget = machine.deadline_budget(1000, 900)
+
+var measured_position = 0.0
+var i = 0
+while i < 10 {
+    machine.budget_begin(budget)
+
+    let target_position = machine.s_curve_step(profile, 0.001)
+    let target_velocity = machine.s_curve_velocity(profile)
+    let target_acceleration = machine.s_curve_acceleration(profile)
+    let estimate = machine.alpha_beta_step(observer, measured_position, 0.001)
+    let ff = machine.motor_feedforward(0.02, 0.15, 0.01, target_velocity, target_acceleration)
+    let raw = machine.pid2_step(velocity_loop, target_velocity, estimate[1], ff, 0.001)
+    let command = machine.filter_step(resonance, raw)
+
+    // A real program may write `command` to an explicitly authorized drive here.
+    print(target_position, command)
+    measured_position = target_position
+
+    let exceeded = machine.budget_end(budget)
+    if exceeded { print("control computation exceeded its hosted budget") }
+    i = i + 1
+}
+
+print(machine.budget_stats_json(budget))

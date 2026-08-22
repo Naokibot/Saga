@@ -1,0 +1,16 @@
+use machine
+
+let clock = machine.cyclic_clock(4000)
+var logical_ticks = 0
+
+while logical_ticks < 4000 {
+    let due = machine.cycle_wait_due(clock)
+    var i = 0
+    while i < due {
+        # Put one deterministic control-state update here.
+        logical_ticks = logical_ticks + 1
+        i = i + 1
+    }
+}
+
+print(machine.cycle_stats_json(clock))

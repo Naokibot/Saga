@@ -1,0 +1,16 @@
+edition 2027
+use http
+
+let opened = http.listen("127.0.0.1", 0)
+if is_err(opened) {
+    print(unwrap_err(opened))
+} else {
+    let server = unwrap_ok(opened)
+    print($"listening on ${http.server_port(server)}")
+    let accepted = http.accept(server)
+    if is_ok(accepted) {
+        let request = unwrap_ok(accepted)
+        http.respond(request, 200, "text/plain; charset=utf-8", "Hello from Saga")
+    }
+    http.server_close(server)
+}

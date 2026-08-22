@@ -1,0 +1,37 @@
+edition 2027
+use embedded
+
+fn gpio_init() -> unit {
+    let rcc_ahbenr: uint32 = uint32(1073877012)
+    let gpioa_moder: uint32 = uint32(1207959552)
+    embedded.mmio_set_bits32(rcc_ahbenr, uint32(131072))
+    embedded.mmio_clear_bits32(gpioa_moder, uint32(2048))
+    embedded.mmio_set_bits32(gpioa_moder, uint32(1024))
+}
+
+fn led_on() -> unit {
+    embedded.mmio_write32(uint32(1207959576), uint32(32))
+}
+
+fn systick_init() -> unit {
+    embedded.mmio_write32(uint32(3758153748), uint32(47999))
+    embedded.mmio_write32(uint32(3758153752), uint32(0))
+    embedded.mmio_write32(uint32(3758153744), uint32(7))
+}
+
+@interrupt("SysTick")
+fn systick() -> unit {
+    embedded.os_tick()
+    led_on()
+}
+
+public fn reset() -> unit {
+    let irq_state: uint32 = embedded.critical_enter()
+    gpio_init()
+    led_on()
+    systick_init()
+    embedded.critical_exit(irq_state)
+    while true {
+        embedded.wfi()
+    }
+}

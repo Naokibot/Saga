@@ -1,0 +1,153 @@
+{
+  "schema": 1,
+  "release": "0.41.0",
+  "source_manifest_sha256": "9f5ebb80107e9d8006a39a911f8ee54860121bf4c387d8c0c2543e987bf732f7",
+  "source_tree_sha256": "9b8aeab4740ff83db42e089cbc93d7ba13f5c086b470a75621e9687d5db9defc",
+  "profile": "hosted-drone-companion-offboard-sitl-hil",
+  "physical_flight": "UNEXECUTED",
+  "hard_realtime": false,
+  "checks": [
+    {
+      "name": "Python drone regression",
+      "pass": true,
+      "detail": "..................                                                       [100%]\n18 passed in 0.14s\n"
+    },
+    {
+      "name": "Go drone regression",
+      "pass": true,
+      "detail": "ok  \tsaga-go/cmd/saga-go\t0.006s\n"
+    },
+    {
+      "name": "SITL-first drone project template compiles",
+      "pass": true,
+      "detail": "drone starter compiles"
+    },
+    {
+      "name": "drone examples compile",
+      "pass": true,
+      "detail": {
+        "advanced_autonomy.saga": "PASS",
+        "explicit_rtl.saga": "PASS",
+        "mavlink_offboard.saga": "PASS",
+        "quad_sitl.saga": "PASS",
+        "vision_tracking.saga": "PASS"
+      }
+    },
+    {
+      "name": "3-axis rotational SITL converges after disturbance",
+      "pass": true,
+      "detail": {
+        "simulated_seconds": 200.0,
+        "cycles": 20000,
+        "final_rpy_rad": [
+          "-1.243842155134570928861217114E-10",
+          "1.824309424664479366208689523E-10",
+          "1.864817547104833532720841633E-13"
+        ],
+        "final_rate_rad_s": [
+          "1.455995951712716972161549359E-11",
+          "-2.135469622104979505254264384E-11",
+          "-2.230499332197692918837974809E-14"
+        ],
+        "attitude_error_norm_rad": 2.2079972059207734e-10,
+        "motor_min": "0.0500000000000000000000",
+        "motor_max": "1"
+      }
+    },
+    {
+      "name": "position loop SITL reaches waypoint with bounded acceleration",
+      "pass": true,
+      "detail": {
+        "cycles": 12000,
+        "final_position_m": [
+          "19.99935244026711971323476494",
+          "-9.999222294044352049402245756",
+          "11.99926931891277101923883187"
+        ],
+        "error_m": 0.0012482207386245454,
+        "max_acceleration": "3"
+      }
+    },
+    {
+      "name": "health degradation does not trigger automatic RTL/LAND/DISARM",
+      "pass": true,
+      "detail": {
+        "state": "ARMED",
+        "mode": "ATTITUDE",
+        "safety_tripped": false
+      }
+    },
+    {
+      "name": "RTL remains an explicit application command",
+      "pass": true,
+      "detail": {
+        "state": "ARMED",
+        "mode": "RTL"
+      }
+    },
+    {
+      "name": "geofence prediction and RTL phases",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "MAVLink offboard setpoints survive real UDP transport and incremental parsing",
+      "pass": true,
+      "detail": {
+        "message_ids": [
+          82,
+          84,
+          76
+        ],
+        "frame_lengths": [
+          51,
+          65,
+          45
+        ]
+      }
+    },
+    {
+      "name": "MAVLink 2 signed packet verifies and replay floor is enforced",
+      "pass": true,
+      "detail": {
+        "link_id": 3,
+        "timestamp": 123456,
+        "stale_packet_rejected": true
+      }
+    },
+    {
+      "name": "DroneCAN transport reference CRC and single-frame layout",
+      "pass": true,
+      "detail": {
+        "can_id": 268522794,
+        "data_hex": "616263c7",
+        "transfer_id": 7
+      }
+    },
+    {
+      "name": "DroneCAN multi-frame transfer has CRC prefix, SOT/EOT and alternating toggle",
+      "pass": true,
+      "detail": {
+        "frames": 5,
+        "tails": [
+          133,
+          37,
+          5,
+          37,
+          69
+        ]
+      }
+    }
+  ],
+  "passed": 13,
+  "total": 13,
+  "pass": true,
+  "limitations": [
+    "Rotational and translational SITL models are deterministic simplified dynamics, not an aerodynamic airframe model.",
+    "No physical IMU, GNSS, barometer, ESC, motor, propeller, radio, or aircraft was attached in this environment.",
+    "The complementary estimator is a reference/SITL estimator and is not represented as a production EKF.",
+    "No automatic RTL/LAND/DISARM policy is provided by the drone module; applications or an external autopilot decide mode changes.",
+    "Hosted Saga remains soft real-time and is not qualified as the sole inner-loop flight controller for direct motor stabilization.",
+    "The practical target validated here is a companion/offboard controller speaking MAVLink to an established flight controller."
+  ]
+}

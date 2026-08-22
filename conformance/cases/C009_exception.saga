@@ -1,0 +1,1 @@
+try { throw "boom" } catch error { print(error.kind, error.message) }

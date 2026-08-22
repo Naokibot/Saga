@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "language": "Saga",
+  "language_version": "1.0-rc1",
+  "preview_editions": ["2027"],
+  "conformance_manifest": "conformance/manifest.json",
+  "qualification": "Project-generated evidence; not an independent laboratory certificate.",
+  "implementation": "saga-native",
+  "implementation_version": "0.18.0",
+  "profiles": [
+    "Standard Core",
+    "Native Hosted",
+    "Portable Game Profile",
+    "Edition 2027 Preview",
+    "Desktop Game Profile when built sagadesktop+cgo",
+    "Scalar C ABI Profile 1 when built sagaffi+cgo",
+    "Native Scalar JIT Preview when built sagajit+cgo on linux/amd64",
+    "Embedded Portable WebAssembly subset"
+  ],
+  "host_runtime": "default Linux x86-64 release is a statically linked self-contained native executable; optional hosted expert profiles have declared native dependencies",
+  "bootstrap": {
+    "self_hosted_compiler_driver": true,
+    "fixed_point": true,
+    "all_runtime_source_self_hosted": false,
+    "seed_runtime_source": "published Go implementation"
+  },
+  "independence": "Separate lexer/parser/type checker/runtime from saga-python; no Python runtime invocation in normal Native execution. Technical independence, not organizational independence.",
+  "standard_core_self_conformance": "17/17 PASS",
+  "edition_2027_preview_conformance": "14/14 PASS",
+  "standard_core_cross_implementation_suite": "35/35 PASS",
+  "game_api_alignment": "92/92 PASS",
+  "validation_report": "saga-VALIDATION-0.18.0.md"
+}

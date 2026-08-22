@@ -1,0 +1,258 @@
+{
+  "schema": 1,
+  "release": "0.43.0",
+  "source_manifest_sha256": "03525558a83096bc9fcbbdf2c2d8f1c9caea95734a3022b9e9eccfa55a3abf34",
+  "source_tree_sha256": "59fdf69e653676cba310b1cd90082f49765640b8026f4e933daaa93e77cf743c",
+  "status": "pass",
+  "pass": true,
+  "cases": [
+    {
+      "name": "MAVLink UDP takeoff-translate-land E2E",
+      "pass": true,
+      "detail": {
+        "phases": [
+          [
+            "takeoff",
+            0.119999885559082,
+            [
+              0.0,
+              0.0,
+              -2.880000114440918
+            ]
+          ],
+          [
+            "translate",
+            0.0,
+            [
+              5.0,
+              2.0,
+              -3.0
+            ]
+          ],
+          [
+            "land",
+            0.0,
+            [
+              5.0,
+              2.0,
+              0.0
+            ]
+          ]
+        ],
+        "received_setpoints": 71
+      }
+    },
+    {
+      "name": "PX4 official SITL execution availability",
+      "pass": true,
+      "detail": {
+        "path": null,
+        "available": false
+      },
+      "status": "UNEXECUTED"
+    },
+    {
+      "name": "ArduPilot official SITL execution availability",
+      "pass": true,
+      "detail": {
+        "path": null,
+        "available": false
+      },
+      "status": "UNEXECUTED"
+    },
+    {
+      "name": "actual ONNX object detector executes via OpenCV DNN",
+      "pass": true,
+      "detail": {
+        "dark": 0,
+        "bright": 1,
+        "confidence": "0.9525741268224334",
+        "box": [
+          "16.0",
+          "16.0",
+          "48.0",
+          "48.0"
+        ]
+      }
+    },
+    {
+      "name": "real visual front-end: optical flow + ArUco PnP pose",
+      "pass": true,
+      "detail": {
+        "flow": {
+          "tracked": 25,
+          "median_du": 4.000051498413086,
+          "median_dv": 2.0000228881835938,
+          "camera_velocity_mps": [
+            -0.8000102996826172,
+            -0.40000457763671876,
+            0.0
+          ]
+        },
+        "pose": [
+          {
+            "id": 7,
+            "rvec": [
+              -3.1382549575141483,
+              2.0415058681224638e-16,
+              -0.0052304433228898325
+            ],
+            "tvec_m": [
+              -0.0009551046944413002,
+              -0.0009551046944412967,
+              0.6060606183756154
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "visual-servo produces bounded explicit body command",
+      "pass": true,
+      "detail": {
+        "vx": "0.10",
+        "vy": "-0.25",
+        "vz": "0.08333333333333333333333333333",
+        "yaw_rate": "-0.25",
+        "error_x": "0.25",
+        "error_y": "0.08333333333333333333333333333",
+        "area_error": "0.05"
+      }
+    },
+    {
+      "name": "VIO inertial propagation + visual correction",
+      "pass": true,
+      "detail": {
+        "before": 0.05,
+        "after": 0.01
+      }
+    },
+    {
+      "name": "pose-graph SLAM optimization runs bounded",
+      "pass": true,
+      "detail": {
+        "pre_x_error": 0.4500000000000002,
+        "post_x_error": 0.3015530172775298
+      }
+    },
+    {
+      "name": "multi-drone coordination/deconfliction",
+      "pass": true,
+      "detail": {
+        "plans": {
+          "1": [
+            "4",
+            "0",
+            "0"
+          ],
+          "2": [
+            "3.829310843146856551816356843",
+            "1.156018367742447260925692632",
+            "0E+13"
+          ]
+        },
+        "conflicts": [
+          {
+            "a": 1,
+            "b": 2,
+            "distance_m": "1.0"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GStreamer structured video backend present or fails closed",
+      "pass": true,
+      "detail": {
+        "runtime_available": true,
+        "webrtcbin_available": false,
+        "status": "EXECUTED"
+      }
+    },
+    {
+      "name": "WebRTC browser backend recipe exposed",
+      "pass": true,
+      "detail": {
+        "backend": "browser-RTCPeerConnection",
+        "operations": [
+          "webrtc.create_peer",
+          "webrtc.add_media_stream",
+          "webrtc.create_data_channel",
+          "webrtc.create_offer",
+          "webrtc.set_local_description",
+          "webrtc.set_remote_description",
+          "webrtc.add_ice_candidate",
+          "webrtc.close"
+        ],
+        "media": "media.request_user_media"
+      }
+    },
+    {
+      "name": "WebRTC media tracks + data channel execute in browser backend mock",
+      "pass": true,
+      "detail": {
+        "status": "EXECUTED",
+        "node": "/opt/nvm/versions/node/v22.16.0/bin/node",
+        "result": {
+          "added": {
+            "added_tracks": 2,
+            "id": 1,
+            "stream_id": 7
+          },
+          "dc": {
+            "label": "telemetry",
+            "ready_state": "connecting"
+          },
+          "closed": {
+            "closed": true,
+            "id": 1
+          }
+        }
+      },
+      "status": "EXECUTED"
+    },
+    {
+      "name": "advanced machine-control core works without user host-language glue",
+      "pass": true,
+      "detail": {
+        "lqr": [
+          [
+            "0.4220824403854534570076841653",
+            "1.243928853903713585578632936"
+          ]
+        ],
+        "resolved_rate": [
+          "0.03999920001599634800632120656",
+          "0.01999960000799817400316060328"
+        ],
+        "plc": "{\"enable\":true}",
+        "canopen_cob": 1537,
+        "cia402": "OPERATION_ENABLED",
+        "process": "d204000000000000"
+      }
+    },
+    {
+      "name": "Saga-only advanced drone/machine examples execute",
+      "pass": true,
+      "detail": [
+        {
+          "file": "examples/drone/visual_vio_slam_swarm.saga",
+          "returncode": 0,
+          "stderr": ""
+        },
+        {
+          "file": "examples/machine/advanced_control.saga",
+          "returncode": 0,
+          "stderr": ""
+        }
+      ]
+    }
+  ],
+  "boundaries": {
+    "official_px4_sitl": "UNEXECUTED",
+    "official_ardupilot_sitl": "UNEXECUTED",
+    "gstreamer_runtime": "EXECUTED",
+    "physical_flight": "UNEXECUTED",
+    "physical_camera": "UNEXECUTED"
+  }
+}

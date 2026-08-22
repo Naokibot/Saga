@@ -1,0 +1,10 @@
+module math
+
+public fn factorial(n: int) -> int {
+  if n <= 1 {
+    return 1
+  }
+  return n * factorial(n - 1)
+}
+
+public fn twice(value: int) -> int = value * 2

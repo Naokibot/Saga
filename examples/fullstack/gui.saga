@@ -1,0 +1,12 @@
+use ui
+
+let window = ui.window("Saga GUI", 480, 240)
+let label = ui.label(window, "名前を入力してください")
+let input = ui.input(window, "Aki")
+
+fn greet() {
+    ui.set(label, "Hello, " + ui.get(input))
+}
+
+ui.button(window, "表示", greet)
+ui.run(window)

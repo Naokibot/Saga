@@ -1,0 +1,2 @@
+class Secret(private let value: text) {}
+print(Secret("x").value)

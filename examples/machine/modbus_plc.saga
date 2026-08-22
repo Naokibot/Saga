@@ -1,0 +1,8 @@
+use machine
+
+// Example only. Running it requires --allow-device and an explicit network grant.
+let plc = machine.modbus_tcp_open("192.0.2.10", 502, 250, 1)
+let registers = machine.modbus_read_holding(plc, 0, 4)
+print(registers)
+machine.modbus_write_register(plc, 10, 1200)
+machine.modbus_close(plc)

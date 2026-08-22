@@ -1,11 +1,27 @@
 # Saga 0.42.0 — Integrated Autonomy + Advanced Machine Control
 
-0.42 adds a MAVLink UDP offboard session and real-SITL runner, visual servoing, hosted VIO, bounded pose-graph SLAM, multi-drone coordination, real ONNX object-detector qualification, an OpenCV-Zoo-compatible YOLOX path, sparse optical-flow velocity, calibrated ArUco PnP pose estimation, structured GStreamer RTP process control and browser WebRTC media-track/data-channel support.
+## Added
 
-The machine profile adds discrete LQR design, state-space control, linear Kalman filtering, synchronized jerk-limited multi-axis motion, DH robot kinematics/Jacobian/resolved-rate control, PLC scan/TON/process images, CANopen NMT/SDO/PDO and CiA-402 helpers. Supported high-level application logic can be written in Saga without Python/C/Go application glue; hardware/OS drivers remain backend responsibilities.
+- MAVLink UDP offboard session usable with PX4/ArduPilot endpoints, plus a reproducible real-SITL E2E runner.
+- Protocol-level E2E flight qualification: takeoff → translate → land over the same MAVLink/UDP path used by real SITL.
+- Visual-servo controller with explicit body velocity/yaw-rate output; no automatic mode policy.
+- Timestamped hosted VIO and bounded pose-graph SLAM primitives.
+- Explicit multi-drone formation/deconfliction planner.
+- OpenCV-Zoo-compatible YOLOX ONNX detector, sparse optical-flow velocity, calibrated ArUco PnP pose estimation and a generated real-ONNX detector fixture for forward-execution qualification.
+- Structured GStreamer H.264/RTP sender/receiver backend.
+- Browser WebRTC media-track and data-channel attachment in the SH-3 browser runtime.
+- Discrete LQR gain design, state-space control, linear Kalman filtering, synchronized jerk-limited multi-axis motion.
+- DH robot kinematics/Jacobian/resolved-rate control.
+- PLC scan/process-image/TON primitives, CANopen NMT/SDO/PDO helpers and CiA-402 state/controlword helpers.
+- Reproducible ONNX fixture generator and Saga-only advanced drone/machine examples.
 
-Flight policy remains explicit. No automatic RTL/LAND/DISARM policy was added.
+## Review fixes
 
-Final source tree SHA-256: `f925e9417b83ad3cac6f69add270417fbbe7e0417c278cca16fb3dda91a023ec`.
+- Fixed synchronized multi-axis motion to use the actual `JerkLimitedProfile.step()` contract.
+- Fixed pose-graph update direction discovered during qualification.
+- Completed WebRTC media support: the browser runtime now attaches MediaStream tracks to the peer connection rather than negotiating an empty peer only.
+- Kept external SITL/GStreamer availability separate from protocol/API qualification so unavailable binaries are never reported as executed.
 
-Official PX4/ArduPilot SITL and GStreamer process execution are `UNEXECUTED` in the qualification environment because those binaries were not installed. The included ONNX fixture is an actual executable detector graph, but not a pretrained production model; the YOLOX backend is implemented for a separately supplied compatible model asset. Physical flight, physical camera and physical industrial machinery remain separately qualified.
+## Boundaries
+
+Saga user programs can now express the supported high-level control stack entirely in Saga. Device drivers, kernel scheduling, GPU/video stacks, physical fieldbus masters and hardware-timed PWM/DShot remain backend responsibilities. Official PX4/ArduPilot SITL and GStreamer process execution are only reported `EXECUTED` when the corresponding binaries are actually present. Physical flight and physical machinery remain separately qualified.

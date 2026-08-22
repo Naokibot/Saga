@@ -1,0 +1,186 @@
+let EMPTY = 0
+let BLACK = 1
+let WHITE = 2
+let SIZE = 8
+
+fn index_of(x: int, y: int) -> int {
+    return y * SIZE + x
+}
+
+fn inside(x: int, y: int) -> bool {
+    return x >= 0 and x < SIZE and y >= 0 and y < SIZE
+}
+
+fn opponent(player: int) -> int {
+    if player == BLACK { return WHITE }
+    return BLACK
+}
+
+fn initial_board() -> list[int] {
+    var board = repeat(EMPTY, SIZE * SIZE)
+    board = set_at(board, index_of(3, 3), WHITE)
+    board = set_at(board, index_of(4, 4), WHITE)
+    board = set_at(board, index_of(4, 3), BLACK)
+    board = set_at(board, index_of(3, 4), BLACK)
+    return board
+}
+
+fn flips_in_direction(board: list[int], position: int, player: int, dx: int, dy: int) -> list[int] {
+    let start_x = position % SIZE
+    let start_y = floor(position / SIZE)
+    var x = start_x + dx
+    var y = start_y + dy
+    var captured: list[int] = []
+    let enemy = opponent(player)
+
+    while inside(x, y) and board[index_of(x, y)] == enemy {
+        captured = append(captured, index_of(x, y))
+        x = x + dx
+        y = y + dy
+    }
+
+    if len(captured) > 0 and inside(x, y) and board[index_of(x, y)] == player {
+        return captured
+    }
+    return []
+}
+
+fn flips_for_move(board: list[int], position: int, player: int) -> list[int] {
+    if position < 0 or position >= SIZE * SIZE { return [] }
+    if board[position] != EMPTY { return [] }
+
+    let dxs = [-1, 0, 1, -1, 1, -1, 0, 1]
+    let dys = [-1, -1, -1, 0, 0, 1, 1, 1]
+    var flips: list[int] = []
+
+    for direction in 0..7 {
+        let found = flips_in_direction(board, position, player, dxs[direction], dys[direction])
+        for item in found {
+            flips = append(flips, item)
+        }
+    }
+    return flips
+}
+
+fn legal_moves(board: list[int], player: int) -> list[int] {
+    var moves: list[int] = []
+    for position in 0..63 {
+        if len(flips_for_move(board, position, player)) > 0 {
+            moves = append(moves, position)
+        }
+    }
+    return moves
+}
+
+fn apply_move(board: list[int], position: int, player: int) -> list[int] {
+    let flips = flips_for_move(board, position, player)
+    assert(len(flips) > 0, "その場所には置けません")
+    var next = set_at(board, position, player)
+    for item in flips {
+        next = set_at(next, item, player)
+    }
+    return next
+}
+
+fn disc_count(board: list[int], player: int) -> int {
+    var count = 0
+    for cell in board {
+        if cell == player { count = count + 1 }
+    }
+    return count
+}
+
+fn cell_text(cell: int) -> text {
+    if cell == BLACK { return "●" }
+    if cell == WHITE { return "○" }
+    return "·"
+}
+
+fn board_text(board: list[int]) -> text {
+    var result = "  a b c d e f g h\n"
+    for y in 0..7 {
+        var line = text(y + 1) + " "
+        for x in 0..7 {
+            line = line + cell_text(board[index_of(x, y)]) + " "
+        }
+        result = result + line + "\n"
+    }
+    return result
+}
+
+fn move_text(position: int) -> text {
+    let columns = "abcdefgh"
+    let x = position % SIZE
+    let y = floor(position / SIZE)
+    return substring(columns, x, x + 1) + text(y + 1)
+}
+
+fn parse_move(raw: text) -> int {
+    let value = lower(trim(raw))
+    if value == "quit" or value == "q" { return -2 }
+    if len(value) != 2 { return -1 }
+    let x = find_text("abcdefgh", substring(value, 0, 1))
+    if x < 0 { return -1 }
+    try {
+        let y = int(substring(value, 1, 2)) - 1
+        if not inside(x, y) { return -1 }
+        return index_of(x, y)
+    } catch error {
+        return -1
+    }
+}
+
+fn move_weight(position: int, flip_count: int) -> int {
+    let x = position % SIZE
+    let y = floor(position / SIZE)
+    var score = flip_count * 10
+    if (x == 0 or x == 7) and (y == 0 or y == 7) {
+        score = score + 1000
+    }
+    if x == 0 or x == 7 or y == 0 or y == 7 {
+        score = score + 40
+    }
+    if (x == 1 or x == 6) and (y == 1 or y == 6) {
+        score = score - 250
+    }
+    return score
+}
+
+fn choose_move(board: list[int], player: int) -> int {
+    let moves = legal_moves(board, player)
+    if len(moves) == 0 { return -1 }
+    var best = moves[0]
+    var best_score = move_weight(best, len(flips_for_move(board, best, player)))
+    for move in moves {
+        let score = move_weight(move, len(flips_for_move(board, move, player)))
+        if score > best_score {
+            best = move
+            best_score = score
+        }
+    }
+    return best
+}
+
+var board = initial_board()
+var player = BLACK
+var passes = 0
+var turns = 0
+
+while passes < 2 and turns < 100 {
+    let move = choose_move(board, player)
+    if move < 0 {
+        passes = passes + 1
+    } else {
+        board = apply_move(board, move, player)
+        passes = 0
+    }
+    player = opponent(player)
+    turns = turns + 1
+}
+
+let black = disc_count(board, BLACK)
+let white = disc_count(board, WHITE)
+assert(turns <= 100, "対局が終了しませんでした")
+assert(black + white <= 64, "盤面の石数が不正です")
+assert(len(legal_moves(board, BLACK)) == 0 and len(legal_moves(board, WHITE)) == 0, "終局判定が不正です")
+print("OTHELLO_SELFPLAY_OK", turns, black, white)

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "language": "Saga",
+  "language_version": "1.0-rc1",
+  "implementation": "saga-c-core",
+  "implementation_version": "0.17.0",
+  "profiles": ["Clean-room Standard Core subset"],
+  "conformance_cases": ["C001","C002","C003","C004","C005","C006","C010","C011","C012","C013","C014"],
+  "coverage": "11/14 Standard Core seed cases; C007-C009 explicitly unsupported",
+  "host_runtime": "C11 executable",
+  "independence": "No linking/importing of saga-native Go or saga-python. Technical clean-room codebase within the same overall project; not organizationally independent third-party maintenance.",
+  "qualification": "Project-generated technical evidence, not a third-party certificate."
+}

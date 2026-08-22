@@ -1,0 +1,5 @@
+use "models.saga" as m
+
+user = m.User("Aki")
+print user.greet()
+print m.twice(21)

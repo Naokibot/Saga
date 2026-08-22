@@ -1,0 +1,52 @@
+{
+  "crypto_extensions": [
+    "sha512",
+    "hmac_sha256",
+    "constant_equal",
+    "random_hex",
+    "password_hash",
+    "password_verify",
+    "aes_gcm_encrypt",
+    "aes_gcm_decrypt"
+  ],
+  "native_security_functions": [
+    "sha512",
+    "hmac_sha256",
+    "constant_equal",
+    "random_hex",
+    "password_hash",
+    "password_verify",
+    "file_sha256",
+    "ip_valid",
+    "cidr_contains",
+    "certificate_info",
+    "tls_probe"
+  ],
+  "non_goals": [
+    "credential theft",
+    "malware deployment",
+    "exploit automation",
+    "stealth or persistence",
+    "raw packet attack tooling"
+  ],
+  "profile": "Saga Defensive Cybersecurity Profile 1",
+  "release": "0.34.0",
+  "schema": 1,
+  "scope": [
+    "defensive cryptography",
+    "credential storage primitives",
+    "file integrity verification",
+    "IP/CIDR policy checks",
+    "X.509 certificate inspection",
+    "verified TLS endpoint inspection"
+  ],
+  "security_properties": {
+    "aead": "AES-GCM with random nonce and caller-supplied AAD",
+    "constant_time_secret_compare": true,
+    "file_hash_streaming": true,
+    "password_kdf": "PBKDF2-HMAC-SHA256, 210000 iterations, random 16-byte salt, 32-byte derived key",
+    "password_verify_iteration_cap": 1000000,
+    "tls_certificate_verification": true,
+    "tls_minimum": "TLS 1.2"
+  }
+}

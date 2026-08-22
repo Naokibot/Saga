@@ -1,0 +1,8 @@
+use drone
+
+// Connect to a PX4/ArduPilot MAVLink UDP endpoint. All mode/setpoint choices are explicit.
+// This example only type-checks by default; use real endpoint values in a controlled test environment.
+let trajectory = drone.trajectory3d([0.0, 0.0, 0.0], [2.0, 1.0, -2.0], 2.0, 1.0, 4.0)
+let allocator = drone.quad_x_allocator(0.0, 1.0)
+print(drone.trajectory_step_json(trajectory, 0.005))
+print(drone.allocation_report_json(allocator, [1.5, 0.05, -0.02, 0.01]))

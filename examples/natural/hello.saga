@@ -1,0 +1,2 @@
+name = "Saga"
+print "Hello,", name

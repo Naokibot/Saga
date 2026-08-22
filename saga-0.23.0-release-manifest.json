@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "release": "0.23.0",
+  "name": "Saga Universal App Actions",
+  "language_baseline": "Language Edition 1.0 RC1",
+  "preview_edition": "2027",
+  "official_implementation": "saga-sh3",
+  "universal_app": {
+    "source_api_count": 10,
+    "browser_first_party_operations": 53,
+    "open_ended_namespaced_operations": true,
+    "raw_browser_eval": false
+  },
+  "web": {
+    "module_api_count": 107,
+    "browser_host_api_count": 101,
+    "real_chromium": "Chrome/144.0.7559.96",
+    "chromium_pass": true,
+    "managed_url_policy_bypassed": false
+  },
+  "game": {
+    "typed_api_count": 101
+  },
+  "regression": {
+    "python": "155/155 + 4 subtests",
+    "go_test": true,
+    "go_vet": true,
+    "go_race": true,
+    "parser_fuzz": 100000,
+    "expression_fuzz": 25000,
+    "unexpected_host_exceptions": 0,
+    "internal_security_unresolved": 0
+  },
+  "sh3": {
+    "schema": 1,
+    "release": "0.23.0",
+    "profile": "SH-3 All-Source Self-Hosting (split qualification)",
+    "compiler_stage2_sha256": "8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4",
+    "compiler_stage3_sha256": "8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4",
+    "kernel_stage2_sha256": "ac6b15c0c3b0f4e7d0e290ad1edf6d3d28fb10a7ad4b1871209104bfcfe044e6",
+    "kernel_stage3_sha256": "ac6b15c0c3b0f4e7d0e290ad1edf6d3d28fb10a7ad4b1871209104bfcfe044e6",
+    "token_image_sha256": "aaa2661cdec4a115f61df6c8bc37cafc090eb388725fbb8e331755c7e286c060",
+    "checks": {
+      "strict_c11_vm_and_launcher": true,
+      "compiler_fixed_point": true,
+      "kernel_fixed_point": true,
+      "standard_core_success": "23/23",
+      "standard_core_diagnostics": "11/11",
+      "edition_2027": "15/15",
+      "source_loader": true,
+      "deterministic_sh3img1": true,
+      "run_image": true,
+      "empty_path_run": true,
+      "empty_path_info": true,
+      "empty_path_sagac_edition_2027": true,
+      "source_boundary_audit_problems": 0
+    },
+    "monolithic_validator_note": "A single monolithic validator exceeded one execution window; all qualification items were rerun to completion in split stages. Timeout is not counted as pass.",
+    "pass": true
+  },
+  "key_source_sha256": {
+    "selfhost/sh3/sh3c.saga": "051dee2426ac3333db4d7954570486ac1a28daaded3d6b868644524979dd690d",
+    "selfhost/sh3/kernel.saga": "26f0331ef2fb28d250ce7c9a2336eecae453c5aa6e6632698e7a45d17f6ee0c6",
+    "bootstrap/sh3/sh3vm.c": "02ecfe78c721a38d249c568199d13708f1286f2c00b8f8201f0598d666ed52f2",
+    "implementations/go/cmd/saga-go/web_runtime/sh3vm-browser.js": "fe9ad44d32751f1a185da1ba12e4d953e3182da14ae93a6716d8086fc1a92b98",
+    "compatibility/app-action-api-0.23.0.json": "fbc94e9a1fd700a470beb89f9a16c0a7d3fa4446a141fc861705866e15cd8248"
+  },
+  "qualification_limits": [
+    "Application actions are universally expressible by namespaced operation plus JSON, but execution requires a trusted host adapter/capability.",
+    "Physical hardware, OS entitlement, vendor account and service availability are not inferred from operation expressibility.",
+    "Permissioned browser/hardware operations not exercised against real devices/services are not claimed as device-qualified.",
+    "Project-internal security review is not an independent third-party audit."
+  ]
+}

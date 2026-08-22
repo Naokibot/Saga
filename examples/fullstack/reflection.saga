@@ -1,0 +1,13 @@
+use reflect
+
+@entity("student")
+class Student(let name: text) {
+    @display("Greeting")
+    fn greet() = "Hello " + self.name
+}
+
+let student = Student("Aki")
+print(reflect.type_name(student))
+print(reflect.fields(student))
+print(reflect.methods(student))
+print(reflect.annotations(Student))

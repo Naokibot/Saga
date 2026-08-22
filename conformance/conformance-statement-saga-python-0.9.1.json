@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "implementation": "saga-python",
+  "implementation_version": "0.10.0",
+  "language": "Saga",
+  "language_version": "0.9",
+  "profiles": [
+    "Standard Core",
+    "Hosted Standard (declared modules)"
+  ],
+  "unicode_identifier_profile": "15.1.0-vendored",
+  "host_runtime": "Python >=3.13",
+  "diagnostic_schema": 2,
+  "diagnostic_formats": [
+    "text",
+    "json",
+    "sarif"
+  ],
+  "diagnostic_locales": [
+    "en",
+    "ja"
+  ],
+  "diagnostic_fallback": "en",
+  "lock_schema": 1,
+  "hosted_modules": [
+    "cloud",
+    "crypto",
+    "data",
+    "db",
+    "docdb",
+    "game",
+    "http",
+    "image",
+    "io",
+    "iot",
+    "json",
+    "ml",
+    "orm",
+    "plugin",
+    "process",
+    "reflect",
+    "science",
+    "spark",
+    "system",
+    "task",
+    "tcp",
+    "time",
+    "udp",
+    "ui",
+    "video",
+    "websocket"
+  ],
+  "qualification": "Project-generated conformance evidence; not an independent certificate",
+  "report": "validation/standard-core-conformance-0.10.0.json"
+}

@@ -1,0 +1,9 @@
+use ui
+let window = ui.window("Saga GUI Smoke", 320, 180)
+let label = ui.label(window, "GUI_OK")
+fn finish() {
+    print(ui.get(label))
+    ui.close(window)
+}
+ui.after(window, 100, finish)
+ui.run(window)

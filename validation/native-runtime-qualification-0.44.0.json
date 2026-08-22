@@ -1,0 +1,175 @@
+{
+  "schema": 1,
+  "release": "0.44.0",
+  "source_manifest_sha256": "5425a78d1da43aa231cd491e04ce0dda7da75e12c807eded4f1ddc5b7200a7ae",
+  "source_tree_sha256": "cc58a362d0118f1b489f339cb90920e2423cfbf76a5ea3ad6dd44d05c5b07eb0",
+  "profile": "Native Runtime ABI 0.35 Preview",
+  "checks": [
+    {
+      "name": "C11 compiler available",
+      "pass": true,
+      "detail": "/usr/local/swift/usr/bin/clang"
+    },
+    {
+      "name": "combined 0.35 native program executes",
+      "pass": true,
+      "detail": {
+        "returncode": 0,
+        "stdout": "Student Aki\n5\nstudent\n8\nfinally\n3\nNativeFailure\ndone\n",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "ABI identity is 0.35",
+      "pass": true,
+      "detail": {
+        "abi": "0.35",
+        "language": "0.35"
+      }
+    },
+    {
+      "name": "generational/incremental/concurrent-sweep memory model is ABI-bound",
+      "pass": true,
+      "detail": "managed-ref-generational-incremental-concurrent-sweep-0.35"
+    },
+    {
+      "name": "open-world dispatch protocol is declared",
+      "pass": true,
+      "detail": {
+        "dispatch": "open-world-registry-stable-slot-type-id-v1",
+        "feature_level": "0.38"
+      }
+    },
+    {
+      "name": "inheritance/interface/virtual dispatch descriptors exported",
+      "pass": true,
+      "detail": {
+        "Student": {
+          "abstract": false,
+          "base": "runtime.Person",
+          "fields": [
+            {
+              "index": 0,
+              "mutable": false,
+              "name": "name",
+              "private": false,
+              "type": "text"
+            },
+            {
+              "index": 1,
+              "mutable": false,
+              "name": "school",
+              "private": false,
+              "type": "text"
+            }
+          ],
+          "interface": false,
+          "interfaces": [],
+          "kind": "class",
+          "layout": [
+            {
+              "index": 0,
+              "mutable": false,
+              "private": false,
+              "type": "text"
+            },
+            {
+              "index": 1,
+              "mutable": false,
+              "private": false,
+              "type": "text"
+            }
+          ],
+          "methods": [
+            {
+              "dispatch_slot": "0x1db323575659ea94",
+              "dispatch_symbol": "saga_abi035_v72756e74696d652e53747564656e74_f6772656574",
+              "name": "greet",
+              "params": [],
+              "return": "text",
+              "symbol": "saga_abi035_m72756e74696d65_c53747564656e74_f6772656574"
+            },
+            {
+              "dispatch_slot": "0x6a59e6d3f25ba5c8",
+              "dispatch_symbol": "saga_abi035_v72756e74696d652e53747564656e74_f726f6c65",
+              "name": "role",
+              "params": [],
+              "return": "text",
+              "symbol": "saga_abi035_m72756e74696d65_c53747564656e74_f726f6c65"
+            }
+          ],
+          "name": "Student",
+          "native_type": "object[runtime.Student]",
+          "template_fields": [],
+          "template_methods": [],
+          "type_id": "0xa2353e6ebec2f56f",
+          "type_params": []
+        },
+        "Greeter": {
+          "abstract": true,
+          "base": null,
+          "fields": [],
+          "interface": true,
+          "interfaces": [],
+          "kind": "class",
+          "layout": [],
+          "methods": [
+            {
+              "dispatch_slot": "0x1db323575659ea94",
+              "dispatch_symbol": "saga_abi035_v72756e74696d652e47726565746572_f6772656574",
+              "name": "greet",
+              "params": [],
+              "return": "text",
+              "symbol": "saga_abi035_m72756e74696d65_c47726565746572_f6772656574"
+            }
+          ],
+          "name": "Greeter",
+          "native_type": "object[runtime.Greeter]",
+          "template_fields": [],
+          "template_methods": [],
+          "type_id": "0x4aabff9810bcc57d",
+          "type_params": []
+        }
+      }
+    },
+    {
+      "name": "generic specializations have concrete native symbols",
+      "pass": true,
+      "detail": {
+        "specialization_marker_count": 108
+      }
+    },
+    {
+      "name": "owned text / managed Option-Result / exception APIs exported",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "external C client calls virtual dispatch symbol",
+      "pass": true,
+      "detail": {
+        "compile_stderr": "",
+        "stdout": "Student Kai\n",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "generational promotion + incremental mutation barrier + sweep complete",
+      "pass": true,
+      "detail": {
+        "compile_stderr": "",
+        "stdout": "minor=2 major=2 concurrent=1\n",
+        "stderr": ""
+      }
+    }
+  ],
+  "passed": 10,
+  "total": 10,
+  "pass": true,
+  "limitations": [
+    "Open-world dispatch is available to 0.37-generated/registered types; mixed use with older pre-registration binaries requires rebuild or an explicit registrar shim.",
+    "GC provides budgeted incremental major mark/sweep and incremental nursery mark/sweep in low-pause mode; the synchronous minor API remains as a compatibility wrapper, and fully concurrent marking/compaction is not claimed.",
+    "Public cross-module generic function/class specialization is supported; generic inheritance and generic methods remain fail-closed.",
+    "Nested Option/Result descriptors inside generic heap slots are not part of ABI 0.35."
+  ]
+}

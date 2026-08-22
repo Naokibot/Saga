@@ -1,0 +1,7 @@
+values = [3, 1, 2, 2]
+result = values
+    .filter { it > 1 }
+    .map { it * 10 }
+    .distinct()
+    .sorted()
+print(result)

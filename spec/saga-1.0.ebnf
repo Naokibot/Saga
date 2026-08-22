@@ -1,0 +1,77 @@
+(* Saga Language Edition 1.0 Release Candidate grammar.
+   Whitespace and comments are lexical separators. Semantic restrictions are
+   specified by SAGA_LANGUAGE_SPECIFICATION_1.0_RC1.md. *)
+program          = { declaration }, EOF ;
+declaration      = { annotation }, [ "abstract" ],
+                   ( use-declaration | interface-declaration | class-declaration
+                   | record-declaration | enum-declaration | function-declaration
+                   | variable-declaration | test-declaration | statement ) ;
+annotation       = "@", identifier, [ "(", [ annotation-arguments ], ")" ] ;
+annotation-arguments = annotation-value, { ",", annotation-value } ;
+annotation-value = literal | "[", [ annotation-value, { ",", annotation-value } ], "]" ;
+
+use-declaration  = "use", ( identifier | string ), [ ";" ] ;
+variable-declaration = ( "let" | "var" ), identifier, [ ":", type ], "=", expression, [ ";" ] ;
+function-declaration = "fn", identifier, [ type-parameters ], "(", [ parameters ], ")",
+                       [ "->", type ], ( "=", expression, [ ";" ] | block ) ;
+parameters       = parameter, { ",", parameter } ;
+parameter        = identifier, ":", type ;
+type-parameters  = "[", identifier, { ",", identifier }, "]" ;
+type             = identifier, [ "[", type, { ",", type }, "]" ] ;
+
+interface-declaration = "interface", identifier, [ type-parameters ],
+                        "{", { interface-method }, "}" ;
+interface-method = { annotation }, "fn", identifier, [ type-parameters ],
+                   "(", [ parameters ], ")", "->", type, [ ";" ] ;
+class-declaration = "class", identifier, [ type-parameters ], [ fields ],
+                    [ "extends", type ], [ "implements", type-list ],
+                    "{", { method-declaration }, "}" ;
+record-declaration = "record", identifier, [ type-parameters ],
+                     "(", [ record-field, { ",", record-field } ], ")" ;
+record-field     = identifier, ":", type ;
+enum-declaration = "enum", identifier, "{", enum-variant, { ",", enum-variant }, [ "," ], "}" ;
+enum-variant     = identifier, [ "(", type, { ",", type }, ")" ] ;
+fields           = "(", field, { ",", field }, ")" ;
+field            = [ "public" | "private" ], [ "let" | "var" ], identifier, ":", type ;
+type-list        = type, { ",", type } ;
+method-declaration = { annotation }, [ "abstract" | "override" ],
+                     "fn", identifier, [ type-parameters ], "(", [ parameters ], ")",
+                     [ "->", type ], ( "=", expression, [ ";" ] | block | [ ";" ] ) ;
+test-declaration = "test", string, block ;
+
+statement        = match-statement | unless-statement | if-statement | while-statement | for-statement
+                 | try-statement | throw-statement | return-statement | break-statement
+                 | continue-statement | block | assignment | expression-statement ;
+match-statement  = "match", expression, "{", { match-case }, [ match-default ], "}" ;
+match-case       = "case", expression, block ;
+match-default    = "default", block ;
+unless-statement = "unless", expression, block, [ "else", block ] ;
+if-statement     = "if", expression, block, [ "else", ( if-statement | block ) ] ;
+while-statement  = "while", expression, block ;
+for-statement    = "for", identifier, "in", expression, block ;
+try-statement    = "try", block, [ "catch", identifier, block ], [ "finally", block ] ;
+throw-statement  = "throw", expression, [ ";" ] ;
+return-statement = "return", [ expression ], [ ";" ] ;
+break-statement  = "break", [ ";" ] ;
+continue-statement = "continue", [ ";" ] ;
+block            = "{", { declaration }, "}" ;
+assignment       = ( identifier | member-expression ), "=", expression, [ ";" ] ;
+expression-statement = expression, [ ";" ] ;
+
+expression       = logical-or ;
+logical-or       = logical-and, { "or", logical-and } ;
+logical-and      = equality, { "and", equality } ;
+equality         = comparison, { ( "==" | "!=" ), comparison } ;
+comparison       = range, { ( "<" | "<=" | ">" | ">=" ), range } ;
+range            = additive, [ "..", additive ] ;
+additive         = multiplicative, { ( "+" | "-" ), multiplicative } ;
+multiplicative   = unary, { ( "*" | "/" | "%" ), unary } ;
+unary            = ( "!" | "not" | "-" ), unary | power ;
+power            = postfix, [ "**", unary ] ;
+postfix          = primary, { "(", [ argument-list ], ")" | "[", expression, "]" | ".", identifier } ;
+argument-list    = expression, { ",", expression } ;
+primary          = literal | interpolated-string | identifier | list-literal | "(", expression, ")" ;
+literal          = integer | decimal | string | "true" | "false" ;
+interpolated-string = "$", string-with-interpolation ;
+list-literal     = "[", [ argument-list ], "]" ;
+member-expression = expression, ".", identifier ;

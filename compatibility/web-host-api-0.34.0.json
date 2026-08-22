@@ -1,0 +1,153 @@
+{
+  "api_count": 101,
+  "categories": {
+    "attributes_style_classes": [
+      "set_attr",
+      "attr",
+      "remove_attr",
+      "set_style",
+      "style",
+      "add_class",
+      "remove_class",
+      "toggle_class",
+      "has_class"
+    ],
+    "canvas_2d": [
+      "canvas_set_size",
+      "canvas_clear",
+      "canvas_fill_rect",
+      "canvas_stroke_rect",
+      "canvas_line",
+      "canvas_circle",
+      "canvas_text",
+      "canvas_data_url"
+    ],
+    "capabilities": [
+      "browser_available",
+      "capability"
+    ],
+    "clipboard": [
+      "clipboard_write",
+      "clipboard_read"
+    ],
+    "device_environment": [
+      "viewport_width",
+      "viewport_height",
+      "pixel_ratio",
+      "language",
+      "user_agent",
+      "visibility"
+    ],
+    "document_query": [
+      "exists",
+      "query_exists",
+      "query_count",
+      "title",
+      "set_title"
+    ],
+    "dom_content": [
+      "set_text",
+      "set_html",
+      "set_value",
+      "append_html",
+      "prepend_html",
+      "text",
+      "html",
+      "value",
+      "create",
+      "clear",
+      "remove"
+    ],
+    "events": [
+      "on_click",
+      "on_event",
+      "dispatch_event"
+    ],
+    "fetch_network": [
+      "online",
+      "fetch",
+      "abort_fetch"
+    ],
+    "fullscreen": [
+      "request_fullscreen",
+      "exit_fullscreen",
+      "fullscreen_active"
+    ],
+    "geolocation": [
+      "geolocate"
+    ],
+    "interaction_state": [
+      "focus",
+      "blur",
+      "click",
+      "scroll_into_view",
+      "set_checked",
+      "checked",
+      "set_disabled",
+      "disabled",
+      "set_selected_index",
+      "selected_index",
+      "rect"
+    ],
+    "local_session_cookie_storage": [
+      "storage_set",
+      "storage_get",
+      "storage_remove",
+      "storage_clear",
+      "session_set",
+      "session_get",
+      "session_remove",
+      "session_clear",
+      "cookie_set",
+      "cookie_get",
+      "cookie_remove"
+    ],
+    "media": [
+      "media_play",
+      "media_pause",
+      "media_current_time",
+      "media_set_current_time",
+      "media_volume",
+      "media_set_volume"
+    ],
+    "navigation_history": [
+      "href",
+      "path",
+      "search",
+      "hash",
+      "set_hash",
+      "navigate",
+      "replace_url",
+      "history_push",
+      "history_replace",
+      "reload",
+      "history_back",
+      "history_forward"
+    ],
+    "timers_animation": [
+      "set_timeout",
+      "set_interval",
+      "animation_frame",
+      "clear_timer"
+    ],
+    "websocket": [
+      "ws_open",
+      "ws_send",
+      "ws_close",
+      "ws_ready_state"
+    ]
+  },
+  "design": "typed high-level API plus generic DOM event/attribute/style primitives; unavailable capabilities fail closed",
+  "language": "Saga",
+  "profile": "Browser Host API 0.22",
+  "pure_web_helpers_not_counted": [
+    "escape",
+    "url_encode",
+    "element",
+    "document",
+    "route",
+    "query"
+  ],
+  "release": "0.34.0",
+  "schema": 1
+}

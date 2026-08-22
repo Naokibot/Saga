@@ -1,0 +1,1 @@
+test "math" { assert(true, "starter package smoke") }

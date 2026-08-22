@@ -1,0 +1,21 @@
+use task
+
+async fn double(value: int) -> int {
+    return value * 2
+}
+
+fn cleanup() -> unit {
+    print("cleanup")
+}
+
+fn calculated() -> int {
+    defer cleanup()
+    return await double(21)
+}
+
+print(calculated())
+
+using pool = task.pool(1) {
+    let pending = task.submit(pool, calculated)
+    print(task.await(pending))
+}

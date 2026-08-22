@@ -1,20 +1,22 @@
 # Saga 0.44.0 — 4 kHz Hosted Control Profile
 
-Saga 0.44 adds a 4,000 Hz logical control profile with a nominal 250 us period.
+Saga 0.44 adds a control scheduling profile designed for 4,000 logical control ticks per second (250 us period) while keeping the hosted-runtime safety boundary explicit.
 
-## Added
-- `machine.cyclic_clock(4000)` for frequency-based cyclic scheduling.
-- `machine.cycle_wait_due(clock)` to expose the number of logical ticks that became due.
-- Linux `timerfd` backend in the Python reference runtime.
-- Absolute-deadline sleep/spin fallback for other hosted environments.
-- Independent Go implementation with matching frequency/due-count semantics.
-- 4 kHz qualification tool and regression tests.
-- Timing telemetry for period, logical cycles, wait calls, overruns, due counts, backend and jitter.
+## 4 kHz scheduling
 
-## Validation
-- 4000 logical ticks / 1.000011849 s = 3999.95 Hz.
-- Full logical control workload: 4000 ticks / 1.000047906 s = 3999.81 Hz.
-- Cached allocator + compact state-space + 8-channel actuator path: p99 56.142 us against a 250 us compute budget.
+- `machine.cyclic_clock(4000)` creates a 250 us cyclic source.
+- Linux uses the kernel `timerfd` periodic timer when available.
+- `machine.cycle_wait_due(clock)` returns the number of control ticks that became due since the previous wait.
+- Kernel expiration counts are authoritative, so temporary host pre-emption does not silently lose logical state updates.
+- Other platforms use an absolute-deadline sleep/spin fallback.
+- Timing telemetry reports backend, period, wait calls, logical cycles, overruns, `last_due`, `max_due`, and jitter.
+
+At 4 kHz, callers should process `cycle_wait_due()` catch-up ticks deterministically. A value above one means the hosted process did not execute physical I/O at every 250 us boundary. This is intentionally reported rather than hidden.
+
+## Control-compute budget
+
+The 0.44 qualification workload combines cached multirotor allocation, a compact state-space command, and eight-channel actuator conditioning. Its p99 execution time must remain below the 250 us 4 kHz budget in the qualification environment.
 
 ## Boundary
-This is hosted soft real-time. Catch-up ticks are explicitly reported when the OS misses individual execution slots. Exact physical 250 us I/O deadlines require a qualified RTOS/PREEMPT_RT/drive/FPGA/hardware path and are not claimed by this release.
+
+This profile is hosted soft real-time. It is suitable for high-rate supervisory/HIL control on capable hosts, but it does not replace an RTOS, FPGA, hardware timer/DMA output engine, drive current loop, or certified safety controller when every physical edge must meet a hard deadline.

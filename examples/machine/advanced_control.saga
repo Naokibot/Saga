@@ -1,0 +1,34 @@
+use machine
+
+// LQR design and state-space control are available directly from Saga source.
+print(machine.lqr_gain_json([[1.0, 1.0], [0.0, 1.0]], [[0.0], [1.0]], [[1.0, 0.0], [0.0, 1.0]], [[1.0]], 50))
+let state = machine.state_space([[1.0, 1.0], [0.0, 1.0]], [[0.0], [1.0]], [[0.1, 0.2]], [[1.0]], [0.0, 0.0], [-1.0], [1.0])
+print(machine.state_space_command(state, [1.0], [0.0, 0.0]))
+print(machine.state_space_predict(state, [0.5]))
+
+let kf = machine.kalman([[1.0]], [[1.0]], [[0.01]], [[0.1]], [0.0], [[1.0]])
+print(machine.kalman_predict(kf))
+print(machine.kalman_update(kf, [1.0]))
+
+let group = machine.motion_group([0.0, 0.0, 0.0], 10.0, 20.0, 100.0)
+machine.motion_group_target(group, [10.0, 5.0, -2.0])
+print(machine.motion_group_step_json(group, 0.01))
+
+let arm = machine.dh_chain([[1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]])
+print(machine.dh_forward_json(arm, [0.0, 0.0]))
+print(machine.dh_resolved_rate(arm, [0.0, 0.0], [0.0, 0.1, 0.0], 0.01, 2.0))
+
+let plc = machine.plc_scan(0.01)
+machine.plc_sample_json(plc, "{\"start\":true}")
+print(machine.plc_read_json(plc, "start"))
+print(machine.plc_ton(plc, "start_delay", true, 0.02))
+print(machine.plc_ton(plc, "start_delay", true, 0.02))
+machine.plc_write_json(plc, "motor_enable", "true")
+print(machine.plc_commit_json(plc))
+
+print(machine.canopen_sdo_download_json(24640, 0, 1, 15, 2))
+print(machine.cia402_state(39))
+let image = machine.process_image(16)
+machine.process_write_int(image, 0, 2, false, 1234)
+machine.process_write_bit(image, 31, true)
+print(machine.process_hex(image))

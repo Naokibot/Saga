@@ -2,21 +2,72 @@
   "schema": 1,
   "release": "0.42.0",
   "source_tree_sha256": "f925e9417b83ad3cac6f69add270417fbbe7e0417c278cca16fb3dda91a023ec",
-  "language_core": "84 tests + 6 subtests PASS",
-  "integrated_autonomy_machine": "80/80 PASS",
-  "cross_implementation": "48/48 PASS",
-  "module_conformance": "14/14 PASS",
-  "native_runtime": "10/10 PASS",
-  "native_codegen": "17/17 PASS",
-  "sh3_fixed_point": true,
-  "actual_onnx_forward": true,
-  "real_pixel_optical_flow": true,
-  "aruco_pnp_pose": true,
-  "mavlink_udp_takeoff_translate_land": "PASS_PROTOCOL_EMULATOR",
-  "browser_webrtc_media_tracks": "PASS_NODE_MOCK",
-  "official_px4_sitl": "UNEXECUTED",
-  "official_ardupilot_sitl": "UNEXECUTED",
-  "gstreamer_runtime": "UNEXECUTED",
-  "physical_devices": "UNEXECUTED",
-  "automatic_flight_policy": false
+  "source_manifest_sha256": "00b8f431da2a73075c78a09fdd9fccc2be87cf6e3654bde3fe1c81e92bccf03c",
+  "independent_language": {
+    "strict_c11_bootstrap": true,
+    "sh3_stage2_stage3_fixed_point": true,
+    "compiler_sha256": "8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4",
+    "python_self": "48/48",
+    "go_self": "48/48"
+  },
+  "autonomy": {
+    "qualification": "PASS",
+    "mavlink_udp_takeoff_translate_land": "PASS_PROTOCOL_EMULATOR",
+    "official_px4_sitl": "UNEXECUTED",
+    "official_ardupilot_sitl": "UNEXECUTED",
+    "visual_servo": "PASS",
+    "vio": "PASS_HOSTED_REFERENCE",
+    "pose_graph_slam": "PASS_HOSTED_REFERENCE",
+    "multi_drone": "PASS"
+  },
+  "vision": {
+    "actual_onnx_graph_forward": "PASS",
+    "fixture_sha256": "4696ef298ce4fcf9b4d5f19f2388aa52634b3db4dff56aefaf73ac18ad9bc6a3",
+    "opencv_zoo_yolox_backend": "IMPLEMENTED_MODEL_ASSET_UNEXECUTED",
+    "sparse_optical_flow": "PASS_REAL_PIXELS",
+    "aruco_pnp_pose": "PASS_REAL_PIXELS"
+  },
+  "video": {
+    "browser_webrtc_media_tracks": "PASS_NODE_MOCK",
+    "browser_webrtc_data_channel": "PASS_NODE_MOCK",
+    "gstreamer_backend": "IMPLEMENTED_RUNTIME_UNEXECUTED"
+  },
+  "advanced_machine": {
+    "saga_only_application_surface": true,
+    "lqr": "PASS",
+    "state_space": "PASS",
+    "kalman": "PASS",
+    "synchronized_motion": "PASS",
+    "dh_kinematics": "PASS",
+    "resolved_rate": "PASS",
+    "plc_scan_ton": "PASS",
+    "canopen": "PASS",
+    "cia402": "PASS",
+    "process_image": "PASS",
+    "physical_machine": "UNEXECUTED"
+  },
+  "regression": {
+    "language_core": "84 + 6 subtests",
+    "modules_generics_machine_drone_vision": "80/80",
+    "native_runtime_codegen_object": "23/23",
+    "native_aggregate_gc": "14 + 4 subtests",
+    "runtime_security": "13/13",
+    "cross_implementation": "48/48",
+    "module_conformance": "14/14",
+    "native_runtime_qualification": "10/10",
+    "native_codegen_qualification": "17/17",
+    "drone_qualification": "13/13",
+    "autonomy_vision_comm": "12/12",
+    "go_test": "PASS",
+    "go_vet": "PASS",
+    "security_audit_issues": 0
+  },
+  "boundaries": [
+    "No automatic RTL/LAND/DISARM policy added",
+    "Official PX4/ArduPilot SITL binaries absent in this environment",
+    "GStreamer binaries absent in this environment",
+    "Pretrained YOLOX asset could not be downloaded in this environment",
+    "Physical flight/camera/industrial hardware unexecuted",
+    "Hosted Saga remains soft real-time; hardware-timed motor stabilization is not qualified"
+  ]
 }

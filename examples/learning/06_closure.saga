@@ -1,0 +1,14 @@
+fn counter(start: int) -> fn[int] {
+    var value = start
+
+    fn next() -> int {
+        value = value + 1
+        return value
+    }
+
+    return next
+}
+
+let next = counter(100)
+print(next())
+print(next())

@@ -1,0 +1,6 @@
+fn first[T](values: list[T]) -> T {
+    return values[0]
+}
+
+print(first([10, 20, 30]))
+print(first(["a", "b"]))

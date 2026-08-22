@@ -1,0 +1,117 @@
+{
+  "schema": 2,
+  "release": "0.24.1",
+  "language": "Saga",
+  "theme": "Correctness, Cybersecurity & Cross-process Safety Patch",
+  "language_baseline": "Language Edition 1.0 RC1",
+  "preview_edition": "2027",
+  "official_implementation": "saga-sh3",
+  "review": {
+    "status": "project-internal review complete",
+    "fixed_findings": [
+      "DB symlink persistence divergence",
+      "Python security result[T,E] contract mismatch",
+      "Python native ResultValue validation/task-boundary support",
+      "Universal App duplicate-key JSON ambiguity",
+      "HTTP UTF-8/header boundary validation",
+      "optional HTTP/process administrator resource policies without fixed language ceilings",
+      "registry package identity/archive exhaustion hardening",
+      "Hosted security validator contract drift"
+    ],
+    "unresolved_in_changed_areas": 0
+  },
+  "cybersecurity": {
+    "profile": "Saga Defensive Cybersecurity Profile 1",
+    "native_security_functions": 11,
+    "crypto_extensions": 8,
+    "security_validator_pass": true
+  },
+  "database": {
+    "cross_process_file_locking": [
+      "Unix flock",
+      "Windows LockFileEx"
+    ],
+    "persisted_sha256_revision_conflicts": true,
+    "canonical_target_persistence": true,
+    "symlink_alias_regression_pass": true
+  },
+  "regression": {
+    "go_test": true,
+    "go_vet": true,
+    "go_race": true,
+    "go_tagged_suites": [
+      "sagaffi",
+      "sagajit",
+      "sagaffi+sagajit",
+      "sagadesktop",
+      "sagadesktop+sagavulkan"
+    ],
+    "python": "161/161 (15 modules executed independently)",
+    "hosted_api": "160/160 across 28 modules",
+    "game_api": "101/101",
+    "web_host_api": "101/101",
+    "app_action": "10 source APIs / 53 browser operations",
+    "real_chromium": "Chrome/144.0.7559.96 Blink/V8 PASS",
+    "parser_fuzz": 100000,
+    "expression_fuzz": 25000,
+    "unexpected_host_exceptions": 0,
+    "machine_smoke": true,
+    "internal_security_unresolved": 0
+  },
+  "low_level_profiles": {
+    "cortex_m0_stm32f030k6": "PASS",
+    "ffi_profile_2": "PASS",
+    "native_scalar_jit": "PASS",
+    "sdl2_second_renderer": "PASS",
+    "virtual_gamepad": "PASS",
+    "xvfb_opengl_shader_audio": "PASS with SDL dummy audio",
+    "vulkan_probe": "executed fail-closed; create_instance=-9; real Vulkan rendering not claimed"
+  },
+  "sh3": {
+    "schema": 1,
+    "release": "0.24.1",
+    "profile": "SH-3 All-Source Self-Hosting (split qualification)",
+    "compiler_stage2_sha256": "8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4",
+    "compiler_stage3_sha256": "8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4",
+    "kernel_stage2_sha256": "d918e7155180f953be88cca102eced301f6007249a1461c0fe37ad51c74801c7",
+    "kernel_stage3_sha256": "d918e7155180f953be88cca102eced301f6007249a1461c0fe37ad51c74801c7",
+    "token_image_sha256": "aaa2661cdec4a115f61df6c8bc37cafc090eb388725fbb8e331755c7e286c060",
+    "checks": {
+      "strict_c11_vm_and_launcher": true,
+      "compiler_fixed_point": true,
+      "kernel_fixed_point": true,
+      "standard_core_success": "23/23",
+      "standard_core_diagnostics": "11/11",
+      "edition_2027": "15/15",
+      "source_loader": true,
+      "deterministic_sh3img1": true,
+      "run_image": true,
+      "empty_path_run": true,
+      "empty_path_info": true,
+      "empty_path_sagac_edition_2027": true,
+      "source_boundary_audit_problems": 0
+    },
+    "monolithic_validator_note": "Timed out and is not counted as PASS; every gate above completed separately.",
+    "pass": true
+  },
+  "key_source_sha256": {
+    "implementations/go/cmd/saga-go/security_native.go": "85e04ee64351adfb34ef71bc6247cab64825c6cfb1678c32cea40595bdb327fb",
+    "implementations/go/cmd/saga-go/native_modules.go": "250b60bc884e1a24d9d4e89604e6d436f87bdbd9840b34226ff2e11bfc0ae1e8",
+    "implementations/go/cmd/saga-go/platform_expansion.go": "17294665c221532c16b09a7eefb36d3dffc9c763702edc378bd82c7c83da6fc0",
+    "implementations/go/cmd/saga-go/registry_native.go": "f597a42f31543a87fbfea9e02f9503327b606827f6262114bcdbc2e1710a5146",
+    "implementations/go/cmd/saga-go/db_filelock_unix.go": "98c2d94a8db4c6a4034f4077890a072929a4494c7d763212523c048fdf1f6328",
+    "implementations/go/cmd/saga-go/db_filelock_windows.go": "af63ed971c5cbae38cae6070b4a57e19b6ef32076f58ee09f0b279990beb7c7b",
+    "saga/stdlib/modules.py": "cc750044616bc8b7dffc2a47a8d7bdecaa6bcae4d3990cef69281ec3bdceb058",
+    "saga/interpreter.py": "e437cecfa87ad7492c64633f10b98ff3e79e09014620f0d388c5be46774a7b33",
+    "saga/registry.py": "8c8a38e0aedb2c065292fb8c8a278d230fbb0d05052ac4c41114b007b3d8a877",
+    "selfhost/sh3/sh3c.saga": "051dee2426ac3333db4d7954570486ac1a28daaded3d6b868644524979dd690d",
+    "selfhost/sh3/kernel.saga": "a2915b22c9fc501e3899df59542c6fc95c7744c057b7f30f2dd99cde65b440a2"
+  },
+  "qualification_limits": [
+    "Project-internal review is not an independent third-party security audit.",
+    "Vulkan real render/present was not qualified because this host could not create a usable Vulkan instance.",
+    "AWS/GPIO/Spark/pygame use documented adapter/test-double evidence where the external target is absent.",
+    "Linux ARM64, Windows and macOS portable binaries are cross-built/format-checked unless target execution is explicitly stated.",
+    "Android/iOS device/store and vendor-service qualification require their actual external environments."
+  ]
+}

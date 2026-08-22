@@ -1,0 +1,144 @@
+{
+  "schema": 1,
+  "release": "0.43.0",
+  "source_manifest_sha256": "03525558a83096bc9fcbbdf2c2d8f1c9caea95734a3022b9e9eccfa55a3abf34",
+  "source_tree_sha256": "59fdf69e653676cba310b1cd90082f49765640b8026f4e933daaa93e77cf743c",
+  "profile": "Natural Module Core 0.30 cross-implementation module graph conformance",
+  "python_implementation": "Saga Python reference",
+  "go_implementation": "Saga Go independent Standard Core",
+  "total": 14,
+  "passed": 14,
+  "pass": true,
+  "cases": [
+    {
+      "id": "MC001-public-namespace",
+      "python_output": "42",
+      "go_output": "42",
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "expected_output": "42",
+      "expected_diagnostic_id": null,
+      "pass": true
+    },
+    {
+      "id": "MC002-internal-hidden",
+      "python_output": "",
+      "go_output": "",
+      "python_diagnostic_id": "SAGA-T106",
+      "go_diagnostic_id": "SAGA-T106",
+      "expected_output": "",
+      "expected_diagnostic_id": "SAGA-T106",
+      "pass": true
+    },
+    {
+      "id": "MC003-qualified-class",
+      "python_output": "Hello Aki",
+      "go_output": "Hello Aki",
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "expected_output": "Hello Aki",
+      "expected_diagnostic_id": null,
+      "pass": true
+    },
+    {
+      "id": "MC004-qualified-inheritance",
+      "python_output": "Hello Aki\nAki:7",
+      "go_output": "Hello Aki\nAki:7",
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "expected_output": "Hello Aki\nAki:7",
+      "expected_diagnostic_id": null,
+      "pass": true
+    },
+    {
+      "id": "MC005-qualified-nominal-identity",
+      "python_output": "",
+      "go_output": "",
+      "python_diagnostic_id": "SAGA-T103",
+      "go_diagnostic_id": "SAGA-T103",
+      "expected_output": "",
+      "expected_diagnostic_id": "SAGA-T103",
+      "pass": true
+    },
+    {
+      "id": "MC006-canonical-alias",
+      "python_output": "",
+      "go_output": "",
+      "python_diagnostic_id": "SAGA-P109",
+      "go_diagnostic_id": "SAGA-P109",
+      "expected_output": "",
+      "expected_diagnostic_id": "SAGA-P109",
+      "pass": true
+    },
+    {
+      "id": "MC007-public-internal-leak",
+      "python_output": "",
+      "go_output": "",
+      "python_diagnostic_id": "SAGA-T118",
+      "go_diagnostic_id": "SAGA-T118",
+      "expected_output": "",
+      "expected_diagnostic_id": "SAGA-T118",
+      "pass": true
+    },
+    {
+      "id": "MC008-public-dependency-leak",
+      "python_output": "",
+      "go_output": "",
+      "python_diagnostic_id": "SAGA-T118",
+      "go_diagnostic_id": "SAGA-T118",
+      "expected_output": "",
+      "expected_diagnostic_id": "SAGA-T118",
+      "pass": true
+    },
+    {
+      "id": "MC009-interface-abi-parity",
+      "python_abi": "ce27aea7e5c50d46a5d447ddb84b4770796969a24ca04e494bf1fa9b181bec2d",
+      "go_abi": "ce27aea7e5c50d46a5d447ddb84b4770796969a24ca04e494bf1fa9b181bec2d",
+      "pass": true
+    },
+    {
+      "id": "MC010-implementation-change-keeps-importer-fresh",
+      "python_fresh": true,
+      "go_fresh": true,
+      "pass": true
+    },
+    {
+      "id": "MC011-abi-change-invalidates-importer",
+      "python_stale": true,
+      "go_stale": true,
+      "pass": true
+    },
+    {
+      "id": "MC012-stale-interface-source-fallback",
+      "python_output": "",
+      "go_output": "",
+      "python_diagnostic_id": "SAGA-T103",
+      "go_diagnostic_id": "SAGA-T103",
+      "expected_output": "",
+      "expected_diagnostic_id": "SAGA-T103",
+      "pass": true
+    },
+    {
+      "id": "MC013-public-enum",
+      "python_output": "ready",
+      "go_output": "ready",
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "expected_output": "ready",
+      "expected_diagnostic_id": null,
+      "pass": true,
+      "interface_parity": true
+    },
+    {
+      "id": "MC014-payload-tagged-union",
+      "python_output": "9",
+      "go_output": "9",
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "expected_output": "9",
+      "expected_diagnostic_id": null,
+      "pass": true,
+      "interface_parity": true
+    }
+  ]
+}

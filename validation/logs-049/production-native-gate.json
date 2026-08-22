@@ -1,0 +1,70 @@
+{
+  "native_reproducibility_required": true,
+  "note": "This gate validates reproducibility and project hygiene; it is not a substitute for external security, platform, load, or safety qualification.",
+  "profile": "Saga Production Project Gate 0.49",
+  "projects": [
+    {
+      "capabilities": [],
+      "gates": [
+        {
+          "detail": "1 source file(s) checked",
+          "name": "compile-and-standard-lint",
+          "status": "PASS"
+        },
+        {
+          "detail": "saga.lock matches project inputs",
+          "name": "locked-inputs",
+          "status": "PASS"
+        },
+        {
+          "detail": "b75b9ab85d8c163cb154d8446c16d57ce658bbc59d0bd5a4b28032fd8d9b1dcb",
+          "name": "reproducible-package",
+          "status": "PASS"
+        },
+        {
+          "detail": "e472cfa4748476486c23ffa901b777d63fbc5acf741d7f4117b6a5ea5dad378f",
+          "name": "reproducible-native",
+          "status": "PASS"
+        }
+      ],
+      "project": "core",
+      "ready": true,
+      "root": "/tmp/saga-prod-gate-049-37m93yif/core",
+      "source_sha256": "108d2d4f6d9f9fffb734b10fef7e1905fc1682ea49dacc0156ca547422328472",
+      "version": "1.0.0"
+    },
+    {
+      "capabilities": [],
+      "gates": [
+        {
+          "detail": "1 source file(s) checked",
+          "name": "compile-and-standard-lint",
+          "status": "PASS"
+        },
+        {
+          "detail": "saga.lock matches project inputs",
+          "name": "locked-inputs",
+          "status": "PASS"
+        },
+        {
+          "detail": "689fe6f7f5d75c3580ce789158fbd8f051a8d97d90fdd344ea4f9e70adea5ccc",
+          "name": "reproducible-package",
+          "status": "PASS"
+        },
+        {
+          "detail": "c9e986a9eb40646c17579d85e698fc22547ace1fb4dbc59ab00994643d8efc7c",
+          "name": "reproducible-native",
+          "status": "PASS"
+        }
+      ],
+      "project": "control",
+      "ready": true,
+      "root": "/tmp/saga-prod-gate-049-37m93yif/control",
+      "source_sha256": "75008af2d677e837733584355671d8abbed4aa90edea763895ada92a8f079ec6",
+      "version": "1.0.0"
+    }
+  ],
+  "ready": true,
+  "schema": 1,
+  "workspace": "/tmp/saga-prod-gate-049-37m93yif"
+}

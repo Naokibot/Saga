@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "release": "0.20.0",
+  "language": "Saga",
+  "language_baseline": "1.0 RC1",
+  "edition_preview": "2027",
+  "official_implementation": "saga-sh3",
+  "sh3_qualified": true,
+  "canonical_language_sources": [
+    "selfhost/sh3/sh3c.saga",
+    "selfhost/sh3/kernel.saga"
+  ],
+  "language_neutral_bootstrap": [
+    "bootstrap/sh3/sh3vm.c",
+    "bootstrap/sh3/launcher.c",
+    "bootstrap/sh3/stage1.sbc"
+  ],
+  "compiler_fixed_point_sha256": "a905fc8e834f2f2bd45a8698d737590e1ce5f0d9a9b5d03f64bb3eb020fa951b",
+  "kernel_sha256": "e9d03804ccd36c7ffaecb709cf95799cd4de17bf62b0667d28d9d7b8b417b261",
+  "official_source_set_sha256": "fdbdbd2df3354cd99b27434ca68543f91cfa14957f1ccf0df520f420d616150b",
+  "conformance": {
+    "standard_core_success": "23/23",
+    "standard_core_diagnostics": "11/11",
+    "edition_2027": "14/14"
+  },
+  "sanitizer": {
+    "valid_corpus": "48/48",
+    "malformed_bytecode_fuzz": 500,
+    "asan_ubsan_findings": 0
+  },
+  "reference_implementations": [
+    "implementations/go",
+    "saga"
+  ],
+  "reference_implementations_are_official_kernel": false,
+  "limitations": [
+    "Official SH-3 binary target execution in this release report is Linux x86-64.",
+    "Optional hosted adapters and vendor backends are outside the SH-3 semantic-kernel claim."
+  ]
+}

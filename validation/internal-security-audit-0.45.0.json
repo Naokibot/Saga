@@ -1,0 +1,27 @@
+{
+  "schema": 2,
+  "release": "0.45.0",
+  "source_manifest_sha256": "21db5c9ee8cb0c370f87d169be5d253c3fc27af2a997a5bc0bbe8ca142719b2f",
+  "source_tree_sha256": "cb06d5ac6e6ff7532c37499e3d38b51753a573d9110a42b5fcfabfba4729e804",
+  "status": "pass",
+  "pass": true,
+  "issues": [],
+  "reviewed_notes": [
+    {
+      "rule": "DYNAMIC-EXEC-REVIEWED",
+      "path": "saga/plugin_host.py",
+      "line": 266,
+      "message": "exec is inside strict isolated host after AST policy validation"
+    },
+    {
+      "rule": "DYNAMIC-EXEC-REVIEWED",
+      "path": "saga/processor_host.py",
+      "line": 41,
+      "message": "exec is inside strict isolated host after AST policy validation"
+    }
+  ],
+  "limitations": [
+    "This is a project-internal automated review, not an independent third-party security audit.",
+    "No external vulnerability database scanner is installed in the execution environment."
+  ]
+}

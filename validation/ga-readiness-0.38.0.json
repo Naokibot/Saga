@@ -1,0 +1,75 @@
+{
+  "schema": 2,
+  "release": "0.38.0",
+  "target": "Saga GA 1.0",
+  "source_manifest_sha256": null,
+  "source_tree_sha256": null,
+  "ga_ready": false,
+  "core_gates": {
+    "language-spec-1.0-final": {
+      "status": "BLOCKED",
+      "reason": "Current source tree is not frozen to the release manifest: release source manifest missing"
+    },
+    "compiler-runtime-conformance": {
+      "status": "BLOCKED",
+      "reason": "Current source tree is not frozen to the release manifest: release source manifest missing"
+    },
+    "self-host-fixed-point": {
+      "status": "BLOCKED",
+      "reason": "Current source tree is not frozen to the release manifest: release source manifest missing"
+    },
+    "second-implementation": {
+      "status": "BLOCKED",
+      "reason": "Current source tree is not frozen to the release manifest: release source manifest missing"
+    },
+    "native-desktop-hosts": {
+      "status": "BLOCKED",
+      "reason": "Current source tree is not frozen to the release manifest: release source manifest missing"
+    },
+    "live-signed-registry": {
+      "status": "BLOCKED",
+      "reason": "Current source tree is not frozen to the release manifest: release source manifest missing"
+    },
+    "security-evidence": {
+      "status": "BLOCKED",
+      "reason": "Current source tree is not frozen to the release manifest: release source manifest missing"
+    },
+    "developer-workflow": {
+      "status": "BLOCKED",
+      "reason": "Current source tree is not frozen to the release manifest: release source manifest missing"
+    }
+  },
+  "optional_platform_profiles": {
+    "vulkan-swapchain-present": {
+      "status": "NO_EVIDENCE"
+    },
+    "machine-control-software": {
+      "status": "NO_EVIDENCE"
+    },
+    "physical-machine-control": {
+      "status": "NO_EVIDENCE"
+    },
+    "physical-gamepad": {
+      "status": "NO_EVIDENCE"
+    },
+    "aws-live-account": {
+      "status": "NO_EVIDENCE"
+    },
+    "physical-gpio": {
+      "status": "NO_EVIDENCE"
+    },
+    "spark-runtime": {
+      "status": "NO_EVIDENCE"
+    },
+    "pygame-runtime": {
+      "status": "NO_EVIDENCE"
+    },
+    "android-device": {
+      "status": "NO_EVIDENCE"
+    },
+    "ios-device": {
+      "status": "NO_EVIDENCE"
+    }
+  },
+  "note": "GA 1.0 is a project production-readiness designation, not ISO/IEC approval."
+}

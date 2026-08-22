@@ -1,0 +1,7 @@
+use task
+
+fn square(value: int) = value * value
+
+let future = task.spawn(square, 100)
+print("future =", task.await(future))
+print("parallel =", task.parallel_map(square, [1, 2, 3, 4, 5], 4))

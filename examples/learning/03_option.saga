@@ -1,0 +1,6 @@
+fn display_name(name: option[text]) -> text {
+    return unwrap_or(name, "guest")
+}
+
+print(display_name(some("Aki")))
+print(display_name(none()))

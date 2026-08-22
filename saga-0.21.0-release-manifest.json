@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "release": "0.21.0",
+  "language_editions": [
+    "1.0-rc1",
+    "2027-preview"
+  ],
+  "official_implementation": "saga-sh3",
+  "sh3_qualified": true,
+  "application_expansion": {
+    "web": true,
+    "pwa": true,
+    "browser_dom_host": true,
+    "http_server": true,
+    "db_transactions": true,
+    "portable_cpu_3d": true,
+    "obj_mesh": true,
+    "game_api_count": 101,
+    "sys_introspection": true
+  },
+  "explicit_nonclaims": [
+    "native Android/iOS SDK target validation",
+    "AAA/PBR 3D engine",
+    "multi-process relational ACID database",
+    "complete OS kernel",
+    "real Chromium page execution on this host"
+  ],
+  "evidence": {
+    "sh3": "validation/sh3-validation-0.21.0.json",
+    "security": "validation/internal-security-audit-0.21.0.json",
+    "fuzz": "validation/fuzz-smoke-0.21.0.json",
+    "game_api": "compatibility/native-game-api-0.21.0.json"
+  }
+}

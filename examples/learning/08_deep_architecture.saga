@@ -1,0 +1,14 @@
+interface Repository[T] {
+    fn save(value: T) -> T
+}
+
+class MemoryRepository[T](let seed: T) implements Repository[T] {
+    override fn save(value: T) -> T = value
+}
+
+fn store[T](repository: Repository[T], value: T) -> T {
+    return repository.save(value)
+}
+
+let repository: Repository[int] = MemoryRepository(0)
+print(store(repository, 42))

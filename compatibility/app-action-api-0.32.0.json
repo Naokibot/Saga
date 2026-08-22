@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "language": "Saga",
+  "release": "0.32.0",
+  "profile": "Universal App Action Protocol 1",
+  "source_api_count": 10,
+  "source_apis": [
+    "host",
+    "capability",
+    "capabilities",
+    "operation_supported",
+    "operations",
+    "invoke",
+    "invoke_async",
+    "cancel",
+    "on",
+    "off"
+  ],
+  "model": {
+    "sync": "app.invoke(operation, payload_json) -> result[text,text]",
+    "async": "app.invoke_async(operation, payload_json, action) -> result[int,text]",
+    "events": "app.on(event, action) -> result[int,text]",
+    "capability": "unavailable host functionality must fail closed"
+  },
+  "categories": {
+    "system": [
+      "system.snapshot"
+    ],
+    "crypto": [
+      "crypto.random_uuid"
+    ],
+    "device": [
+      "device.gamepads",
+      "device.vibrate",
+      "device.connection",
+      "device.screen"
+    ],
+    "notification_share": [
+      "notification.permission",
+      "notification.request",
+      "notification.show",
+      "share"
+    ],
+    "media": [
+      "media.enumerate_devices",
+      "media.request_user_media",
+      "media.stop"
+    ],
+    "files": [
+      "file.open_text",
+      "file.save_text",
+      "file.pick_directory"
+    ],
+    "hardware": [
+      "bluetooth.request_device",
+      "usb.request_device",
+      "serial.request_port",
+      "hid.request_device",
+      "midi.request_access",
+      "nfc.scan",
+      "nfc.write"
+    ],
+    "contacts_power_orientation": [
+      "contacts.select",
+      "wake_lock.request",
+      "wake_lock.release",
+      "orientation.lock",
+      "orientation.unlock",
+      "keyboard.lock",
+      "keyboard.unlock",
+      "pointer_lock.request",
+      "pointer_lock.exit",
+      "badge.set",
+      "badge.clear",
+      "screen.get_details"
+    ],
+    "permissions": [
+      "permission.query"
+    ],
+    "gpu_realtime": [
+      "webgpu.request_adapter",
+      "webrtc.create_peer",
+      "webrtc.create_offer",
+      "webrtc.set_local_description",
+      "webrtc.set_remote_description",
+      "webrtc.add_ice_candidate",
+      "webrtc.close",
+      "webtransport.open",
+      "webtransport.close"
+    ],
+    "identity_payments": [
+      "payment.request",
+      "credentials.get"
+    ],
+    "advanced_browser": [
+      "eye_dropper.open",
+      "xr.request_session",
+      "idle.request",
+      "push.subscribe",
+      "speech.speak",
+      "speech.cancel"
+    ]
+  },
+  "native_operations": [
+    "system.snapshot",
+    "system.cwd",
+    "system.home_dir",
+    "system.temp_dir",
+    "system.pid",
+    "filesystem.read_text",
+    "filesystem.write_text",
+    "filesystem.exists",
+    "filesystem.remove",
+    "filesystem.list",
+    "filesystem.mkdir",
+    "filesystem.rename",
+    "filesystem.stat",
+    "time.unix_ms",
+    "time.sleep_ms",
+    "crypto.random_uuid",
+    "process.run",
+    "network.http_get"
+  ],
+  "expressibility": "Any application action can be named by text and represented with a JSON payload through invoke/invoke_async. Execution still requires a host adapter/capability; proprietary or unavailable platform APIs return an error rather than being simulated."
+}

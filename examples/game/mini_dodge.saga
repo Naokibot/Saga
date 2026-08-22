@@ -1,0 +1,37 @@
+use game
+
+let width = 24
+let height = 9
+var player_x = 2
+var enemy_x = 18
+var score = 0
+var running = true
+
+while running {
+    let canvas = game.canvas(width, height)
+    game.box(canvas, 0, 0, width, height, "#")
+    game.set(canvas, player_x, height - 2, "A")
+    game.set(canvas, enemy_x, height - 2, "X")
+    game.text(canvas, 2, 1, $"score=${score}")
+    game.present(canvas)
+
+    let command = game.input("a=left d=right q=quit > ")
+    if command == "q" {
+        running = false
+    } else {
+        if command == "a" and player_x > 1 { player_x = player_x - 1 }
+        if command == "d" and player_x < width - 2 { player_x = player_x + 1 }
+
+        enemy_x = enemy_x - 1
+        if enemy_x <= 1 {
+            enemy_x = width - 2
+            score = score + 1
+        }
+        if game.overlap(player_x, height - 2, 1, 1, enemy_x, height - 2, 1, 1) {
+            print("GAME OVER")
+            running = false
+        }
+    }
+}
+
+print($"final score=${score}")

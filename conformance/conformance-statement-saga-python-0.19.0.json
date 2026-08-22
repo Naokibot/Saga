@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "language": "Saga",
+  "language_version": "1.0-rc1",
+  "qualification": "Project-generated reference-implementation evidence; not an independent laboratory certificate.",
+  "implementation": "saga-python-reference",
+  "implementation_version": "0.19.0-reference-compatible",
+  "profiles": ["Standard Core", "Hosted Standard reference"],
+  "host_runtime": "Python >=3.13",
+  "independence": "Reference implementation; does not use Saga Native as its parser/evaluator for normal execution.",
+  "regression": "155/155 PASS + 4 subtests",
+  "standard_core_cross_implementation_suite": "35/35 PASS"
+}

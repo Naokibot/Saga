@@ -1,0 +1,15 @@
+# 型は多くの場合、自動で推測されます。
+let name = "Aki"
+let scores = [82, 95, 71]
+
+fn average(values: list[int]) = mean(values)
+
+print(name, "の平均点は", decimal(average(scores)))
+
+for score in scores {
+    if score >= 80 {
+        print(score, "は合格です")
+    } else {
+        print(score, "は復習しましょう")
+    }
+}

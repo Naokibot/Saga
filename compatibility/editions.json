@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "stable": ["0.9", "0.10", "1.0"],
+  "preview": ["2027"],
+  "default": "1.0",
+  "2027": {
+    "unicode_profile": "15.1.0-vendored",
+    "diagnostic_schema": "saga.diagnostic.v2",
+    "legacy_source_inclusion": true,
+    "namespaced_modules": true,
+    "exact_float_implicit_mix": false,
+    "fixed_width_integer_arithmetic": "promote-to-int",
+    "breaking_changes_require_new_edition": true
+  }
+}

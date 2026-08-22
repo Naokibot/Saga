@@ -1,0 +1,6 @@
+use crypto
+use io
+
+let password_hash = crypto.password_hash("correct horse battery staple")
+print(crypto.password_verify("correct horse battery staple", password_hash))
+print(crypto.sha256(io.encode("Saga")))

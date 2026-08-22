@@ -1,0 +1,59 @@
+(* Saga 0.8 Standard Core grammar. Whitespace and comments are lexical separators. *)
+program          = { declaration }, EOF ;
+declaration      = { annotation }, [ "abstract" ],
+                   ( use-declaration | interface-declaration | class-declaration
+                   | function-declaration | variable-declaration | statement ) ;
+annotation       = "@", identifier, [ "(", [ annotation-arguments ], ")" ] ;
+annotation-arguments = annotation-value, { ",", annotation-value } ;
+annotation-value = literal | "[", [ annotation-value, { ",", annotation-value } ], "]" ;
+use-declaration  = "use", ( identifier | string ), [ ";" ] ;
+variable-declaration = ( "let" | "var" ), identifier, [ ":", type ], "=", expression, [ ";" ] ;
+function-declaration = "fn", identifier, [ type-parameters ], "(", [ parameters ], ")",
+                       [ "->", type ], ( "=", expression, [ ";" ] | block ) ;
+parameters       = parameter, { ",", parameter } ;
+parameter        = identifier, ":", type ;
+type-parameters  = "[", identifier, { ",", identifier }, "]" ;
+type             = identifier, [ "[", type, { ",", type }, "]" ] ;
+interface-declaration = "interface", identifier, [ type-parameters ],
+                        "{", { interface-method }, "}" ;
+interface-method = { annotation }, "fn", identifier, [ type-parameters ],
+                   "(", [ parameters ], ")", "->", type, [ ";" ] ;
+class-declaration = "class", identifier, [ type-parameters ], [ fields ],
+                    [ "extends", identifier ], [ "implements", identifiers ],
+                    "{", { method-declaration }, "}" ;
+fields           = "(", field, { ",", field }, ")" ;
+field            = [ "public" | "private" ], [ "let" | "var" ], identifier, ":", type ;
+identifiers      = identifier, { ",", identifier } ;
+method-declaration = { annotation }, [ "abstract" | "override" ],
+                     "fn", identifier, [ type-parameters ], "(", [ parameters ], ")",
+                     [ "->", type ], ( "=", expression, [ ";" ] | block | [ ";" ] ) ;
+statement        = if-statement | while-statement | for-statement | try-statement
+                 | throw-statement | return-statement | break-statement
+                 | continue-statement | block | assignment | expression-statement ;
+if-statement     = "if", expression, block, [ "else", ( if-statement | block ) ] ;
+while-statement  = "while", expression, block ;
+for-statement    = "for", identifier, "in", expression, block ;
+try-statement    = "try", block, [ "catch", identifier, block ], [ "finally", block ] ;
+throw-statement  = "throw", expression, [ ";" ] ;
+return-statement = "return", [ expression ], [ ";" ] ;
+break-statement  = "break", [ ";" ] ;
+continue-statement = "continue", [ ";" ] ;
+block            = "{", { declaration }, "}" ;
+assignment       = ( identifier | member-expression ), "=", expression, [ ";" ] ;
+expression-statement = expression, [ ";" ] ;
+expression       = logical-or ;
+logical-or       = logical-and, { "or", logical-and } ;
+logical-and      = equality, { "and", equality } ;
+equality         = comparison, { ( "==" | "!=" ), comparison } ;
+comparison       = range, { ( "<" | "<=" | ">" | ">=" ), range } ;
+range            = additive, [ "..", additive ] ;
+additive         = multiplicative, { ( "+" | "-" ), multiplicative } ;
+multiplicative   = unary, { ( "*" | "/" | "%" ), unary } ;
+unary            = ( "!" | "not" | "-" ), unary | power ;
+power            = postfix, [ "**", unary ] ;
+postfix          = primary, { "(", [ argument-list ], ")" | "[", expression, "]" | ".", identifier } ;
+argument-list    = expression, { ",", expression } ;
+primary          = literal | identifier | list-literal | "(", expression, ")" ;
+literal          = integer | decimal | string | "true" | "false" ;
+list-literal     = "[", [ argument-list ], "]" ;
+member-expression = expression, ".", identifier ;

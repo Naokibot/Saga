@@ -1,0 +1,1 @@
+{"schema":1,"release":"0.41.0","profile":"SH-3 compiler fixed point","bootstrap_vm_strict_c11":true,"launcher_strict_c11":true,"stage1_to_stage2":true,"stage2_to_stage3":true,"stage2_equals_stage3":true,"compiler_sha256":"8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4","pass":true}

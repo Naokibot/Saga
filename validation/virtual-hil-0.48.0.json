@@ -1,0 +1,161 @@
+{
+  "absolute_encoder": {
+    "count_noise_counts": 1,
+    "kind": "virtual-absolute-encoder-hil",
+    "max_position_error_deg": 0.00406495037896093,
+    "max_velocity_error_rpm": 4.628650302388905,
+    "p99_velocity_error_rpm": 3.348461736788977,
+    "physical_encoder_executed": false,
+    "resolution_bits": 17,
+    "rms_position_error_deg": 0.0018993994897902762,
+    "sample_rate_hz": 10000,
+    "simulated_dropped_samples": 202,
+    "speed_rpm": 3000.0,
+    "status": "PASS",
+    "timestamp_jitter_ns": 200
+  },
+  "can_fd_brs": {
+    "brs_flag_preserved": true,
+    "kernel_vcan_detail": "RTNETLINK answers: Operation not permitted",
+    "kernel_vcan_setup": "UNAVAILABLE",
+    "kind": "socketcan-abi-plus-brs-wire-model",
+    "modeled_64byte_wire_time_us_1m_5m_brs": 177.6,
+    "modeled_64byte_wire_time_us_1mbps_no_brs": 705.6,
+    "modeled_brs_speedup": 3.9729729729729732,
+    "payload_roundtrip": true,
+    "physical_canfd_controller_executed": false,
+    "socketcan_canfd_frame_bytes": 72,
+    "status": "PASS"
+  },
+  "ethercat_distributed_clocks": {
+    "cycle_us": 1000,
+    "dc_register_frames": [
+      {
+        "address": 0,
+        "command": "BWR",
+        "data_hex": "00000000",
+        "index": 1,
+        "irq": 0,
+        "length": 4,
+        "more": false,
+        "offset": 2304,
+        "working_counter": 0
+      },
+      {
+        "address": 4097,
+        "command": "FRMW",
+        "data_hex": "15cd5b0700000000",
+        "index": 2,
+        "irq": 0,
+        "length": 8,
+        "more": false,
+        "offset": 2320,
+        "working_counter": 0
+      },
+      {
+        "address": 0,
+        "command": "BRD",
+        "data_hex": "00000000",
+        "index": 3,
+        "irq": 0,
+        "length": 4,
+        "more": false,
+        "offset": 2348,
+        "working_counter": 0
+      }
+    ],
+    "initial_offset_range_us": 1000,
+    "kind": "virtual-ethercat-distributed-clocks",
+    "locked_p99_max_slave_error_ns": 25.425410270690918,
+    "locked_worst_max_slave_error_ns": 29.146759510040283,
+    "note": "Models ESC clock-servo behavior; it does not emulate a vendor ESC implementation or prove ETG conformance.",
+    "oscillator_drift_range_ppm": 50,
+    "propagation_estimate_sigma_ns": 12,
+    "real_esc_distributed_clock_executed": false,
+    "status": "PASS",
+    "virtual_slaves": 4
+  },
+  "executed_at_unix_ns": 1787109223653101205,
+  "foc_motor_inverter": {
+    "control_rate_hz": 20000,
+    "kind": "virtual-pmsm-inverter-hil",
+    "monte_carlo_cases": 100,
+    "monte_carlo_failures": 0,
+    "nominal": {
+      "duty_in_range": true,
+      "final_error_a": 0.007374542065594625,
+      "max_abs_id_a": 0.05119698967623222,
+      "max_abs_iq_a": 15.32431667694336,
+      "overshoot_percent": 2.1621111796223977,
+      "settling_ms_2pct_1ms_window": 1.4500000000000004
+    },
+    "nominal_current_bandwidth_hz": 1000,
+    "physical_hardware_executed": false,
+    "plant_features": [
+      "dq PMSM electrical dynamics",
+      "one-sample inverter delay",
+      "2% voltage gain loss",
+      "0.15V dead-time drop",
+      "ADC noise",
+      "25% bus sag"
+    ],
+    "status": "PASS",
+    "worst_abs_id_a": 0.26807607153906127,
+    "worst_final_error_a": 0.017109590364855265
+  },
+  "host": {
+    "machine": "x86_64",
+    "platform": "Linux-6.18.35-x86_64-with-glibc2.41",
+    "python": "3.13.5"
+  },
+  "mcu_zero_allocation_wcet": {
+    "allocator_symbol_references": [],
+    "formal_target_wcet_proven": false,
+    "general_saga_mcu_backend_zero_allocation_proven": false,
+    "generated_c": "evidence/virtual-hil-048/foc_q_tick.c",
+    "generated_object": "evidence/virtual-hil-048/foc_q_tick.cortex-m4f.o",
+    "kind": "restricted-control-tick-cortex-m4f-object-proof",
+    "object_sha256": "c12433f88382fd0d33ea1d3ddbfb7ea5ec431a71d8e1912806f4f47f47946d22",
+    "scope": "one generated scalar FOC q-axis @control_tick kernel",
+    "static_stack_bytes": 0,
+    "static_total_instruction_upper_bound": 22,
+    "status": "PASS",
+    "subroutine_call_instructions": [],
+    "target": "arm-none-eabi cortex-m4f hard-float",
+    "virtual_wcet_model_cycles_16_cycles_per_instruction": 352,
+    "virtual_wcet_model_us_at_168mhz": 2.0952380952380953
+  },
+  "nic_timestamping": {
+    "eth0_device_path": "/sys/devices/pci0000:00/0000:00:01.0/virtio0",
+    "kind": "timestamp-provenance-plus-virtual-phc",
+    "note": "Hardware precision figures are model results because this environment exposes no PHC device.",
+    "physical_nic_hardware_timestamp_executed": false,
+    "ptp_devices": [],
+    "real_linux_software_timestamp_p99_from_presend_ns": 2925,
+    "real_linux_software_timestamp_packets": 200,
+    "status": "PASS",
+    "synthetic_raw_hardware_timestamp_parse": true,
+    "virtual_phc_error_max_ns": 25.358060598373413,
+    "virtual_phc_error_p99_ns": 14.225319564342499,
+    "virtual_phc_quantum_ns": 8.0,
+    "virtual_software_timestamp_error_p99_ns": 5298.715330630541
+  },
+  "physical_hardware_qualification_pass": false,
+  "physical_hardware_status": "UNEXECUTED",
+  "qualification": "Saga 0.47 Advanced Motion Virtual-HIL 0.48",
+  "schema": 1,
+  "software_model_pass": true,
+  "sto_estop": {
+    "dual_channel_reaction_ms": 2.0000000000000004,
+    "functional_safety_certification_claimed": false,
+    "kind": "dual-channel-sto-estop-fault-injection-model",
+    "note": "This is fault-injection logic testing only; it is not SIL/PL validation or proof of diagnostic coverage.",
+    "physical_safety_relay_or_drive_sto_executed": false,
+    "release_without_reset_does_not_restart": true,
+    "saga_guarded_actuator_stopped": true,
+    "single_channel_discrepancy_latched": true,
+    "single_welded_sto_channel_still_removes_torque": true,
+    "software_latch_clear_does_not_reenable_external_sto": true,
+    "status": "PASS"
+  }
+}

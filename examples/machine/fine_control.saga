@@ -1,0 +1,13 @@
+use machine
+
+// Per-actuator commands are explicit. No automatic mode or safety policy is hidden here.
+let actuators = machine.actuator_bank(4, -1.0, 1.0, 0.0, 4.0, 0.01)
+machine.actuator_set_all(actuators, [0.8, -0.4, 0.2, 1.0])
+print(machine.actuator_step(actuators, 0.01))
+machine.actuator_set(actuators, 2, 0.7)
+print(machine.actuator_step(actuators, 0.01))
+print(machine.actuator_state_json(actuators))
+
+let fast = machine.fast_state_space([[1.0, 0.01], [0.0, 1.0]], [[0.0], [0.01]], [[0.4, 0.1]], [[1.0]], [0.0, 0.0], [-1.0], [1.0])
+print(machine.fast_state_command(fast, [1.0], [0.0, 0.0]))
+print(machine.fast_state_predict(fast, [0.2]))

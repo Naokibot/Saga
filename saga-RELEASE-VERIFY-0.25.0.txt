@@ -1,0 +1,96 @@
+Saga 0.25.0 final release verification
+======================================
+
+Release theme: Platform Qualification & GA Readiness
+Validation host: Linux x86-64
+
+SOURCE / ARCHIVE CANDIDATE
+- Candidate ZIP integrity (unzip -t): PASS
+- Candidate ZIP re-extracted into an independent directory: PASS
+- Candidate source tree vs fully tested work tree, excluding intentionally stripped cache files: BYTE/FILE IDENTICAL
+- Re-extracted Python module entry point: Saga 0.25.0 PASS
+- Re-extracted collected Python tests: 174
+- Re-extracted changed/new regression subset (ecosystem + platform profiles): 22/22 PASS
+- Re-extracted Go full suite: PASS
+- Re-extracted Go vet: PASS
+- Re-extracted Go Race Detector: PASS
+- Re-extracted Python <-> Go current-release differential corpus: 13/13 PASS
+- Re-extracted Hosted API validation: 168/168 PASS
+- Re-extracted internal security audit: PASS / 0 issues
+- Re-extracted real Chromium validation: PASS
+
+FULL PRE-PACKAGE REGRESSION
+- Python regression: 174/174 PASS + 4 subtests (16 modules executed independently)
+- Go full tests: PASS
+- Go vet: PASS
+- Go Race Detector: PASS; repeated after final HTTP lifecycle race fix
+- Go optional tags: sagaffi PASS; sagajit PASS; sagaffi+sagajit PASS; sagadesktop PASS; sagadesktop+sagavulkan PASS
+- Security API: 11 security functions + 8 crypto extensions PASS
+- Hosted API: 168/168 entry points across 28 modules PASS
+- Native Game API: 101/101 PASS
+- Browser Host API: 101/101 PASS
+- Universal App Action API: 10 source APIs / 53 browser operations PASS
+- Machine smoke: file/SQLite, TCP, UDP, AES-GCM, process, WebSocket, image, video and Othello PASS
+- Parser fuzz: 100000 cases / 0 unexpected host exceptions PASS
+- Expression fuzz: 25000 cases / 0 unexpected host exceptions PASS
+- Real Chromium 144 Blink/V8: PASS
+- Internal automated security audit: PASS / 0 issues
+- Native Linux host qualification: PASS
+- Android/iOS generated StandardCoreRuntime build/vet/embedded Saga execution: PASS
+- python -m saga / conformance / check / run / fmt / lint / debug: PASS
+
+SH-3 SPLIT QUALIFICATION
+- Monolithic sh3 validator exceeded the execution window and is NOT counted as PASS.
+- Strict C11 bootstrap VM and launcher: PASS
+- Compiler Stage2 == Stage3: PASS
+  SHA-256 8ea80749c7aba49116742de76cca0168c8b37357fb27b3cbdd000a0739ab12d4
+- Canonical kernel Stage2 == Stage3: PASS
+  SHA-256 cbba9e5b42c8c41a2ecd2ecfde619368fc632299719cd7161d1b829ad32404e3
+- Standard Core success corpus: 23/23 PASS
+- Standard Core diagnostic corpus: 11/11 PASS
+- Edition 2027 Preview corpus: 15/15 PASS
+- source loader / deterministic SH3IMG1 / image execution / empty-PATH run-info-sagac: PASS
+- source-boundary audit: PASS / 0 problems
+
+PLATFORM IMPLEMENTATION / QUALIFICATION
+- Production Vulkan instance/device/surface/swapchain/acquire/submit/present path: PASS on SwiftShader software Vulkan ICD
+- Vulkan status is PASS_SOFTWARE_DEVICE; physical GPU is NOT claimed
+- AWS live STS qualification path: IMPLEMENTED, authorized account/OIDC evidence pending
+- GPIO input/output/PWM/read/write/on/off/close + --allow-device: IMPLEMENTED, physical board pending
+- Spark local/session/SQL/range-count + process capability: IMPLEMENTED, real Spark on this host pending
+- pygame finite-frame qualification path: IMPLEMENTED, real pygame on this host pending
+- Android/iOS StandardCoreRuntime and CI/device validation paths: IMPLEMENTED, physical/vendor device evidence pending
+- Windows/macOS native-host qualifiers: IMPLEMENTED; cross-builds generated, target-host execution pending
+- Physical gamepad lab gate: IMPLEMENTED, device pending
+- Independent Ed25519 security-audit attestation verifier: IMPLEMENTED, independent audit pending
+- External signed HTTPS registry roundtrip qualifier: IMPLEMENTED, project-authorized live registry pending
+
+SOURCE REVIEW FIXES IN 0.25.0
+- GPIO device capability gap fixed
+- Spark external-process capability bypass fixed
+- private cloud SDK method access narrowed
+- Android Gradle generator syntax/toolchain profile fixed
+- mobile StandardCoreRuntime dependency closure fixed
+- mobile CI nonexistent example fixed
+- registry package identity/staging/rollback hardened
+- stale cross-implementation/GA evidence fixed
+- Python conformance implementation-version metadata fixed
+- SH-3 current-release corpus packaging fixed
+- standalone qualification-tool PYTHONPATH dependency fixed
+- GA audit-evidence shape crash fixed
+- Python module entry point and debugger added
+- Language Specification RC1 duplicate/out-of-order clause structure repaired as RC2
+- Native HTTP response ACK/request-context cancellation race fixed and regression-tested
+
+GA 1.0 STATUS
+- ga_ready: FALSE
+- PASS: compiler/runtime conformance
+- PASS: SH-3 fixed point
+- PASS: current independent second implementation
+- PASS: developer workflow
+- BLOCKED: Language Specification 1.0 Final (RC2 exists; Final deliberately withheld)
+- BLOCKED: native Windows + macOS host execution evidence
+- BLOCKED: live external signed HTTPS registry roundtrip
+- BLOCKED: independent signed security audit with zero open critical/high findings
+
+The internal/current-host release is qualified. Saga 0.25.0 is not represented as Core GA 1.0, ISO/IEC approved, independently security-certified, or physically qualified on hardware/services that were not available to this execution environment.

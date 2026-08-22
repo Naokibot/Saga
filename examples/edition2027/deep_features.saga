@@ -1,0 +1,42 @@
+edition 2027
+use "models.saga" as models
+use task
+
+fn first[T](source: T) -> T.Item where T: models.Source = source.get()
+
+resource class Handle(let value: int) {
+    fn close() -> unit { print("closed", self.value) }
+}
+
+async fn add(a: int, b: int) -> int = a + b
+
+fn make_value(okay: bool) -> result[int, text] {
+    if okay { return ok(40) }
+    return err("not available")
+}
+
+fn answer(okay: bool) -> result[int, text] {
+    let base = make_value(okay)?
+    return ok(base + 2)
+}
+
+comptime fn square(x: int) -> int = x * x
+
+print(first(models.IntSource(7)))
+print(square(9))
+print(unwrap_ok(answer(true)))
+
+taskgroup {
+    let future = add(20, 22)
+    print(await future)
+}
+
+let channel = task.channel(1)
+task.send(channel, 5)
+print(unwrap(task.recv(channel)))
+task.close(channel)
+
+let handle = Handle(3)
+using owned = move handle {
+    print(owned.value)
+}

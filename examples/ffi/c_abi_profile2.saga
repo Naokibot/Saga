@@ -1,0 +1,30 @@
+edition 2027
+use ffi
+
+unsafe {
+    print(ffi.profile())
+    let pair = ffi.layout(["x:i32", "y:f64"])
+    let p = ffi.struct_alloc(pair)
+    ffi.struct_set(pair, p, "x", 21)
+    ffi.struct_set(pair, p, "y", 1.5f64)
+
+    let doubled = ffi.call("./libprobe.so", "pair_twice",
+        "struct{x:i32,y:f64}", ["struct{x:i32,y:f64}"], [p])
+    print(ffi.struct_get(pair, doubled, "x"))
+    print(ffi.struct_get(pair, doubled, "y"))
+
+    fn plus10(x: int) -> int = x + 10
+    let callback = ffi.callback(plus10, "i64", ["i64"])
+    let callback_ptr = ffi.callback_ptr(callback)
+    print(ffi.call("./libprobe.so", "apply_cb", "i64", ["ptr"], [callback_ptr]))
+    ffi.callback_close(callback)
+
+    let foreign = ffi.call("./libprobe.so", "make_owned8", "ptr", [], [])
+    let owned = ffi.adopt(foreign, 8)
+    ffi.store(owned, 0, "i64", 99)
+    print(ffi.load(owned, 0, "i64"))
+
+    ffi.free(owned)
+    ffi.free(doubled)
+    ffi.free(p)
+}

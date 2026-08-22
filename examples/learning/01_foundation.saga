@@ -1,0 +1,10 @@
+let name = "Saga"
+var score = 0
+
+for point in [10, 20, 30] {
+    score = score + point
+}
+
+if score >= 50 {
+    print(name, "score:", score)
+}

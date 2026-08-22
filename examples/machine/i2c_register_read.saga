@@ -1,0 +1,8 @@
+use machine
+
+# Example only: replace device/address/register with values from the actual sensor datasheet.
+let sensor = machine.i2c_open("/dev/i2c-1", 64)
+let register = machine.bytes_from_hex("00")
+let data = machine.i2c_write_read(sensor, register, 2)
+print(machine.bytes_to_hex(data))
+machine.i2c_close(sensor)

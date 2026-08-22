@@ -1,0 +1,24 @@
+(* Saga Natural Module Core 0.30 grammar overlay.
+   This file extends the Natural/Core declaration grammar; it is not a
+   replacement for the complete Saga 1.0 expression grammar. *)
+
+module-source       = module-declaration, { source-use }, { top-level-declaration } ;
+legacy-source       = { source-use | top-level-declaration } ;
+
+module-declaration  = "module", identifier ;
+source-use          = "use", string-literal, [ "as", identifier ] ;
+visibility          = "public" | "internal" ;
+
+(* Top-level declarations without an explicit visibility modifier are internal. *)
+top-level-declaration
+                    = [ visibility ], ( variable-declaration
+                                      | function-declaration
+                                      | class-declaration
+                                      | interface-declaration ) ;
+
+qualified-name      = identifier, { ".", identifier } ;
+qualified-type      = qualified-name, [ type-arguments ] ;
+qualified-member    = identifier, ".", identifier ;
+
+(* 0.30 module names themselves are one identifier. Dotted module declarations
+   are intentionally reserved for a later profile. *)

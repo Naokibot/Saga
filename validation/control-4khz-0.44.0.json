@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "release": "0.44.0",
+  "source_manifest_sha256": "5425a78d1da43aa231cd491e04ce0dda7da75e12c807eded4f1ddc5b7200a7ae",
+  "source_tree_sha256": "cc58a362d0118f1b489f339cb90920e2423cfbf76a5ea3ad6dd44d05c5b07eb0",
+  "pass": true,
+  "status": "pass",
+  "cases": [
+    {
+      "name": "4000 kernel/logical ticks in one second",
+      "pass": true,
+      "evidence": {
+        "ticks": 4000,
+        "wait_calls": 3670,
+        "elapsed_s": 1.000011848998838,
+        "logical_hz": 3999.952604566236,
+        "stats": {
+          "frequency_hz": 4000,
+          "period_us": 250.0,
+          "cycles": 4000,
+          "wait_calls": 3670,
+          "overruns": 330,
+          "last_due": 1,
+          "max_due": 34,
+          "max_late_us": 1378.418,
+          "mean_abs_jitter_us": 70.77886021798378,
+          "backend": "linux-timerfd",
+          "timing_class": "hosted-soft-realtime"
+        }
+      }
+    },
+    {
+      "name": "control compute p99 fits 250 us budget",
+      "pass": true,
+      "evidence": {
+        "mean_us": 12.867948125000002,
+        "p50_us": 11.117,
+        "p95_us": 12.666,
+        "p99_us": 56.142,
+        "max_us": 1219.293,
+        "budget_us": 250.0
+      }
+    },
+    {
+      "name": "full logical control workload executes 4000 ticks per second",
+      "pass": true,
+      "evidence": {
+        "ticks": 4000,
+        "elapsed_s": 1.0000479059999634,
+        "logical_hz": 3999.808385179646,
+        "stats": {
+          "frequency_hz": 4000,
+          "period_us": 250.0,
+          "cycles": 4000,
+          "wait_calls": 3722,
+          "overruns": 278,
+          "last_due": 1,
+          "max_due": 51,
+          "max_late_us": 1217.791,
+          "mean_abs_jitter_us": 70.98628130037596,
+          "backend": "linux-timerfd",
+          "timing_class": "hosted-soft-realtime"
+        }
+      }
+    }
+  ],
+  "boundary": "hosted-soft-realtime; logical ticks can be counted/caught up, physical 250 us deadline compliance requires hardware/RTOS qualification"
+}

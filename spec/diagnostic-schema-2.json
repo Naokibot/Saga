@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:saga:diagnostic-schema:2",
+  "title": "Saga diagnostic envelope schema 2",
+  "type": "object",
+  "required": [
+    "schema",
+    "language",
+    "implementation_version",
+    "locale",
+    "diagnostic"
+  ],
+  "properties": {
+    "schema": {
+      "const": 2
+    },
+    "language": {
+      "const": "Saga"
+    },
+    "implementation_version": {
+      "type": "string"
+    },
+    "locale": {
+      "type": "string"
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": [
+        "code",
+        "id",
+        "severity",
+        "title",
+        "message",
+        "filename",
+        "range"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^SAGA-[LPTRI]\\d{3}$"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^SAGA-[LPTRI]\\d{3}$"
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "note",
+            "help"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "raw_message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "filename": {
+          "type": "string"
+        },
+        "help": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "explanation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "range": {
+          "type": "object",
+          "required": [
+            "start",
+            "end"
+          ],
+          "properties": {
+            "start": {
+              "$ref": "#/$defs/position"
+            },
+            "end": {
+              "$ref": "#/$defs/position"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "position": {
+      "type": "object",
+      "required": [
+        "line",
+        "column"
+      ],
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

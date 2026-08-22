@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "implementation": "saga-go",
+  "implementation_version": "0.9.0",
+  "language": "Saga",
+  "language_version": "0.9",
+  "profiles": [
+    "Portable Core Level 1"
+  ],
+  "unicode_identifier_profile": "15.1.0-vendored",
+  "host_runtime": "Go native executable",
+  "diagnostic_schema": "PCL1 broad categories and standard exit statuses",
+  "hosted_modules": [],
+  "qualification": "Independent implementation maintained in the same project; not an independent laboratory certificate",
+  "report": "validation/differential-conformance-0.9.0.json"
+}

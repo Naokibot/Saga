@@ -1,0 +1,22 @@
+{
+  "files": [
+    {
+      "path": "main.saga",
+      "sha256": "b58075ab75ac2e63ca8e6566bda769c473a4e2298ea2b24f85a77e2b3b7e974a",
+      "size": 76
+    },
+    {
+      "path": "saga.toml",
+      "sha256": "62116d327b039bc7050df5619db676f3a35eec59d45ac27cb5a47b1cd42ea073",
+      "size": 104
+    }
+  ],
+  "language": "Saga",
+  "language_version": "1.0",
+  "project": {
+    "entry": "main.saga",
+    "name": "saga_hello",
+    "version": "0.1.0"
+  },
+  "schema": 1
+}

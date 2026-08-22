@@ -1,0 +1,6 @@
+use "math.saga" as math
+
+fn answer(value: int) -> int = math.twice(value) + 2
+
+print(answer(20))
+print(math.factorial(5))

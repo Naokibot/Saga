@@ -1,0 +1,13 @@
+use db
+use orm
+
+@table("users")
+class User(let id: int, let name: text) {}
+
+let connection = db.open("output/app.db")
+orm.create_table(connection, User)
+orm.insert(connection, User(1, "Aki"))
+for user in orm.all(connection, User) {
+    print(user.id, user.name)
+}
+db.close(connection)

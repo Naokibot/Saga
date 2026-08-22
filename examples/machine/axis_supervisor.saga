@@ -1,0 +1,15 @@
+use machine
+
+let safety = machine.safety_latch()
+let axis = machine.axis(0.0, -180.0, 180.0, 90.0, 180.0, 0.8, 0.05, 0.01, 20.0, safety)
+machine.axis_target(axis, 90.0)
+
+var measured = 0.0
+var i = 0
+while i < 500 and not machine.axis_done(axis, measured) {
+    let command = machine.axis_step(axis, measured, 0.01)
+    measured = machine.axis_planned_position(axis)
+    print(measured, command)
+    i = i + 1
+}
+print("safety tripped:", machine.safety_tripped(safety))

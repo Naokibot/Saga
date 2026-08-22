@@ -1,0 +1,18 @@
+Saga 0.19.0 release ZIP re-extraction verification
+
+Verified from a fresh extraction of saga-lang-0.19.0.zip:
+- Go Native tests: PASS
+- go vet: PASS
+- sagaffi tagged tests: PASS
+- sagaffi tagged go vet: PASS
+- Python reference regression: 155/155 PASS + 4 subtests
+- Native game API checker/runtime/manifest: 92/92 PASS
+- Standard Core conformance: 17/17 PASS
+- Edition 2027 Preview conformance: 14/14 PASS
+- STM32F030K6 firmware generation: PASS
+- STM32 raw vector/memory assertions: PASS
+- SH-3 strict gate: EXPECTED NOT QUALIFIED, pass=false, 49 non-test Go kernel files, 5 core blocker groups
+- SH-2 bootstrap fixed point: PASS; Stage2 == Stage3
+- Stage2/Stage3 SHA-256: 2b54169eb48c50ed41e3fd4eb24bf10de4358b9aefa13fd591deb7dc34442d05
+
+Qualification: SH-3 is intentionally not reported as PASS.

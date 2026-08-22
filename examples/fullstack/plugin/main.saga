@@ -1,0 +1,5 @@
+use plugin
+
+let extension = plugin.load("examples/fullstack/plugin/sample_plugin.py")
+print(plugin.call(extension, "double", 21))
+print(plugin.call(extension, "greet", "Aki"))

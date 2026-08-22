@@ -1,0 +1,17 @@
+interface Greeter {
+    fn greet() -> text
+}
+
+abstract class Person(private var age: int, let name: text) implements Greeter {
+    fn birthday() { self.age = self.age + 1 }
+    override fn greet() -> text = "Hello " + self.name
+    abstract fn role() -> text
+}
+
+class Student(let school: text) extends Person {
+    override fn role() -> text = "student"
+}
+
+let student = Student(15, "Aki", "Saga High")
+student.birthday()
+print(student.greet(), student.role(), student.school)

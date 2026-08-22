@@ -1,10 +1,90 @@
-# Saga 0.44.0 — 4 kHz Hosted Control Profile
+# Saga 0.50.0 — Production GA Control Hardening
 
-Saga 0.44 adds a hosted control profile for **4,000 logical control-state updates per second**, corresponding to a nominal **250 us period**.
+Saga 0.50 closes the main source-level gap between a bounded control function and a production control call graph. `@control_tick(rate_hz, budget_us)` now has a transitive companion, `@control_safe`: hidden helper I/O/allocation, recursion, indirect calls, shared mutation and unapproved external calls are rejected before execution.
 
-On Linux, the Python reference runtime uses the kernel `timerfd` periodic timer. `machine.cycle_wait_due(clock)` returns the number of logical control ticks that became due since the previous wait, so temporary process pre-emption does not silently erase state updates. The independent Go implementation exposes the same frequency-based cyclic API and due-count semantics with an absolute-deadline sleep/spin scheduler.
+For deployment qualification, `saga production-check --native --machine` fails closed unless the project has explicit timing contracts and source-bound hazard/WCET/HIL evidence plus declared independent E-stop, STO/interlock and hardware-watchdog layers. The language/toolchain can be released as Production GA; a physical machine still requires its own target and safety qualification.
 
-Example:
+See `spec/SAGA_PRODUCTION_GA_CONTROL_0.50.md`, `docs/PRODUCTION_GA_CONTROL_0.50.md`, `RELEASE_NOTES_0.50.0.md`, `saga-REVIEW_REPORT-0.50.0.md`, and `saga-VALIDATION-0.50.0.md`.
+
+---
+
+# Saga 0.49.0 — Production & Industrial Profile
+
+Saga is an independent general-purpose language designed to remain readable while scaling into native systems and physical-machine control. 0.49 adds first-class large-system production gates and explicit periodic-control contracts on top of the 0.47 advanced-motion stack.
+
+```saga
+use machine
+
+@control_tick(20000, 35)
+fn current_tick(error: decimal) -> decimal {
+    return error * 0.5
+}
+
+let guard = machine.control_guard(20000, 35, 100, 5)
+let now = machine.monotonic_ns()
+let input_ts = now
+if machine.control_guard_begin(guard, input_ts, now) {
+    let command = current_tick(1.0)
+}
+let healthy = machine.control_guard_end(guard, machine.monotonic_ns())
+```
+
+For large repositories, `saga-workspace.toml` groups independently locked projects and `saga production-check --native` fails closed on compile/lint/lock/reproducible-package/native-build problems while reporting minimum capability categories.
+
+This is a production-candidate engineering profile, not a shortcut around independent security audits, physical host qualification, field history or functional-safety certification.
+
+See `spec/SAGA_PRODUCTION_INDUSTRIAL_0.49.md`, `docs/PRODUCTION_INDUSTRIAL_0.49.md`, `RELEASE_NOTES_0.49.0.md`, and `saga-REVIEW_REPORT-0.49.0.md`.
+
+## Retained Advanced Motion Control 0.47
+
+Saga is an independent general-purpose programming language built around readable source, static accountability, exact-number defaults, explicit authority and progressively deeper systems capability.
+
+Saga 0.47 extends the 0.46 precision-machine layer with a shared Python/Go advanced-motion surface: persistent FOC current control, integrated incremental/absolute encoders, online RLS identification, bounded MPC, disturbance/friction compensation, electronic gearing, EtherCAT/CAN-FD transport with timestamp provenance, and a compiler-enforced `@control_tick` MCU/RTOS source profile.
+
+```saga
+use machine
+
+let foc = machine.foc_current(2.0, 80.0, 2.0, 80.0, 0.08, 0.00012, 0.00012, 0.018, 25.0, 24.0, 12.0)
+machine.foc_step(foc, 0.0, 4.0, 0.2, -0.1, -0.1, 0.25, 40.0, 48.0, 0.0001)
+let duty_u = machine.foc_duty(foc, 0)
+```
+
+Control mathematics remains ordinary Saga state. Raw EtherCAT/CAN/PWM/device I/O remains capability-gated. `@control_tick` rejects dynamic Saga allocations, async/task structures, resource-lifetime changes, exceptions, unbounded loops and known blocking receive/exchange operations, but it is a source-level MCU/RTOS contract rather than a claim that hosted Python/Go is hard real-time or that target object code has already been proven allocation-free.
+
+See `spec/SAGA_ADVANCED_MOTION_0.47.md`, `docs/ADVANCED_MOTION_0.47.md`, `RELEASE_NOTES_0.47.0.md`, `saga-REVIEW_REPORT-0.47.0.md`, and `saga-VALIDATION-0.47.0.md`.
+
+## Retained Precision Machine Control 0.46
+
+Saga 0.46's 2-DOF PID, motor feed-forward, alpha-beta observer, resonance notch, Clarke/Park/inverse-Park, SVPWM and deadline-budget observer remain available. 0.47 builds on those primitives rather than replacing them.
+
+## Retained Language Synthesis 0.45
+
+Saga is an independent general-purpose programming language with its own grammar/type system, module model, native ABI/compiler/runtime, package tooling, independent Go implementation, and SH-3 self-host path.
+
+Saga 0.45 makes `async`/`await`, lexical `taskgroup`, LIFO `defer`, deterministic `using`, and resource-focused `move` a coherent common surface across the Python reference implementation and the independent Go implementation. Public async module APIs are represented as `future[T]` in the deterministic `.smi.json` ABI.
+
+```saga
+async fn double(value: int) -> int {
+    return value * 2
+}
+
+fn answer() -> int {
+    defer print("cleanup")
+    return await double(21)
+}
+
+print(answer())
+```
+
+The new words are contextual: an older program can still declare names such as `fn await()` where the spelling is not being used as the 0.45 construct. `move` is intentionally limited to move-only native resources; ordinary Saga values remain managed and do not acquire a general borrow-checker burden.
+
+See `spec/SAGA_LANGUAGE_SYNTHESIS_0.45.md`, `docs/LANGUAGE_SYNTHESIS_0.45.md`, `RELEASE_NOTES_0.45.0.md`, `saga-REVIEW_REPORT-0.45.0.md`, and `saga-VALIDATION-0.45.0.md`.
+
+## Retained 4 kHz hosted control profile
+
+### 4,000 control ticks per second
+
+Saga 0.44 introduces a 4 kHz hosted control profile with a **250 us period**.
 
 ```saga
 use machine
@@ -19,25 +99,12 @@ while true {
 }
 ```
 
-## Qualification
+On Linux, `CyclicClock` uses the kernel `timerfd` periodic timer. The kernel counts every expiration, so temporary process pre-emption does not silently erase logical control ticks. `cycle_wait_due()` returns the number of state updates that became due; `cycle_stats_json()` reports period, backend, wait calls, cycles, overruns, `last_due`, `max_due`, and jitter.
 
-Final reviewed source tree SHA-256: `cc58a362d0118f1b489f339cb90920e2423cfbf76a5ea3ad6dd44d05c5b07eb0`.
-
-Source-bound 0.44 qualification observed:
-- 4,000 logical ticks in **1.000011849 s**: **3999.95 Hz**
-- Integrated full logical control workload: **4000 ticks / 1.000047906 s**, **3999.81 Hz**
-- Cached allocator + compact state-space + 8-channel actuator conditioning: **p99 56.142 us**, below the 250 us compute budget
-- Selected Python regression: **138/138 PASS**
-- Python self-conformance: **48/48 PASS**
-- Go self-conformance: **48/48 PASS**
-- Python↔Go differential: **48/48 PASS**
-- Module conformance: **14/14 PASS**
-- Native Runtime: **10/10 PASS**
-- Native Codegen: **17/17 PASS**
-- Go tests and `go vet`: **PASS**
+The cached control allocator, compact state-space path, and per-actuator conditioning remain available for high-rate loops. Saga still keeps physical E-stop/STO/interlocks and hazardous-motion safety policy outside the hosted language runtime.
 
 ## Timing boundary
 
-This is still **hosted soft real-time**. The host scheduler produced catch-up events (`cycle_wait_due() > 1`) in the qualification environment. Therefore this evidence proves that Saga can preserve and execute 4,000 logical state updates per second; it does **not** prove that a physical PWM/GPIO/CAN/EtherCAT edge occurred on every exact 250 us deadline.
+The 4 kHz profile is **hosted soft real-time**. Counting/executing 4,000 logical state updates per second is distinct from guaranteeing a physical GPIO/PWM/CAN/EtherCAT edge on every exact 250 us boundary. Hard-deadline motor-current/FOC loops, hardware-timed waveforms, EtherCAT distributed-clock slaves/masters, and certified safety motion require the relevant RTOS/drive/FPGA/driver/hardware qualification.
 
-Hard-deadline motor-current/FOC loops, deterministic fieldbus timing, hardware-timed waveforms, and certified safety motion require a qualified RTOS/PREEMPT_RT/drive/FPGA/hardware-specific backend. Physical E-stop/STO/interlocks remain external.
+See `docs/CONTROL_4KHZ_0.44.md`, `RELEASE_NOTES_0.44.0.md`, and `validation/control-4khz-0.44.0.json` for the detailed qualification boundary.

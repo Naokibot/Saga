@@ -1,0 +1,402 @@
+{
+  "cases": [
+    {
+      "actual_error": null,
+      "actual_output": "0.3 true",
+      "expected_error": null,
+      "expected_output": "0.3 true",
+      "id": "SC001-exact-decimal",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "1/2",
+      "expected_error": null,
+      "expected_output": "1/2",
+      "id": "SC002-rational",
+      "pass": true
+    },
+    {
+      "actual_error": "SAGA-T001",
+      "actual_output": "",
+      "expected_error": "SAGA-T001",
+      "expected_output": null,
+      "id": "SC003-let",
+      "pass": true
+    },
+    {
+      "actual_error": "SAGA-T001",
+      "actual_output": "",
+      "expected_error": "SAGA-T001",
+      "expected_output": null,
+      "id": "SC004-bool-condition",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "15",
+      "expected_error": null,
+      "expected_output": "15",
+      "id": "SC005-range",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "42",
+      "expected_error": null,
+      "expected_output": "42",
+      "id": "SC006-function",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "none",
+      "expected_error": null,
+      "expected_output": "none",
+      "id": "SC007-option",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "Thrown boom",
+      "expected_error": null,
+      "expected_output": "Thrown boom",
+      "id": "SC008-exception",
+      "pass": true
+    },
+    {
+      "actual_error": "SAGA-R001",
+      "actual_output": "",
+      "expected_error": "SAGA-R001",
+      "expected_output": null,
+      "id": "SC009-bounds",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "-4 512",
+      "expected_error": null,
+      "expected_output": "-4 512",
+      "id": "SC010-power",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "42",
+      "expected_error": null,
+      "expected_output": "42",
+      "id": "SC011-unicode",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "true false",
+      "expected_error": null,
+      "expected_output": "true false",
+      "id": "SC012-identity",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "6\n7",
+      "expected_error": null,
+      "expected_output": "6\n7",
+      "id": "SC013-closure",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "-2 1 -1",
+      "expected_error": null,
+      "expected_output": "-2 1 -1",
+      "id": "SC014-remainder-sign",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "Saga",
+      "expected_error": null,
+      "expected_output": "Saga",
+      "id": "SC015-natural-binding",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[2, 4, 6]",
+      "expected_error": null,
+      "expected_output": "[2, 4, 6]",
+      "id": "SC016-natural-map",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "6",
+      "expected_error": null,
+      "expected_output": "6",
+      "id": "SC017-explicit-closure",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[4, 6]",
+      "expected_error": null,
+      "expected_output": "[4, 6]",
+      "id": "SC018-pipeline",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "Hello",
+      "expected_error": null,
+      "expected_output": "Hello",
+      "id": "SC019-first-class-closure",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[1, 20]",
+      "expected_error": null,
+      "expected_output": "[1, 20]",
+      "id": "SC020-closure-return",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "yes",
+      "expected_error": null,
+      "expected_output": "yes",
+      "id": "SC021-control-call-brace",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[2, 4]",
+      "expected_error": null,
+      "expected_output": "[2, 4]",
+      "id": "SC022-natural-pipeline-names",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "6",
+      "expected_error": null,
+      "expected_output": "6",
+      "id": "SC023-legacy-pipeline-order",
+      "pass": true
+    },
+    {
+      "actual_error": "SAGA-P001",
+      "actual_output": "",
+      "expected_error": "SAGA-P001",
+      "expected_output": null,
+      "id": "SC024-duplicate-closure-parameters",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "ok(5) err(bad)",
+      "expected_error": null,
+      "expected_output": "ok(5) err(bad)",
+      "id": "SC025-result-propagation",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "6",
+      "expected_error": null,
+      "expected_output": "6",
+      "id": "SC026-natural-each",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "2",
+      "expected_error": null,
+      "expected_output": "2",
+      "id": "SC027-natural-find",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "true",
+      "expected_error": null,
+      "expected_output": "true",
+      "id": "SC028-natural-none",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[3, 2, 1]",
+      "expected_error": null,
+      "expected_output": "[3, 2, 1]",
+      "id": "SC029-natural-sorted-by",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[2, 3]",
+      "expected_error": null,
+      "expected_output": "[2, 3]",
+      "id": "SC030-natural-skip",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[[1, 3], [2, 4]]",
+      "expected_error": null,
+      "expected_output": "[[1, 3], [2, 4]]",
+      "id": "SC031-natural-zip",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[1, 2, 3]",
+      "expected_error": null,
+      "expected_output": "[1, 2, 3]",
+      "id": "SC032-natural-flatten",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[1, 1, 2, 2]",
+      "expected_error": null,
+      "expected_output": "[1, 1, 2, 2]",
+      "id": "SC033-natural-flat-map",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[[1, 2], [3]]",
+      "expected_error": null,
+      "expected_output": "[[1, 2], [3]]",
+      "id": "SC034-natural-chunk",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "[[1, 2], [2, 3]]",
+      "expected_error": null,
+      "expected_output": "[[1, 2], [2, 3]]",
+      "id": "SC035-natural-window",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "SAGA\n[a, b]",
+      "expected_error": null,
+      "expected_output": "SAGA\n[a, b]",
+      "id": "SC036-natural-text",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "true\n9",
+      "expected_error": null,
+      "expected_output": "true\n9",
+      "id": "SC037-natural-map-value",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "true\n[1, 2]",
+      "expected_error": null,
+      "expected_output": "true\n[1, 2]",
+      "id": "SC038-natural-set",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "{1: [1, 1], 2: [2]}",
+      "expected_error": null,
+      "expected_output": "{1: [1, 1], 2: [2]}",
+      "id": "SC039-natural-group",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "{1: [1, 3], 0: [2]}",
+      "expected_error": null,
+      "expected_output": "{1: [1, 3], 0: [2]}",
+      "id": "SC040-natural-group-by",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "Hello\n5",
+      "expected_error": null,
+      "expected_output": "Hello\n5",
+      "id": "SC041-natural-bare-call",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "Todo\ninside",
+      "expected_error": null,
+      "expected_output": "Todo\ninside",
+      "id": "SC042-natural-bare-call-block",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "2",
+      "expected_error": null,
+      "expected_output": "2",
+      "id": "SC043-bare-call-subtraction-guard",
+      "pass": true
+    },
+    {
+      "actual_error": "SAGA-R001",
+      "actual_output": "",
+      "expected_error": "SAGA-R001",
+      "expected_output": null,
+      "id": "SC044-remainder-zero-diagnostic",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "2",
+      "expected_error": null,
+      "expected_output": "2",
+      "id": "SC045-enum-match",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "not ready",
+      "expected_error": null,
+      "expected_output": "not ready",
+      "id": "SC046-unless",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "42",
+      "expected_error": null,
+      "expected_output": "42",
+      "id": "SC047-tagged-union-payload",
+      "pass": true
+    },
+    {
+      "actual_error": null,
+      "actual_output": "true\nfalse",
+      "expected_error": null,
+      "expected_output": "true\nfalse",
+      "id": "SC048-tagged-union-equality",
+      "pass": true
+    }
+  ],
+  "gc_preview_version": "0.38",
+  "language": "Saga",
+  "language_edition": "4 kHz Hosted Control 0.44 / Native Runtime ABI 0.35",
+  "module_core_version": "0.30",
+  "native_aggregate_abi_version": "0.35",
+  "native_codegen_abi_version": "0.32",
+  "native_object_core_version": "0.31",
+  "native_value_abi_version": "0.33",
+  "natural_core_version": "0.29",
+  "pass": true,
+  "passed": 48,
+  "schema": 1,
+  "total": 48,
+  "version": "0.44.0"
+}

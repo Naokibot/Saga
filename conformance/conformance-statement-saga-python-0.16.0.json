@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "language": "Saga",
+  "language_version": "1.0-rc1",
+  "conformance_manifest": "conformance/manifest.json",
+  "qualification": "Project-generated evidence; not an independent laboratory certificate.",
+  "implementation": "saga-python-reference",
+  "implementation_version": "0.16.0-reference-compatible",
+  "profiles": [
+    "Standard Core",
+    "Hosted Standard reference"
+  ],
+  "host_runtime": "Python >=3.13",
+  "independence": "Reference implementation; does not use Saga Native as its parser/evaluator for normal execution.",
+  "portable_core_cross_suite": "14/14 differential cases PASS"
+}

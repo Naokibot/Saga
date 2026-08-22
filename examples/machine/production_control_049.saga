@@ -1,0 +1,19 @@
+use machine
+
+@control_tick(20000, 35)
+fn current_tick(error: decimal) -> decimal {
+    return error * 0.5
+}
+
+let guard = machine.control_guard(20000, 35, 100, 5)
+let cycle_start = machine.monotonic_ns()
+let sensor_timestamp = cycle_start
+
+if machine.control_guard_begin(guard, sensor_timestamp, cycle_start) {
+    let command = current_tick(1.0)
+    print(command)
+}
+
+let cycle_ok = machine.control_guard_end(guard, machine.monotonic_ns())
+print(cycle_ok)
+print(machine.control_guard_stats_json(guard))

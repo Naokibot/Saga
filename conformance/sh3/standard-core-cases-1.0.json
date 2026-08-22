@@ -1,0 +1,186 @@
+{
+  "schema": 1,
+  "release": "0.26.2",
+  "success": [
+    {
+      "name": "control",
+      "source": "var total: int = 0\nfor n in 1..6 { if n == 3 { continue } total = total + n }\nvar x: int = 0\nwhile x < 3 { x = x + 1 }\nprint(total, x)",
+      "stdout": "18 3\n"
+    },
+    {
+      "name": "function_recursion",
+      "source": "fn fact(n: int) -> int { if n <= 1 { return 1 } return n * fact(n - 1) }\nprint(fact(8))",
+      "stdout": "40320\n"
+    },
+    {
+      "name": "exact_numbers",
+      "source": "print(0.1 + 0.2 == 0.3)\nprint(1 / 3 + 1 / 6)\nprint(2 ** -2)",
+      "stdout": "true\n1/2\n1/4\n"
+    },
+    {
+      "name": "collections",
+      "source": "let xs = append([1,2],3)\nlet m = map_of(\"a\",1,\"b\",2)\nlet s = set_of(1,2,2,3)\nprint(len(xs), map_get(m,\"b\",0), len(s), contains(xs,3))",
+      "stdout": "3 2 3 true\n"
+    },
+    {
+      "name": "option",
+      "source": "let a: option[int] = some(42)\nlet b: option[int] = none()\nprint(is_some(a), unwrap(a), is_none(b), unwrap_or(b,7))",
+      "stdout": "true 42 true 7\n"
+    },
+    {
+      "name": "generics",
+      "source": "fn first[T](xs: list[T]) -> T { return xs[0] }\nprint(first([7,8]), first([\"a\",\"b\"]))",
+      "stdout": "7 a\n"
+    },
+    {
+      "name": "higher_order",
+      "source": "fn square(x: int) -> int = x*x\nfn even(x: int) -> bool = x % 2 == 0\nfn add(a: int,b: int) -> int = a+b\nprint(transform(square,[1,2,3]))\nprint(filter(even,[1,2,3,4]))\nprint(reduce(add,[1,2,3,4],0))",
+      "stdout": "[1, 4, 9]\n[2, 4]\n10\n"
+    },
+    {
+      "name": "oop",
+      "source": "interface Named { fn name() -> text }\nclass Person(let value: text) implements Named { override fn name() -> text = self.value }\nclass Student(let student_name: text) extends Person { override fn name() -> text = \"Student \" + self.student_name }\nfn label(item: Named) -> text = item.name()\nlet person: Person = Student(\"base\",\"Aki\")\nlet named: Named = person\nprint(label(named), text(person))",
+      "stdout": "Student Aki Student(value=base, student_name=Aki)\n"
+    },
+    {
+      "name": "private",
+      "source": "class Account(private let secret: text, let name: text) {}\nprint(text(Account(\"token\",\"Aki\")))",
+      "stdout": "Account(name=Aki)\n"
+    },
+    {
+      "name": "exception",
+      "source": "try { throw \"boom\" } catch err { print(err.kind, err.message) } finally { print(\"finally\") }",
+      "stdout": "Thrown boom\nfinally\n"
+    },
+    {
+      "name": "unicode",
+      "source": "let 合計 = 40 + 2\nprint(合計)",
+      "stdout": "42\n"
+    },
+    {
+      "name": "text",
+      "source": "let s = \" Saga \"\nprint(trim(s), upper(\"ab\"), lower(\"AB\"), substring(\"abcdef\",1,4), find_text(\"abcabc\",\"bc\"))",
+      "stdout": "Saga AB ab bcd 1\n"
+    },
+    {
+      "name": "task",
+      "source": "use task\nfn square(x: int) -> int = x*x\nlet f = task.spawn(square,12)\nprint(task.await(f))\nprint(task.parallel_map(square,[1,2,3,4],2))",
+      "stdout": "144\n[1, 4, 9, 16]\n"
+    },
+    {
+      "name": "generic_class",
+      "source": "class Box[T](let value: T) { fn get() -> T = self.value }\nlet box: Box[int] = Box(42)\nprint(box.get())",
+      "stdout": "42\n"
+    },
+    {
+      "name": "abstract_class",
+      "source": "abstract class Shape() { abstract fn area() -> int }\nclass Square(let side: int) extends Shape { override fn area() -> int = self.side*self.side }\nlet s: Shape = Square(4)\nprint(s.area())",
+      "stdout": "16\n"
+    },
+    {
+      "name": "annotations",
+      "source": "@entity\nclass User(let id: int) {}\n@pure\nfn value() -> int = 7\nprint(value(), text(User(1)))",
+      "stdout": "7 User(id=1)\n"
+    },
+    {
+      "name": "object_identity",
+      "source": "class Box(let x: int) {}\nlet a=Box(1)\nlet b=Box(1)\nprint(a==a,a==b)",
+      "stdout": "true false\n"
+    },
+    {
+      "name": "collection_equality",
+      "source": "print([1,2]==[1,2], map_of(\"a\",1)==map_of(\"a\",1), set_of(1,2)==set_of(2,1))",
+      "stdout": "true true true\n"
+    },
+    {
+      "name": "lexical_closure",
+      "source": "fn make_counter(start: int) -> fn[int] { var n = start fn next() -> int { n = n + 1 return n } return next }\nlet c = make_counter(10)\nprint(c())\nprint(c())",
+      "stdout": "11\n12\n"
+    },
+    {
+      "name": "generic_interface_binding",
+      "source": "interface Repository[T] { fn save(value: T) -> T }\nclass MemoryRepository[T](let seed: T) implements Repository[T] { override fn save(value: T) -> T = value }\nlet repo: Repository[int] = MemoryRepository(0)\nprint(repo.save(42))",
+      "stdout": "42\n"
+    },
+    {
+      "name": "generic_base_binding",
+      "source": "class Box[T](let value: T) {}\nclass IntBox() extends Box[int] {}\nlet box = IntBox(9)\nprint(box.value)",
+      "stdout": "9\n"
+    },
+    {
+      "name": "generic_transitive_relation",
+      "source": "interface R[T] { fn value() -> T }\nclass Base[T](let stored:T) implements R[T] { override fn value() -> T = self.stored }\nclass IntBase() extends Base[int] {}\nlet x:R[int]=IntBase(55)\nprint(x.value())",
+      "stdout": "55\n"
+    },
+    {
+      "name": "builtins_complete",
+      "source": "fn square(x: int) -> int = x * x\nfn even(x: int) -> bool = x % 2 == 0\nfn add(a: int, b: int) -> int = a + b\n\nlet xs = [3, 1, 2, 2]\nprint(len(xs), text(42), int(\"42\"), decimal(1 / 4), ratio(1, 3))\nprint(abs(-5), sqrt(9), round(1.2345, 2), floor(1.9), ceil(1.1), min(2, 3), max(2, 3))\nprint(sum([1,2,3]), mean([1,2,3]), append([1,2], 3), prepend([2,3], 1), get([1,2], 5, 9), contains([1,2], 2))\nassert(true, \"must pass\")\nprecision(70)\nprint(slice([1,2,3,4], 1, 3), reverse([1,2,3]), sort(xs), unique(xs))\nprint(transform(square, [1,2,3]), filter(even, [1,2,3,4]), reduce(add, [1,2,3], 0), find(even, [1,3,4], 0))\nprint(any(even, [1,3,4]), all(even, [2,4,6]))\nprint(split(\"a,b,c\", \",\"), join([\"a\",\"b\"], \"-\"), trim(\" x \"), upper(\"Saga\"), lower(\"Saga\"))\nprint(replace(\"abcabc\", \"a\", \"x\"), starts_with(\"Saga\", \"Sa\"), ends_with(\"Saga\", \"ga\"), find_text(\"Saga\", \"g\"), substring(\"Saga\", 1, 3))\nlet m0 = map_of(\"a\", 1, \"b\", 2)\nlet m1 = map_put(m0, \"c\", 3)\nlet m2 = map_remove(m1, \"a\")\nprint(map_get(m1, \"c\", 0), map_keys(m2), map_values(m2), map_contains(m2, \"b\"))\nlet s0 = set_of(1,2)\nlet s1 = set_add(s0, 3)\nlet s2 = set_remove(s1, 1)\nprint(set_contains(s2, 2), set_union(s2, set_of(4)), set_intersection(s2, set_of(2,9)))\nprint(repeat(\"x\", 3), set_at([1,2,3], 1, 9))\nlet yes = some(7)\nlet no = none()\nprint(is_some(yes), is_none(no), unwrap(yes), unwrap_or(no, 8))\n\ninterface Named { fn name() -> text }\nabstract class Base(let value: int) implements Named {\n    override fn name() -> text = \"base\"\n    abstract fn kind() -> text\n}\nclass Child(let extra: text) extends Base {\n    override fn kind() -> text = self.extra\n}\nfn identity[T](value: T) -> T = value\nlet child: Named = Child(5, \"child\")\nprint(child.name(), identity(\"generic\"))\n\nvar count = 0\nwhile count < 3 { count = count + 1 }\nfor n in 1..3 { if n == 2 { continue } }\ntry { throw \"boom\" } catch error { print(error.kind, error.message) } finally { print(\"finally\") }\n",
+      "stdout": "4 42 42 0.25 1/3\n5 3 1.23 1 2 2 3\n6 2 [1, 2, 3] [1, 2, 3] 9 true\n[2, 3] [3, 2, 1] [1, 2, 2, 3] [3, 1, 2]\n[1, 4, 9] [2, 4] 6 4\ntrue true\n[a, b, c] a-b x SAGA saga\nxbcxbc true true 2 ag\n3 [b, c] [2, 3] true\ntrue set{2, 3, 4} set{2}\n[x, x, x] [1, 9, 3]\ntrue true 7 8\nbase generic\nThrown boom\nfinally\n"
+    }
+  ],
+  "errors": [
+    {
+      "name": "immutable",
+      "source": "let x = 1\nx = 2",
+      "diagnostic": "SAGA-T101"
+    },
+    {
+      "name": "unknown",
+      "source": "print(missing)",
+      "diagnostic": "SAGA-T102"
+    },
+    {
+      "name": "condition",
+      "source": "if 1 { print(1) }",
+      "diagnostic": "SAGA-T104"
+    },
+    {
+      "name": "private_access",
+      "source": "class A(private let x: int) {}\nlet a=A(1)\nprint(a.x)",
+      "diagnostic": "SAGA-T107"
+    },
+    {
+      "name": "bad_filter",
+      "source": "fn bad(x: int) -> int = x\nfilter(bad,[1,2])",
+      "diagnostic": "SAGA-T103"
+    },
+    {
+      "name": "bad_map_key",
+      "source": "let x = map_of([1],2)",
+      "diagnostic": "SAGA-T103"
+    },
+    {
+      "name": "duplicate_annotation",
+      "source": "@x\n@x\nfn value() -> int = 1",
+      "diagnostic": "SAGA-T108"
+    },
+    {
+      "name": "generic_invariance",
+      "source": "class Box[T](let value: T) {}\nlet a: Box[int] = Box(1)\nlet b: Box[text] = a",
+      "diagnostic": "SAGA-T103"
+    },
+    {
+      "name": "generic_interface_invariance",
+      "source": "interface R[T] { fn save(v: T) -> T }\nclass M[T](let seed: T) implements R[T] { override fn save(v: T) -> T = v }\nlet r: R[text] = M(0)",
+      "diagnostic": "SAGA-T103"
+    },
+    {
+      "name": "bad_override",
+      "source": "class A() { fn x() -> int = 1 }\nclass B() extends A { fn x() -> int = 2 }",
+      "diagnostic": "SAGA-T110"
+    },
+    {
+      "name": "abstract_construct",
+      "source": "abstract class A() { abstract fn x() -> int }\nlet a=A()",
+      "diagnostic": "SAGA-T111"
+    }
+  ],
+  "source_loader": {
+    "entry": "main.saga",
+    "files": {
+      "dep.saga": "fn value() -> int = 42\n",
+      "main.saga": "use \"dep.saga\"\nprint(value())\n"
+    },
+    "stdout": "42\n"
+  }
+}

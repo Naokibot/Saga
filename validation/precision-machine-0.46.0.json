@@ -1,0 +1,147 @@
+{
+  "schema": 1,
+  "release": "0.46.0",
+  "source_manifest_sha256": "e078014b56a1edd2fe13bdb8e8e027d0483524aee1c2130656d2da9d53ecdd55",
+  "source_tree_sha256": "586e700d07a716bcb516476cf01ad33688a8d05990070cd140b576000d7b6023",
+  "profile": "Precision Machine Control 0.46",
+  "total": 5,
+  "passed": 5,
+  "pass": true,
+  "cases": [
+    {
+      "id": "pid2-observer-feedforward-parity",
+      "expected": [
+        "1.5",
+        "3.5",
+        "1",
+        "2"
+      ],
+      "python_output": [
+        "1.5",
+        "3.5",
+        "1",
+        "2"
+      ],
+      "go_output": [
+        "1.5",
+        "3.5",
+        "1",
+        "2"
+      ],
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "pass": true
+    },
+    {
+      "id": "foc-transform-svpwm-parity",
+      "expected_numeric": [
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.6875,
+        0.3125,
+        0.3125
+      ],
+      "python_output": [
+        "1",
+        "0",
+        "0",
+        "1",
+        "0",
+        "1",
+        "0",
+        "0.6875",
+        "0.3125",
+        "0.3125"
+      ],
+      "go_output": [
+        "1",
+        "0",
+        "0",
+        "1",
+        "0",
+        "1",
+        "0",
+        "0.6875",
+        "0.3125",
+        "0.3125"
+      ],
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "tolerance": {
+        "relative": 1e-12,
+        "absolute": 1e-12
+      },
+      "pass": true
+    },
+    {
+      "id": "notch-reset-and-numeric-parity",
+      "python_output": [
+        "0.9359311069395873",
+        "0.848507255331047320042650284",
+        "0.9359311069395873",
+        "0.848507255331047320042650284"
+      ],
+      "go_output": [
+        "0.935931106939587",
+        "0.848507255331047",
+        "0.935931106939587",
+        "0.848507255331047"
+      ],
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "cross_implementation_absolute_tolerance": 2e-12,
+      "pass": true
+    },
+    {
+      "id": "deadline-budget-observer-shape",
+      "expected": {
+        "period_us": 1000,
+        "budget_us": 900,
+        "samples": 0,
+        "violations": 0,
+        "last_elapsed_us": 0,
+        "max_elapsed_us": 0,
+        "timing_class": "hosted-soft-realtime"
+      },
+      "python": {
+        "period_us": 1000,
+        "budget_us": 900,
+        "samples": 0,
+        "violations": 0,
+        "last_elapsed_us": 0,
+        "max_elapsed_us": 0,
+        "timing_class": "hosted-soft-realtime"
+      },
+      "go": {
+        "budget_us": 900,
+        "last_elapsed_us": 0,
+        "max_elapsed_us": 0,
+        "period_us": 1000,
+        "samples": 0,
+        "timing_class": "hosted-soft-realtime",
+        "violations": 0
+      },
+      "python_diagnostic_id": null,
+      "go_diagnostic_id": null,
+      "pass": true
+    },
+    {
+      "id": "pid2-static-type-rejection",
+      "expected_diagnostic_id": "SAGA-T105",
+      "python_diagnostic_id": "SAGA-T105",
+      "go_diagnostic_id": "SAGA-T105",
+      "pass": true
+    }
+  ],
+  "boundaries": {
+    "physical_device_access_required_for_math": false,
+    "hosted_deadline_budget_is_hard_realtime": false,
+    "hosted_foc_math_is_a_physical_current_loop_qualification": false,
+    "certified_machine_safety_function_changed": false
+  }
+}

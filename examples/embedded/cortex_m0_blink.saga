@@ -1,0 +1,18 @@
+edition 2027
+use embedded
+
+fn led_on() -> unit {
+    embedded.mmio_write32(uint32(1073741824), uint32(1))
+    embedded.barrier()
+}
+
+@interrupt("SysTick")
+fn systick() -> unit {
+    led_on()
+}
+
+public fn reset() -> unit {
+    embedded.irq_disable()
+    led_on()
+    embedded.irq_enable()
+}

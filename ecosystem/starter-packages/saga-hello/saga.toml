@@ -1,0 +1,6 @@
+[project]
+name = "saga_hello"
+version = "0.1.0"
+language = "1.0"
+entry = "main.saga"
+test_dir = "tests"

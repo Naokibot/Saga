@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "language": "Saga",
+  "language_version": "1.0-rc1",
+  "conformance_manifest": "conformance/manifest.json",
+  "qualification": "Project-generated evidence; not an independent laboratory certificate.",
+  "implementation": "saga-native",
+  "implementation_version": "0.17.0",
+  "profiles": [
+    "Standard Core",
+    "Native Hosted",
+    "Portable Game Profile",
+    "Desktop Game Profile when built sagadesktop+cgo"
+  ],
+  "host_runtime": "self-contained native executable; bootstrap seed source is Go",
+  "independence": "Separate lexer/parser/type checker/runtime from saga-python; no Python runtime invocation. Technical independence, not organizational independence.",
+  "portable_core_cross_suite": "14/14 differential cases PASS",
+  "implementation_independence_report": "validation/implementation-independence-0.17.0.json"
+}

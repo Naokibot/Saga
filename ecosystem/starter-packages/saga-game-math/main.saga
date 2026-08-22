@@ -1,0 +1,6 @@
+fn clamp_axis(value:decimal) -> decimal {
+    if value < -1 { return -1 }
+    if value > 1 { return 1 }
+    return value
+}
+print(clamp_axis(0.25))

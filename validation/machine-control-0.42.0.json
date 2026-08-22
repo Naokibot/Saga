@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "release": "0.42.0",
+  "source_manifest_sha256": "00b8f431da2a73075c78a09fdd9fccc2be87cf6e3654bde3fe1c81e92bccf03c",
+  "source_tree_sha256": "f925e9417b83ad3cac6f69add270417fbbe7e0417c278cca16fb3dda91a023ec",
+  "generated_at_utc": "2026-08-17T09:49:50.186719+00:00",
+  "host": {
+    "system": "Linux",
+    "machine": "x86_64"
+  },
+  "timing_class": "hosted-soft-realtime",
+  "industrial_protocols": [
+    "modbus-rtu",
+    "modbus-tcp",
+    "socketcan",
+    "canopen-framing",
+    "i2c-dev",
+    "spidev",
+    "uart",
+    "plc-process-image"
+  ],
+  "motion_control": [
+    "pid",
+    "trapezoidal-profile",
+    "jerk-limited-s-curve",
+    "supervised-axis",
+    "synchronized-multi-axis",
+    "state-space",
+    "lqr-design",
+    "linear-kalman",
+    "dh-kinematics",
+    "resolved-rate",
+    "watchdog",
+    "safety-latch"
+  ],
+  "saga_only_application_surface": true,
+  "saga_only_scope": "Supported control algorithms, sequencing, protocol framing and process-image logic are callable from Saga source; physical drivers remain runtime/OS/device backends.",
+  "hard_realtime_claimed": false,
+  "physical_motion_executed": false,
+  "checks": [
+    {
+      "name": "Python machine-control regression",
+      "pass": true,
+      "detail": ".......................                                                  [100%]\n23 passed in 0.19s\n"
+    },
+    {
+      "name": "Go Native machine-control regression",
+      "pass": true,
+      "detail": "ok  \tsaga-go/cmd/saga-go\t0.011s\n"
+    },
+    {
+      "name": "Go Native machine-control vet",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Python checker: advanced_control.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga042/saga-lang-0.41.0-autonomy-vision-communications/examples/machine/advanced_control.saga\n"
+    },
+    {
+      "name": "Python checker: axis_supervisor.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga042/saga-lang-0.41.0-autonomy-vision-communications/examples/machine/axis_supervisor.saga\n"
+    },
+    {
+      "name": "Python checker: encoder_velocity.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga042/saga-lang-0.41.0-autonomy-vision-communications/examples/machine/encoder_velocity.saga\n"
+    },
+    {
+      "name": "Python checker: i2c_register_read.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga042/saga-lang-0.41.0-autonomy-vision-communications/examples/machine/i2c_register_read.saga\n"
+    },
+    {
+      "name": "Python checker: modbus_plc.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga042/saga-lang-0.41.0-autonomy-vision-communications/examples/machine/modbus_plc.saga\n"
+    },
+    {
+      "name": "Python checker: pid_axis.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga042/saga-lang-0.41.0-autonomy-vision-communications/examples/machine/pid_axis.saga\n"
+    },
+    {
+      "name": "Python checker: safe_hbridge.saga",
+      "pass": true,
+      "detail": "OK: /mnt/data/saga042/saga-lang-0.41.0-autonomy-vision-communications/examples/machine/safe_hbridge.saga\n"
+    }
+  ],
+  "hardware_inventory": {
+    "i2c": [],
+    "spi": [],
+    "uart": [],
+    "pwm": [],
+    "iio": [],
+    "can": []
+  },
+  "physical_qualification": "UNEXECUTED",
+  "physical_qualification_reason": "Default qualification is deliberately non-destructive. Physical buses, motors, servos, encoders, interlocks, and emergency-stop circuitry require an operator-controlled hardware lab.",
+  "pass": true
+}

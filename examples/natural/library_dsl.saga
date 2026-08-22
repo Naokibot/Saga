@@ -1,0 +1,9 @@
+fn panel(title: text, body: fn[unit]) {
+    print(title)
+    body()
+}
+
+panel "Todo" {
+    print("- write code")
+    print("- run tests")
+}

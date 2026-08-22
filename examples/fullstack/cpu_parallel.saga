@@ -1,0 +1,14 @@
+use task
+
+fn square(value: int) -> int = value * value
+fn even(value: int) -> bool = value % 2 == 0
+fn add(a: int, b: int) -> int = a + b
+
+let values = [1, 2, 3, 4, 5, 6, 7, 8]
+let squares = task.cpu_map(square, values, 0)
+let even_squares = task.cpu_filter(even, squares, 0)
+let total = task.cpu_reduce(add, squares, 0, 0)
+
+print(squares)
+print(even_squares)
+print(total)

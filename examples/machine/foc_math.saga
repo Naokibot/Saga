@@ -1,0 +1,10 @@
+use machine
+
+// Mathematical FOC core. No PWM hardware is touched by this example.
+let abc = machine.clarke(8.0, -4.0, -4.0)
+let dq = machine.park(abc[0], abc[1], 0.0)
+print(dq[0], dq[1])
+
+let voltage = machine.inverse_park(2.0, 0.5, 0.0)
+let duty = machine.svpwm(voltage[0], voltage[1], 24.0)
+print(duty[0], duty[1], duty[2])

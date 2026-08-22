@@ -1,0 +1,321 @@
+{
+  "schema": 1,
+  "language": "Saga",
+  "version": "0.22.0",
+  "grammar_sha256": "1df87a60dc370207c53394520266820145a202e8d151608a2bffa87998c51551",
+  "keywords": [
+    "abstract",
+    "and",
+    "break",
+    "catch",
+    "class",
+    "continue",
+    "else",
+    "extends",
+    "false",
+    "finally",
+    "fn",
+    "for",
+    "if",
+    "implements",
+    "in",
+    "interface",
+    "let",
+    "not",
+    "or",
+    "override",
+    "private",
+    "public",
+    "return",
+    "throw",
+    "true",
+    "try",
+    "use",
+    "var",
+    "while"
+  ],
+  "builtins": [
+    "abs",
+    "all",
+    "any",
+    "append",
+    "assert",
+    "ceil",
+    "contains",
+    "decimal",
+    "ends_with",
+    "err",
+    "filter",
+    "find",
+    "find_text",
+    "floor",
+    "get",
+    "int",
+    "is_err",
+    "is_none",
+    "is_ok",
+    "is_some",
+    "join",
+    "len",
+    "lower",
+    "map_contains",
+    "map_get",
+    "map_keys",
+    "map_of",
+    "map_put",
+    "map_remove",
+    "map_values",
+    "max",
+    "mean",
+    "min",
+    "none",
+    "ok",
+    "precision",
+    "prepend",
+    "print",
+    "ratio",
+    "reduce",
+    "repeat",
+    "replace",
+    "reverse",
+    "round",
+    "set_add",
+    "set_at",
+    "set_contains",
+    "set_intersection",
+    "set_of",
+    "set_remove",
+    "set_union",
+    "slice",
+    "some",
+    "sort",
+    "split",
+    "sqrt",
+    "starts_with",
+    "substring",
+    "sum",
+    "text",
+    "transform",
+    "trim",
+    "unique",
+    "unwrap",
+    "unwrap_err",
+    "unwrap_ok",
+    "unwrap_or",
+    "unwrap_result_or",
+    "upper"
+  ],
+  "modules": {
+    "cloud": [
+      "aws_client",
+      "call",
+      "env"
+    ],
+    "console": [
+      "input",
+      "write"
+    ],
+    "crypto": [
+      "aes_decrypt",
+      "aes_encrypt",
+      "base64_decode",
+      "base64_encode",
+      "constant_equal",
+      "hmac_sha256",
+      "password_hash",
+      "password_verify",
+      "random",
+      "sha256"
+    ],
+    "data": [
+      "chunks",
+      "csv_read",
+      "csv_write",
+      "group_count"
+    ],
+    "db": [
+      "begin",
+      "close",
+      "commit",
+      "execute",
+      "open",
+      "query",
+      "rollback",
+      "transaction"
+    ],
+    "docdb": [
+      "get",
+      "keys",
+      "open",
+      "put",
+      "remove"
+    ],
+    "game": [
+      "available",
+      "run_demo"
+    ],
+    "gpio": [
+      "close",
+      "off",
+      "on",
+      "output"
+    ],
+    "http": [
+      "bytes",
+      "get",
+      "header",
+      "port",
+      "post",
+      "query",
+      "request_header",
+      "request_method",
+      "request_path",
+      "request_text",
+      "response",
+      "serve",
+      "status",
+      "stop",
+      "text",
+      "wait"
+    ],
+    "image": [
+      "height",
+      "open",
+      "resize",
+      "save",
+      "width"
+    ],
+    "io": [
+      "append_text",
+      "copy",
+      "decode",
+      "encode",
+      "exists",
+      "list",
+      "mkdir",
+      "read_bytes",
+      "read_text",
+      "remove",
+      "write_bytes",
+      "write_text"
+    ],
+    "json": [
+      "decode",
+      "encode",
+      "pretty"
+    ],
+    "ml": [
+      "linear_regression",
+      "predict"
+    ],
+    "net": [
+      "accept",
+      "close",
+      "receive",
+      "send",
+      "tcp_connect",
+      "tcp_listen",
+      "udp",
+      "udp_bind",
+      "udp_receive",
+      "udp_send"
+    ],
+    "orm": [
+      "all",
+      "create_table",
+      "insert"
+    ],
+    "plugin": [
+      "call",
+      "load"
+    ],
+    "process": [
+      "run"
+    ],
+    "reflect": [
+      "annotations",
+      "class_of",
+      "fields",
+      "get",
+      "methods",
+      "type_name"
+    ],
+    "regex": [
+      "find_all",
+      "is_match",
+      "replace",
+      "split"
+    ],
+    "science": [
+      "dot",
+      "linspace",
+      "matrix_multiply",
+      "mean"
+    ],
+    "spark": [
+      "session",
+      "stop"
+    ],
+    "system": [
+      "architecture",
+      "cpu_count",
+      "platform"
+    ],
+    "task": [
+      "all",
+      "await",
+      "cpu_count",
+      "cpu_filter",
+      "cpu_map",
+      "cpu_reduce",
+      "parallel_map",
+      "pool",
+      "process_id",
+      "shutdown",
+      "spawn",
+      "submit"
+    ],
+    "time": [
+      "add_days",
+      "add_seconds",
+      "diff",
+      "format",
+      "iso",
+      "now",
+      "parse",
+      "seconds",
+      "sleep",
+      "utc_now"
+    ],
+    "ui": [
+      "after",
+      "button",
+      "close",
+      "get",
+      "input",
+      "label",
+      "run",
+      "set",
+      "window"
+    ],
+    "video": [
+      "close",
+      "frame_count",
+      "open"
+    ],
+    "websocket": [
+      "close",
+      "connect",
+      "receive",
+      "send"
+    ]
+  },
+  "semantic_changes": [
+    "native_game_profile_1_0_rc1",
+    "rgba8_framebuffer_and_image_textures",
+    "sprite_camera_tilemap_particles_physics",
+    "desktop_window_input_audio_gamepad",
+    "gpu_renderer_and_programmable_shader_backend",
+    "native_standardization_evidence_registry"
+  ]
+}

@@ -1,0 +1,22 @@
+edition 2027
+use web
+use sys
+
+var count = 0
+let saved = web.storage_get("counter")
+if is_ok(saved) {
+    let maybe = unwrap_ok(saved)
+    if is_some(maybe) {
+        count = int(unwrap(maybe))
+    }
+}
+
+let event = sys.args()
+if len(event) >= 2 and event[0] == "click" and event[1] == "increment" {
+    count = count + 1
+    web.storage_set("counter", text(count))
+}
+
+web.set_html("saga-root", "<p>Count: <strong id=\"counter-value\"></strong></p><button id=\"increment\">Increment</button>")
+web.set_text("counter-value", text(count))
+web.on_click("increment", "increment")

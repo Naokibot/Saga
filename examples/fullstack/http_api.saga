@@ -1,0 +1,13 @@
+use http
+use json
+
+fn handle(request: any) -> any {
+    if http.request_path(request) == "/health" {
+        return http.response(200, json.encode(map_of("status", "ok")), "application/json; charset=utf-8")
+    }
+    return http.response(404, "Not Found", "text/plain; charset=utf-8")
+}
+
+let server = http.serve("127.0.0.1", 8080, handle)
+print("Serving http://127.0.0.1:8080/health")
+http.wait(server)

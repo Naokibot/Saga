@@ -1,0 +1,24 @@
+=== uname ===
+Linux edbfcc940191 6.18.35 #1 SMP Mon Jul 27 18:07:50 UTC 2026 x86_64 GNU/Linux
+=== id ===
+uid=0(root) gid=0(root) groups=0(root)
+=== network ===
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00 promiscuity 0 allmulti 0 minmtu 0 maxmtu 0 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 524280 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1000
+    link/ether 8e:29:d1:ad:88:b7 brd ff:ff:ff:ff:ff:ff promiscuity 0 allmulti 0 minmtu 68 maxmtu 1500 addrgenmode eui64 numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 tso_max_size 65536 tso_max_segs 65535 gro_max_size 65536 gso_ipv4_max_size 65536 gro_ipv4_max_size 65536 parentbus virtio parentdev virtio0 
+=== ptp devices ===
+ls: cannot access '/dev/ptp*': No such file or directory
+=== eth0 sysfs ===
+/sys/devices/pci0000:00/0000:00:01.0/virtio0
+=== toolchain ===
+Python 3.13.5
+go version go1.23.2 linux/amd64
+clang version 17.0.0 (https://github.com/swiftlang/llvm-project.git 10999b6d034fe318f3d56c83bddb6572593a8bb0)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+LLVM (http://llvm.org/):
+  LLVM version 17.0.0
+  Optimized build.
+=== vcan setup attempt ===
+RTNETLINK answers: Operation not permitted
