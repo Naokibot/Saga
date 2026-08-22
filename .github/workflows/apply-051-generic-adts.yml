@@ -56,8 +56,10 @@ jobs:
       - name: Run Go vet
         working-directory: implementations/go
         run: go vet ./...
-      - name: Remove integration scaffolding
-        run: rm -f tools/apply_051_generic_adts.py tools/fix_051_match_runtime.py tools/fix_051_go_diagnostic_test.py .github/workflows/apply-051-generic-adts.yml
+      - name: Prepare source-only commit
+        run: |
+          rm -f tools/apply_051_generic_adts.py tools/fix_051_match_runtime.py tools/fix_051_go_diagnostic_test.py
+          git restore .github/workflows/saga-ci.yml
       - name: Commit integrated source
         run: |
           git config user.name "K.Saga"
