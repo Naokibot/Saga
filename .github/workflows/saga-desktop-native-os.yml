@@ -27,7 +27,9 @@ jobs:
       - uses: actions/setup-python@v6
         with: {python-version: '3.13'}
       - uses: actions/setup-go@v7
-        with: {go-version: '1.23.x'}
+        with:
+          go-version: '1.23.x'
+          cache-dependency-path: implementations/go/go.mod
       - name: Native host qualification
         run: python tools/native_host_qualification.py --expected-host linux --output validation/native-host-linux-ci.json
       - uses: actions/upload-artifact@v4
@@ -40,7 +42,9 @@ jobs:
       - uses: actions/setup-python@v6
         with: {python-version: '3.13'}
       - uses: actions/setup-go@v7
-        with: {go-version: '1.23.x'}
+        with:
+          go-version: '1.23.x'
+          cache-dependency-path: implementations/go/go.mod
       - name: Native host qualification
         run: python tools/native_host_qualification.py --expected-host macos --output validation/native-host-macos-ci.json
       - uses: actions/upload-artifact@v4
@@ -53,7 +57,9 @@ jobs:
       - uses: actions/setup-python@v6
         with: {python-version: '3.13'}
       - uses: actions/setup-go@v7
-        with: {go-version: '1.23.x'}
+        with:
+          go-version: '1.23.x'
+          cache-dependency-path: implementations/go/go.mod
       - name: Native host qualification
         shell: pwsh
         run: python tools/native_host_qualification.py --expected-host windows --output validation/native-host-windows-ci.json
