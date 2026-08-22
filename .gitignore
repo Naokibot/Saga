@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Packaging/build outputs
+build/
+dist/
+*.egg-info/
+
+# Go
+implementations/go/saga-go
+*.test
+
+# Local qualification outputs
+validation/*-ci.json
+validation/physical-lab.json
+review-output/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local environment/secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
