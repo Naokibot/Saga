@@ -1,13 +1,28 @@
 name: Saga platform qualification
+
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'saga/**'
+      - 'implementations/**'
+      - 'tools/platform_qualification.py'
+      - 'tools/platform_qualification_current.py'
+      - 'pyproject.toml'
+      - '.github/workflows/saga-platform-qualification.yml'
   pull_request:
     paths:
       - 'saga/**'
       - 'implementations/**'
       - 'tools/platform_qualification.py'
-      - 'validation/platform-live/**'
+      - 'tools/platform_qualification_current.py'
+      - 'pyproject.toml'
       - '.github/workflows/saga-platform-qualification.yml'
+
+permissions:
+  contents: read
+
 jobs:
   linux-hosted-real:
     runs-on: ubuntu-24.04
@@ -24,7 +39,7 @@ jobs:
       - name: Install real Hosted adapters
         run: python -m pip install -e '.[game,bigdata,cloud,iot]'
       - name: Run platform qualification
-        run: python tools/platform_qualification.py --output validation/platform-qualification-ci.json
+        run: python tools/platform_qualification_current.py --output validation/platform-qualification-ci.json
         env:
           SDL_AUDIODRIVER: dummy
           SDL_VIDEODRIVER: dummy
@@ -61,7 +76,7 @@ jobs:
       - run: python -m pip install -e '.[cloud]'
       - name: Execute Saga -> boto3 -> AWS STS
         if: vars.SAGA_AWS_QUALIFICATION_ROLE_ARN != ''
-        run: python tools/platform_qualification.py --output validation/aws-live.json
+        run: python tools/platform_qualification_current.py --output validation/aws-live.json
         env:
           SAGA_AWS_LIVE: '1'
           AWS_REGION: ${{ vars.SAGA_AWS_QUALIFICATION_REGION || 'us-east-1' }}
