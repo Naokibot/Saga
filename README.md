@@ -1,110 +1,197 @@
-# Saga 0.50.0 — Production GA Control Hardening
+# Saga
 
-Saga 0.50 closes the main source-level gap between a bounded control function and a production control call graph. `@control_tick(rate_hz, budget_us)` now has a transitive companion, `@control_safe`: hidden helper I/O/allocation, recursion, indirect calls, shared mutation and unapproved external calls are rejected before execution.
+Saga is an independent general-purpose programming language focused on readable source, exact computation, explicit authority, native systems work, and progressively deeper machine-control capability.
 
-For deployment qualification, `saga production-check --native --machine` fails closed unless the project has explicit timing contracts and source-bound hazard/WCET/HIL evidence plus declared independent E-stop, STO/interlock and hardware-watchdog layers. The language/toolchain can be released as Production GA; a physical machine still requires its own target and safety qualification.
+The project includes a Python reference implementation, an independent Go implementation, native/WASM code-generation work, package and workspace tooling, language-server/debugging support, platform qualification, and machine-control profiles.
 
-See `spec/SAGA_PRODUCTION_GA_CONTROL_0.50.md`, `docs/PRODUCTION_GA_CONTROL_0.50.md`, `RELEASE_NOTES_0.50.0.md`, `saga-REVIEW_REPORT-0.50.0.md`, and `saga-VALIDATION-0.50.0.md`.
+## Project status
 
----
+- **Latest frozen release:** Saga 0.50.0 — Production GA Control Hardening
+- **Frozen release branch:** `release/0.50.0-production-ga`
+- **Development branch:** `main`
+- **License:** MIT
+- **Python requirement:** 3.13+
 
-# Saga 0.49.0 — Production & Industrial Profile
+`release/source-manifest-0.50.0.json` describes the frozen 0.50.0 source candidate. Maintenance work on `main` may intentionally diverge from that historical manifest; a later release must create new source-bound evidence instead of rewriting old release evidence.
 
-Saga is an independent general-purpose language designed to remain readable while scaling into native systems and physical-machine control. 0.49 adds first-class large-system production gates and explicit periodic-control contracts on top of the 0.47 advanced-motion stack.
+The **Production GA** designation applies to the Saga 0.50 language/toolchain control profile. It is **not** a functional-safety certificate for a physical machine. Target-specific hard real-time, WCET, physical HIL, fieldbus, motor/drive, E-stop/STO/interlock, watchdog, SIL/PL, and other regulatory evidence remain deployment-specific.
 
-```saga
-use machine
+## Quick start
 
-@control_tick(20000, 35)
-fn current_tick(error: decimal) -> decimal {
-    return error * 0.5
-}
+Clone the repository and install Saga in an isolated environment:
 
-let guard = machine.control_guard(20000, 35, 100, 5)
-let now = machine.monotonic_ns()
-let input_ts = now
-if machine.control_guard_begin(guard, input_ts, now) {
-    let command = current_tick(1.0)
-}
-let healthy = machine.control_guard_end(guard, machine.monotonic_ns())
+```bash
+git clone https://github.com/SagaK-dev/Saga.git
+cd Saga
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install -e .
 ```
 
-For large repositories, `saga-workspace.toml` groups independently locked projects and `saga production-check --native` fails closed on compile/lint/lock/reproducible-package/native-build problems while reporting minimum capability categories.
+Windows PowerShell activation:
 
-This is a production-candidate engineering profile, not a shortcut around independent security audits, physical host qualification, field history or functional-safety certification.
-
-See `spec/SAGA_PRODUCTION_INDUSTRIAL_0.49.md`, `docs/PRODUCTION_INDUSTRIAL_0.49.md`, `RELEASE_NOTES_0.49.0.md`, and `saga-REVIEW_REPORT-0.49.0.md`.
-
-## Retained Advanced Motion Control 0.47
-
-Saga is an independent general-purpose programming language built around readable source, static accountability, exact-number defaults, explicit authority and progressively deeper systems capability.
-
-Saga 0.47 extends the 0.46 precision-machine layer with a shared Python/Go advanced-motion surface: persistent FOC current control, integrated incremental/absolute encoders, online RLS identification, bounded MPC, disturbance/friction compensation, electronic gearing, EtherCAT/CAN-FD transport with timestamp provenance, and a compiler-enforced `@control_tick` MCU/RTOS source profile.
-
-```saga
-use machine
-
-let foc = machine.foc_current(2.0, 80.0, 2.0, 80.0, 0.08, 0.00012, 0.00012, 0.018, 25.0, 24.0, 12.0)
-machine.foc_step(foc, 0.0, 4.0, 0.2, -0.1, -0.1, 0.25, 40.0, 48.0, 0.0001)
-let duty_u = machine.foc_duty(foc, 0)
+```powershell
+.\.venv\Scripts\Activate.ps1
 ```
 
-Control mathematics remains ordinary Saga state. Raw EtherCAT/CAN/PWM/device I/O remains capability-gated. `@control_tick` rejects dynamic Saga allocations, async/task structures, resource-lifetime changes, exceptions, unbounded loops and known blocking receive/exchange operations, but it is a source-level MCU/RTOS contract rather than a claim that hosted Python/Go is hard real-time or that target object code has already been proven allocation-free.
+Check the installed language:
 
-See `spec/SAGA_ADVANCED_MOTION_0.47.md`, `docs/ADVANCED_MOTION_0.47.md`, `RELEASE_NOTES_0.47.0.md`, `saga-REVIEW_REPORT-0.47.0.md`, and `saga-VALIDATION-0.47.0.md`.
+```bash
+saga --version
+saga doctor
+```
 
-## Retained Precision Machine Control 0.46
-
-Saga 0.46's 2-DOF PID, motor feed-forward, alpha-beta observer, resonance notch, Clarke/Park/inverse-Park, SVPWM and deadline-budget observer remain available. 0.47 builds on those primitives rather than replacing them.
-
-## Retained Language Synthesis 0.45
-
-Saga is an independent general-purpose programming language with its own grammar/type system, module model, native ABI/compiler/runtime, package tooling, independent Go implementation, and SH-3 self-host path.
-
-Saga 0.45 makes `async`/`await`, lexical `taskgroup`, LIFO `defer`, deterministic `using`, and resource-focused `move` a coherent common surface across the Python reference implementation and the independent Go implementation. Public async module APIs are represented as `future[T]` in the deterministic `.smi.json` ABI.
+Create `hello.saga`:
 
 ```saga
-async fn double(value: int) -> int {
+fn twice(value: int) -> int {
     return value * 2
 }
 
-fn answer() -> int {
-    defer print("cleanup")
-    return await double(21)
-}
-
-print(answer())
+print(twice(21))
 ```
 
-The new words are contextual: an older program can still declare names such as `fn await()` where the spelling is not being used as the 0.45 construct. `move` is intentionally limited to move-only native resources; ordinary Saga values remain managed and do not acquire a general borrow-checker burden.
+Then run it:
 
-See `spec/SAGA_LANGUAGE_SYNTHESIS_0.45.md`, `docs/LANGUAGE_SYNTHESIS_0.45.md`, `RELEASE_NOTES_0.45.0.md`, `saga-REVIEW_REPORT-0.45.0.md`, and `saga-VALIDATION-0.45.0.md`.
+```bash
+saga check hello.saga
+saga run hello.saga
+```
 
-## Retained 4 kHz hosted control profile
+## Core CLI
 
-### 4,000 control ticks per second
+Saga's CLI includes:
 
-Saga 0.44 introduces a 4 kHz hosted control profile with a **250 us period**.
+```text
+run               execute checked Saga source
+check             parse/type-check without execution
+repl              interactive REPL
+new               create a Saga project
+lint / fmt        style and source checks
+module            generate separate-compilation module interfaces
+test              run Saga tests
+lock / verify     reproducible project locking
+production-check  project/workspace production gate
+pack              deterministic .sagapkg creation
+build             native executable or WebAssembly build
+conformance       Standard Core self-conformance
+lsp               Language Server Protocol server
+debug / profile   debugging and profiling
+registry          package-registry server/client workflows
+mobile            generate mobile runtime projects
+ecosystem         package/bridge SDK tooling
+capabilities      static capability audit
+doctor            environment diagnostics
+```
+
+Run `saga --help` or `saga <command> --help` for the complete command surface.
+
+## Language design
+
+Saga aims to keep common code approachable while retaining a serious systems path.
+
+Key language/toolchain areas include:
+
+- exact-number-oriented defaults and static contracts;
+- `option` / `result`-style explicit failure handling;
+- namespaced modules, public/internal visibility, separate compilation, and deterministic interfaces;
+- `async` / `await`, lexical `taskgroup`, `defer`, deterministic `using`, and resource-focused `move`;
+- native ABI/code-generation work and managed runtime/GC layers;
+- deterministic packaging, workspaces, lock verification, and capability reporting;
+- Python reference implementation plus an independent Go implementation;
+- native desktop/mobile, graphics/game, cloud, IoT, registry, and platform qualification paths.
+
+The language intentionally avoids turning ordinary managed values into a global borrow-checking burden. Explicit ownership/authority rules are concentrated around resources where lifetime and external authority matter.
+
+## Machine-control profile
+
+Saga 0.50 adds transitive control-call-graph hardening around the existing periodic-control stack.
 
 ```saga
 use machine
-let clock = machine.cyclic_clock(4000)
-while true {
-    let due = machine.cycle_wait_due(clock)
-    var i = 0
-    while i < due {
-        # one deterministic control-state update
-        i = i + 1
-    }
+
+@control_safe
+fn clamp_command(value: decimal) -> decimal {
+    if value > 1.0 { return 1.0 }
+    if value < -1.0 { return -1.0 }
+    return value
+}
+
+@control_tick(20000, 35)
+fn current_tick(error: decimal) -> decimal {
+    return clamp_command(error * 0.5)
 }
 ```
 
-On Linux, `CyclicClock` uses the kernel `timerfd` periodic timer. The kernel counts every expiration, so temporary process pre-emption does not silently erase logical control ticks. `cycle_wait_due()` returns the number of state updates that became due; `cycle_stats_json()` reports period, backend, wait calls, cycles, overruns, `last_due`, `max_due`, and jitter.
+`@control_safe` and `@control_tick` are source/toolchain contracts. They reject classes of hidden allocation/I/O, recursion, indirect calls, shared mutation, unapproved external calls, and other constructs that violate the production control profile.
 
-The cached control allocator, compact state-space path, and per-actuator conditioning remain available for high-rate loops. Saga still keeps physical E-stop/STO/interlocks and hazardous-motion safety policy outside the hosted language runtime.
+Deployment qualification is performed with:
 
-## Timing boundary
+```bash
+saga production-check --native --machine
+```
 
-The 4 kHz profile is **hosted soft real-time**. Counting/executing 4,000 logical state updates per second is distinct from guaranteeing a physical GPIO/PWM/CAN/EtherCAT edge on every exact 250 us boundary. Hard-deadline motor-current/FOC loops, hardware-timed waveforms, EtherCAT distributed-clock slaves/masters, and certified safety motion require the relevant RTOS/drive/FPGA/driver/hardware qualification.
+The machine-production gate is fail-closed when required source-bound timing, hazard, WCET, HIL, and independent hardware-safety evidence is absent.
 
-See `docs/CONTROL_4KHZ_0.44.md`, `RELEASE_NOTES_0.44.0.md`, and `validation/control-4khz-0.44.0.json` for the detailed qualification boundary.
+See:
+
+- `spec/SAGA_PRODUCTION_GA_CONTROL_0.50.md`
+- `docs/PRODUCTION_GA_CONTROL_0.50.md`
+- `RELEASE_NOTES_0.50.0.md`
+- `saga-REVIEW_REPORT-0.50.0.md`
+- `saga-VALIDATION-0.50.0.md`
+
+## Validation and CI
+
+The repository separates software qualification from external/physical qualification.
+
+The frozen 0.50 evidence includes Python and Go regression, Go vet/race checks, internal automated security review, specification linting, deterministic control invariant cases, native reproducibility/execution, and source-bound machine-production checks.
+
+Current development CI runs core Python/Go checks on pushes to `main` and pull requests. Additional workflows cover:
+
+- desktop native OS qualification;
+- platform/runtime qualification;
+- Android/iOS build evidence;
+- live signed registry qualification;
+- self-hosted physical hardware-lab qualification.
+
+Physical-lab and credentialed live-service workflows remain explicit/manual gates and must not be interpreted as passed unless their actual evidence exists.
+
+## Repository structure
+
+```text
+saga/               Python reference implementation
+implementations/go/ independent Go implementation
+spec/               language and profile specifications
+docs/               design and usage documentation
+tests/              Python regression tests
+tools/              qualification/release/developer tooling
+validation/         validation and qualification evidence
+release/            frozen source manifests
+examples/           Saga examples
+.github/workflows/  CI and qualification workflows
+```
+
+## Contributing
+
+See `CONTRIBUTING.md` for development and pull-request expectations.
+
+Before submitting changes, at minimum run the relevant Python regression tests plus:
+
+```bash
+cd implementations/go
+go test ./...
+go vet ./...
+```
+
+Do not rewrite a historical source manifest merely to make it match a changed development tree.
+
+## Security
+
+See `SECURITY.md` for vulnerability-reporting guidance and the machine-control safety boundary.
+
+Do not commit secrets, tokens, signing keys, production credentials, or sensitive third-party data.
+
+## Release history
+
+The repository retains release notes, review reports, specifications, validation documents, and source manifests for prior development milestones. Start with `RELEASE_NOTES_0.50.0.md` and `CHANGELOG.md` for the current release line.
