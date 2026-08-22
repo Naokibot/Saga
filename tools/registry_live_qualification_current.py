@@ -2,10 +2,13 @@
 """Run live registry qualification against the version declared by this checkout."""
 from __future__ import annotations
 
+import sys
 import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 with (ROOT / "pyproject.toml").open("rb") as fh:
     release = str(tomllib.load(fh)["project"]["version"])
