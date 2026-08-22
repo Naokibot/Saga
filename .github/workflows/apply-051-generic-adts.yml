@@ -1,5 +1,6 @@
 name: Apply Saga 0.51 Generic ADTs
 
+# This second branch update intentionally triggers the workflow after it exists.
 on:
   push:
     branches: [feature/saga-051-generic-adts]
