@@ -1,13 +1,32 @@
 name: Saga platform qualification
+
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'saga/**'
+      - 'implementations/**'
+      - 'tools/platform_qualification.py'
+      - 'tools/platform_qualification_current.py'
+      - 'tools/machine_control_qualification.py'
+      - 'tools/machine_control_qualification_current.py'
+      - 'pyproject.toml'
+      - '.github/workflows/saga-platform-qualification.yml'
   pull_request:
     paths:
       - 'saga/**'
       - 'implementations/**'
       - 'tools/platform_qualification.py'
-      - 'validation/platform-live/**'
+      - 'tools/platform_qualification_current.py'
+      - 'tools/machine_control_qualification.py'
+      - 'tools/machine_control_qualification_current.py'
+      - 'pyproject.toml'
       - '.github/workflows/saga-platform-qualification.yml'
+
+permissions:
+  contents: read
+
 jobs:
   linux-hosted-real:
     runs-on: ubuntu-24.04
@@ -16,19 +35,20 @@ jobs:
       - uses: actions/setup-python@v6
         with: {python-version: '3.13'}
       - uses: actions/setup-go@v7
-        with: {go-version: '1.26.x'}
-      - uses: actions/setup-java@v4
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: implementations/go/go.mod
+      - uses: actions/setup-java@v5
         with: {distribution: 'temurin', java-version: '21'}
       - name: Native dependencies
         run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libvulkan-dev mesa-vulkan-drivers xvfb
-      - name: Install real Hosted adapters
-        run: python -m pip install -e '.[game,bigdata,cloud,iot]'
+      - name: Install qualification dependencies
+        run: python -m pip install -e '.[dev,game,bigdata,cloud,iot]'
       - name: Run platform qualification
-        run: python tools/platform_qualification.py --output validation/platform-qualification-ci.json
+        run: python tools/platform_qualification_current.py --output validation/platform-qualification-ci.json
         env:
           SDL_AUDIODRIVER: dummy
-          SDL_VIDEODRIVER: dummy
-      - name: Require real pygame and Spark
+      - name: Require software qualification gates
         run: |
           python - <<'PY'
           import json
@@ -36,6 +56,7 @@ jobs:
           g={x['id']:x for x in d['gates']}
           assert g['pygame-runtime']['status']=='PASS', g['pygame-runtime']
           assert g['spark-runtime']['status']=='PASS', g['spark-runtime']
+          assert g['machine-control-software']['status']=='PASS', g['machine-control-software']
           assert g['vulkan-swapchain-present']['status'].startswith('PASS'), g['vulkan-swapchain-present']
           PY
       - uses: actions/upload-artifact@v4
@@ -58,10 +79,10 @@ jobs:
         with:
           role-to-assume: ${{ vars.SAGA_AWS_QUALIFICATION_ROLE_ARN }}
           aws-region: ${{ vars.SAGA_AWS_QUALIFICATION_REGION || 'us-east-1' }}
-      - run: python -m pip install -e '.[cloud]'
+      - run: python -m pip install -e '.[dev,cloud]'
       - name: Execute Saga -> boto3 -> AWS STS
         if: vars.SAGA_AWS_QUALIFICATION_ROLE_ARN != ''
-        run: python tools/platform_qualification.py --output validation/aws-live.json
+        run: python tools/platform_qualification_current.py --output validation/aws-live.json
         env:
           SAGA_AWS_LIVE: '1'
           AWS_REGION: ${{ vars.SAGA_AWS_QUALIFICATION_REGION || 'us-east-1' }}
