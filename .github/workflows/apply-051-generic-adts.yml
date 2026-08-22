@@ -6,12 +6,14 @@ on:
     paths:
       - 'tools/apply_051_generic_adts.py'
       - 'tools/fix_051_match_runtime.py'
+      - 'tools/fix_051_go_diagnostic_test.py'
       - '.github/workflows/apply-051-generic-adts.yml'
   pull_request:
     branches: [main]
     paths:
       - 'tools/apply_051_generic_adts.py'
       - 'tools/fix_051_match_runtime.py'
+      - 'tools/fix_051_go_diagnostic_test.py'
       - '.github/workflows/apply-051-generic-adts.yml'
 
 permissions:
@@ -36,6 +38,8 @@ jobs:
         run: python tools/apply_051_generic_adts.py
       - name: Apply enum match runtime fix
         run: python tools/fix_051_match_runtime.py
+      - name: Stabilize Go diagnostic assertion
+        run: python tools/fix_051_go_diagnostic_test.py
       - name: Format Go implementation
         run: gofmt -w implementations/go/cmd/saga-go
       - name: Install Saga
@@ -53,7 +57,7 @@ jobs:
         working-directory: implementations/go
         run: go vet ./...
       - name: Remove integration scaffolding
-        run: rm -f tools/apply_051_generic_adts.py tools/fix_051_match_runtime.py .github/workflows/apply-051-generic-adts.yml
+        run: rm -f tools/apply_051_generic_adts.py tools/fix_051_match_runtime.py tools/fix_051_go_diagnostic_test.py .github/workflows/apply-051-generic-adts.yml
       - name: Commit integrated source
         if: github.event_name == 'push'
         run: |
