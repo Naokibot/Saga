@@ -59,7 +59,6 @@ jobs:
       - name: Remove integration scaffolding
         run: rm -f tools/apply_051_generic_adts.py tools/fix_051_match_runtime.py tools/fix_051_go_diagnostic_test.py .github/workflows/apply-051-generic-adts.yml
       - name: Commit integrated source
-        if: github.event_name == 'push'
         run: |
           git config user.name "K.Saga"
           git config user.email "SagaK-dev@users.noreply.github.com"
