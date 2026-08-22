@@ -31,7 +31,9 @@ jobs:
       - uses: actions/setup-python@v6
         with: {python-version: '3.13'}
       - uses: actions/setup-go@v7
-        with: {go-version: '1.26.x'}
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: implementations/go/go.mod
       - uses: actions/setup-java@v4
         with: {distribution: 'temurin', java-version: '21'}
       - name: Native dependencies
